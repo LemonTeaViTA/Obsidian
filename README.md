@@ -1,2 +1,2 @@
 # Obsidian
-知识库
+基于Karpathy的个人LLM知识库
