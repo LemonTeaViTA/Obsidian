@@ -1,0 +1,222 @@
+{
+  "main": {
+    "id": "ec8ddd3e5dc00398",
+    "type": "split",
+    "children": [
+      {
+        "id": "61f6fb0262f251d2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f49609097e68c6e8",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "wiki/并发编程篇.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "并发编程篇"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "bb7afa757381bb2c",
+    "type": "split",
+    "children": [
+      {
+        "id": "496577e68595605d",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "15fb59fda1f5b4b5",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "ae381f3a68ad07f6",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "f86b6fb1553e1c51",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "right": {
+    "id": "8e2e6e18ae65b413",
+    "type": "split",
+    "children": [
+      {
+        "id": "22693295db163803",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "2e9b50bd7e579199",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "wiki/并发编程篇.md",
+                "collapseAll": true,
+                "extraContext": true,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "并发编程篇 的反向链接列表"
+            }
+          },
+          {
+            "id": "6b602fb6056ea626",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "wiki/并发编程篇.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "并发编程篇 的出链列表"
+            }
+          },
+          {
+            "id": "5f3391a9da39989c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "f29c2245eca24bb9",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "b1c2e90f38a3f969",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "wiki/并发编程篇.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "并发编程篇 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false,
+      "copilot:Open Copilot Chat": false
+    }
+  },
+  "active": "f49609097e68c6e8",
+  "lastOpenFiles": [
+    "wiki/并发编程/守护线程.md",
+    "wiki/并发编程/线程上下文切换.md",
+    "wiki/并发编程/ThreadPoolCrashRecovery.md",
+    "wiki/并发编程/ThreadSafety.md",
+    "wiki/并发编程/SleepWait.md",
+    "wiki/并发编程/ForkJoin.md",
+    "wiki/并发编程/DatabaseConnectionPool.md",
+    "wiki/并发编程/CustomThreadPoolExecutor.md",
+    "wiki/并发编程/ThreadPoolUsageNotes.md",
+    "wiki/并发编程/ThreadPoolTuning.md",
+    "wiki/并发编程/ThreadPoolDynamicConfig.md",
+    "wiki/并发编程/ThreadPoolState.md",
+    "wiki/并发编程/ThreadPoolExceptionHandling.md",
+    "wiki/并发编程/CompletableFuture.md",
+    "wiki/并发编程/AtomicStampedReference.md",
+    "wiki/并发编程/PessimisticLock.md",
+    "wiki/并发编程/OptimisticLock.md",
+    "wiki/并发编程/DeadLock.md",
+    "wiki/并发编程/AtomicReference.md",
+    "wiki/并发编程/AtomicInteger.md",
+    "wiki/并发编程/CAS.md",
+    "wiki/并发编程/ThreadPoolExecutor.md",
+    "wiki/并发编程/BlockingQueue.md",
+    "wiki/并发编程/CopyOnWriteArrayList.md",
+    "wiki/并发编程/ConcurrentHashMap.md",
+    "wiki/并发编程/Exchanger.md",
+    "wiki/并发编程",
+    "wiki/hubs",
+    "wiki",
+    "copilot/copilot-custom-prompts",
+    "copilot"
+  ]
+}
