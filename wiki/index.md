@@ -11,7 +11,7 @@
 - [[Spring篇|Spring篇]]
 - [[并发编程篇|并发编程篇]]
 - [[集合框架篇|集合框架篇]]
-- [[LeetCode-Hot100/算法_MOC|LeetCode Hot100 完整分类导航]]
+- [[算法/算法_MOC|LeetCode Hot100 完整分类导航]]
 
 ## 配套页面
 
