@@ -1,215 +1,4 @@
-# 集合框架篇
-
-> 来源文件：raw/files/面渣逆袭集合框架篇V2.1.epub
-> 正文位置：EPUB/text/ch001.xhtml
-> 导航位置：EPUB/nav.xhtml
-> 导入方式：自动抽取（待你后续精修）
-
-
-
- ## 1. 集合框架概述
-
-### 常见的集合框架有哪些？
-
-集合框架可以分为两条大的支线：
-
-#### 第一条支线：Collection
-主要由 List、Set、Queue 组成：
-- **List**：代表有序、可重复的集合，典型代表就是封装了动态数组的 ArrayList 和封装了链表的 LinkedList；
-- **Set**：代表无序、不可重复的集合，典型代表就是 HashSet 和 TreeSet；
-- **Queue**：代表队列，典型代表就是双端队列 ArrayDeque ，以及优先队列 PriorityQueue。
-
-**另外一个回答版本：**
-Collection 接口是最基本的集合框架表示方式，提供了添加、删除、清空等基本操作，它主要有三个子接口：
-- **List**：一个有序的集合，可以包含重复的元素。实现类包括 ArrayList、LinkedList 等。
-- **Set**：一个不包含重复元素的集合。实现类包括 HashSet、LinkedHashSet、TreeSet 等。
-- **Queue**：一个用于保持元素队列的集合。实现类包括 PriorityQueue、ArrayDeque 等。
-
-#### 第二条支线：Map
-代表键值对的集合，典型代表就是 HashMap。
-Map 接口表示键值对的集合，一个键映射到一个值。键不能重复，每个键只能对应一个值。Map 接口的实现类包括 HashMap、LinkedHashMap、TreeMap 等。
-
----
-
-### 集合框架有哪些常用工具类？
-集合框架位于 java.util 包下，提供了两个常用的工具类：
-- **Collections**：提供了一些对集合进行排序、二分查找、同步的静态方法。
-- **Arrays**：提供了一些对数组进行排序、打印、和 List 进行转换的静态方法。
-
----
-
-### 简单介绍一下队列
-Java 中的队列主要通过 Queue 接口和并发包下的 BlockingQueue 两个接口来实现。
-- 优先队列 PriorityQueue 实现了 Queue 接口，是一个无界队列，它的元素按照自然顺序排序或者 Comparator 比较器进行排序。
-- 双端队列 ArrayDeque 也实现了 Queue 接口，是一个基于数组的，可以在两端插入和删除元素的队列。
-- LinkedList 实现了 Queue 接口的子类 Deque，所以也可以当做双端队列来使用。
-
-#### 队列和栈的区别了解吗？
-- **队列** 是一种先进先出（FIFO, First-In-First-Out）的数据结构，第一个加入队列的元素会成为第一个被移除的元素。
-- **栈** 是一种后进先出（LIFO, Last-In-First-Out）的数据结构，最后一个加入栈的元素会成为第一个被移除的元素。
-
----
-
-### 哪些是线程安全的容器？
-像 Vector、Hashtable、ConcurrentHashMap、CopyOnWriteArrayList、ConcurrentLinkedQueue、ArrayBlockingQueue、LinkedBlockingQueue 都是线程安全的。
-
----
-
-### Collection继承了哪些接口？
-Collection 继承了 Iterable 接口，这意味着所有实现 Collection 接口的类都必须实现 iterator() 方法，之后就可以使用增强型 or 循环遍历集合中的元素了。 
- 
- 
- 
- 
- 
- 
- 
- 
- 
-## 2. List 体系
-
-### 🌟ArrayList 和 LinkedList 有什么区别？
-
-ArrayList 是基于数组实现的，LinkedList 是基于链表实现的。
-
-#### ArrayList 和 LinkedList 的用途有什么不同？
-多数情况下，ArrayList 更利于查找，LinkedList 更利于增删。
-1. 由于 ArrayList 是基于数组实现的，所以 `get(int index)` 可以直接通过数组下标获取，时间复杂度是 O(1)；LinkedList 是基于链表实现的，`get(int index)` 需要遍历链表，时间复杂度是 O(n)。
-当然，`get(E element)` 这种查找，两种集合都需要遍历通过 `equals` 比较获取元素，所以时间复杂度都是 O(n)。
-2. ArrayList 如果增删的是数组的尾部，时间复杂度是 O(1)；如果 add 的时候涉及到扩容，时间复杂度会上升到 O(n)。
-但如果插入的是中间的位置，就需要把插入位置后的元素向前或者向后移动，甚至还有可能触发扩容，效率就会低很多，变成 O(n)。
-
-LinkedList 因为是链表结构，插入和删除只需要改变前置节点、后置节点和插入节点的引用，因此不需要移动元素。
-如果是在链表的头部插入或者删除，时间复杂度是 O(1)；如果是在链表的中间插入或者删除，时间复杂度是 O(n)，因为需要遍历链表找到插入位置；如果是在链表的尾部插入或者删除，时间复杂度是 O(1)。
-
-#### ArrayList 和 LinkedList 是否支持随机访问？
-1. ArrayList 是基于数组的，也实现了 `RandomAccess` 接口，所以它支持随机访问，可以通过下标直接获取元素。
-2. LinkedList 是基于链表的，所以它没法根据下标直接获取元素，不支持随机访问。
-
-#### ArrayList 和 LinkedList 内存占用有何不同？
-ArrayList 是基于数组的，是一块连续的内存空间，所以它的内存占用是比较紧凑的；但如果涉及到扩容，就会重新分配内存，空间是原来的 1.5 倍。
-
-LinkedList 是基于链表的，每个节点都有一个指向下一个节点和上一个节点的引用，于是每个节点占用的内存空间比 ArrayList 稍微大一点。
-
-#### ArrayList 和 LinkedList 的使用场景有什么不同？
-**ArrayList 适用于：**
-- 随机访问频繁：需要频繁通过索引访问元素的场景。
-- 读取操作远多于写入操作：如存储不经常改变的列表。
-- 末尾添加元素：需要频繁在列表末尾添加元素的场景。
-
-**LinkedList 适用于：**
-- 频繁插入和删除：在列表中间频繁插入和删除元素的场景。
-- 不需要快速随机访问：顺序访问多于随机访问的场景。
-- 队列和栈：由于其双向链表的特性，LinkedList 可以实现队列（FIFO）和栈（LIFO）。
-
-#### 链表和数组有什么区别？
-- 数组在内存中占用的是一块连续的存储空间，因此我们可以通过数组下标快速访问任意元素。数组在创建时必须指定大小，一旦分配内存，数组的大小就固定了。
-- 链表的元素存储在于内存中的任意位置，每个节点通过指针指向下一个节点。
-
----
-
-### ArrayList 的扩容机制了解吗？
-
-了解。当往 ArrayList 中添加元素时，会先检查是否需要扩容，如果当前容量+1 超过数组长度，就会进行扩容。
-
-扩容后的新数组长度是原来的 1.5 倍，然后再把原数组的值拷贝到新数组中。
-
-```java
-private void grow(int minCapacity) {
-    // overflow-conscious code
-    int oldCapacity = elementData.length;
-    int newCapacity = oldCapacity + (oldCapacity >> 1);
-    if (newCapacity - minCapacity < 0)
-        newCapacity = minCapacity;
-    if (newCapacity - MAX_ARRAY_SIZE > 0)
-        newCapacity = hugeCapacity(minCapacity);
-    // minCapacity is usually close to size, so this is a win:
-    elementData = Arrays.copyOf(elementData, newCapacity);
-}
-```
-
----
-
-### ArrayList 怎么序列化的知道吗？
-
-在 ArrayList 中，`writeObject` 方法被重写了，用于自定义序列化逻辑：只序列化有效数据，因为 `elementData` 数组的容量一般大于实际的元素数量，声明的时候也加了 `transient` 关键字。
-
-#### 为什么 ArrayList 不直接序列化元素数组呢？
-
-出于效率的考虑，数组可能长度 100，但实际只用了 50，剩下的 50 没用到，也就不需要序列化。
-
-```java
-private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException {
-    // 将当前 ArrayList 的结构进行序列化
-    int expectedModCount = modCount;
-    s.defaultWriteObject(); // 序列化非 transient 字段
-    // 序列化数组的大小
-    s.writeInt(size);
-    // 序列化每个元素
-    for (int i = 0; i < size; i++) {
-        s.writeObject(elementData[i]);
-    }
-    // 检查是否在序列化期间发生了并发修改
-    if (modCount != expectedModCount) {
-        throw new ConcurrentModificationException();
-    }
-}
-```
-
----
-
-### 快速失败 fail-fast 了解吗？
-
-`fail-fast` 是 Java 集合的一种错误检测机制。
-
-在用迭代器遍历集合对象时，如果线程 A 遍历过程中，线程 B 对集合对象的内容进行了修改，就会抛出 `ConcurrentModificationException`。
-
-迭代器在遍历时直接访问集合中的内容，并且在遍历过程中使用一个 `modCount` 变量。集合在被遍历期间如果内容发生变化，就会改变 `modCount` 的值。每当迭代器使用 `hasNext()`/`next()` 遍历下一个元素之前，都会检测 `modCount` 变量是否为 `expectedmodCount` 值，是的话就返回遍历；否则抛出异常，终止遍历。
-
-异常的抛出条件是检测到 `modCount != expectedmodCount` 这个条件。如果集合发生变化时修改 `modCount` 值刚好又设置为了 `expectedmodCount` 值，则异常不会抛出。因此，不能依赖于这个异常是否抛出而进行并发操作的编程，这个异常只建议用于检测并发修改的 bug。
-
-`java.util` 包下的集合类都是快速失败的，不能在多线程下发生并发修改（迭代过程中被修改），比如 `ArrayList` 类。
-
-#### 什么是安全失败（fail-safe）呢？
-
-采用安全失败机制的集合容器，在遍历时不是直接在集合内容上访问的，而是先复制原有集合内容，在拷贝的集合上进行遍历。
-
-- **原理**：由于迭代时是对原集合的拷贝进行遍历，所以在遍历过程中对原集合所作的修改并不能被迭代器检测到，所以不会触发 `ConcurrentModificationException`。
-- **缺点**：基于拷贝内容的优点是避免了 `ConcurrentModificationException`，但同样地，迭代器并不能访问到修改后的内容，即：迭代器遍历的是开始遍历那一刻拿到的集合拷贝，在遍历期间原集合发生的修改迭代器是不知道的。
-- **场景**：`java.util.concurrent` 包下的容器都是安全失败，可以在多线程下并发使用，并发修改，比如 `CopyOnWriteArrayList` 类。
-
----
-
-### 有哪几种实现 ArrayList 线程安全的方法？ 
-
-常用的有两种。
-
-1. 可以使用 `Collections.synchronizedList()` 方法，它可以返回一个线程安全的 List。 
-```java
-SynchronizedList list = Collections.synchronizedList(new ArrayList());
-```
-内部是通过 `synchronized` 关键字加锁来实现的。
-
-2. 也可以直接使用 `CopyOnWriteArrayList`，它是线程安全的 ArrayList，遵循写时复制的原则，每当对列表进行修改时，都会创建一个新副本，这个新副本会替换旧的列表，而对旧列表的所有读取操作仍然在原有的列表上进行。 
-```java
-CopyOnWriteArrayList list = new CopyOnWriteArrayList();
-```
-通俗的讲，CopyOnWrite 就是当我们往一个容器添加元素的时候，不直接往容器中添加，而是先复制出一个新的容器，然后在新的容器里添加元素，添加完之后，再将原容器的引用指向新的容器。多个线程在读的时候，不需要加锁，因为当前容器不会添加任何元素。这样就实现了线程安全。
-
-#### ArrayList 和 Vector 的区别？ 
-- `Vector` 属于 JDK 1.0 时期的遗留类，不推荐使用，仍然保留着是因为 Java 希望向后兼容。
-- `ArrayList` 是在 JDK 1.2 时引入的，用于替代 Vector 作为主要的非同步动态数组实现。因为 `Vector` 所有的方法都使用了 `synchronized` 关键字进行同步，所以单线程环境下效率较低。
-
----
-
-### CopyOnWriteArrayList 了解多少？ 
-
-`CopyOnWriteArrayList` 就是线程安全版本的 `ArrayList`。
-`CopyOnWrite` —— 写时复制，已经明示了它的原理。
-
-`CopyOnWriteArrayList` 采用了一种读写分离的并发策略。`CopyOnWriteArrayList` 容器允许并发读，读操作是无锁的。至于写操作，比如说向容器中添加一个元素，首先将当前容器复制一份，然后在新副本上执行写操作，结束之后再将原容器的引用指向新容器。
-
-## 3. Map 体系 
+## Map 体系 
 
 Map 中最重要的就是 HashMap 了，面试基本被问出包浆了，一定要好好准备。 
 
@@ -409,13 +198,7 @@ static final int hash(Object key) {
 - 对于 `h2` 的最低 4 位是 `1101` （十进制中为 13） 
 
 这样， `h1` 和 `h2` 就会被分别放在数组的第 12 个位置和第 13 个位置上，从而避免了哈希冲突。 
- 
- 
- 
- 
- 
- 
- 15.为什么 HashMap 的容量是 2 的幂次方？ 
+### 为什么 HashMap 的容量是 2 的幂次方？ 
  是为了快速定位元素在底层数组中的下标。 
  HashMap 是通过 hash & (n-1) 来定位元素下标的，n 为数组的大小，也就是 HashMap 底层数组的容量。 
  数组长度-1 正好相当于一个“低位掩码”——掩码的低位最好全是 1，这样 & 运算才有意义，否则结果一定是 0。 
@@ -480,7 +263,7 @@ static final int hash(Object key) {
  
  
  
-### 16. 如果初始化 HashMap，传一个 17 的容量，它会怎么处理？ 
+ 如果初始化 HashMap，传一个 17 的容量，它会怎么处理？ 
 HashMap 会将容量调整到大于等于 17 的最小的 $2$ 的幂次方，也就是 32。 
  
 这是因为哈希表的大小最好是 $2$ 的 $N$ 次幂，这样可以通过 `(n - 1) & hash` 高效计算出索引值。 
@@ -527,7 +310,7 @@ static final int tableSizeFor(int cap) {
  
  
  
-### 17. 你还知道哪些哈希函数的构造方法呢？ 
+ 你还知道哪些哈希函数的构造方法呢？ 
 - **除留取余法**：`H(key) = key % p (p <= N)`，关键字除以一个不大于哈希表长度的正整数 $p$，所得余数为地址，当然 HashMap 里进行了优化改造，效率更高，散列也更均衡。 
 除此之外，还有这几种常见的哈希函数构造方法： 
 - **直接定址法**：直接根据 key 来映射到对应的数组位置，例如 1232 放到下标 1232 的位置。 
@@ -537,7 +320,7 @@ static final int tableSizeFor(int cap) {
  
  
 
-### 18. 解决哈希冲突有哪些方法？ 
+ 解决哈希冲突有哪些方法？ 
 **简版回答**：我知道的有 3 种，再哈希法、开放地址法和拉链法。 
  
 #### 什么是再哈希法？ 
@@ -571,7 +354,7 @@ if (e.hash == hash &&
  
  
  
-### 19. 为什么 HashMap 链表转红黑树的阈值为 8 呢？ 
+ 为什么 HashMap 链表转红黑树的阈值为 8 呢？ 
 树化发生在 table 数组的长度大于 64，且链表的长度大于 8 的时候。 
 为什么是 8 呢？源码的注释也给出了答案。 
  
@@ -580,7 +363,7 @@ if (e.hash == hash &&
 至于红黑树转回链表的阈值为什么是 6，而不是 8？是因为如果这个阈值也设置成 8，假如发生碰撞，节点增减刚好在 8 附近，会发生链表和红黑树的不断转换，导致资源浪费。 
  
  
-### 20. HashMap 扩容发生在一个什么时期呢？ 
+ HashMap 扩容发生在一个什么时期呢？ 
 当键值对数量超过阈值，也就是容量 * 负载因子时。 
  
  
@@ -611,7 +394,7 @@ if (e.hash == hash &&
  
  
  
-### 21. 🌟HashMap的扩容机制了解吗？ 
+ HashMap的扩容机制了解吗？ 
  扩容时，HashMap 会创建一个新的数组，其容量是原来的两倍。然后遍历旧哈希表中的元素，将其重新分配到新的哈希表中。 
  如果当前桶中只有一个元素，那么直接通过键的哈希值与数组大小取模锁定新的索引位置： `e.hash & (newCap - 1)` 。 
  如果当前桶是红黑树，那么会调用 `split()` 方法分裂树节点，以保证树的平衡。 
@@ -709,7 +492,7 @@ if (e.hash == hash &&
  所以，哪怕有几十万条数据，可能只有一半的数据才需要移动到新位置。另外，位运算的计算速度非常快，因此，尽管扩容操作涉及到遍历整个哈希表并对每个节点进行判断，但这部分操作的计算成本是相对较低的。 
  
  
-### 22. JDK 8 对 HashMap 做了哪些优化呢？ 
+ JDK 8 对 HashMap 做了哪些优化呢？ 
  
 *   **底层的数据结构**由数组 + 链表改成了数组 + 链表或红黑树的结构。 
     如果多个键映射到了同一个哈希值，链表会变得很长，在最坏的情况下，当所有的键都映射到同一个桶中时，性能会退化到 $O(n)$，而红黑树的时间复杂度是 $O(logn)$。 
@@ -724,7 +507,7 @@ if (e.hash == hash &&
  
  
  
-### 23. 你能自己设计实现一个 HashMap 吗？ 
+ 你能自己设计实现一个 HashMap 吗？ 
  
  > 这道题 快手 常考。红黑树版咱们多半是写不出来的，但是数组+链表版还是问题不大，详细可见： [手写 HashMap，快手面试官直呼内行！](https://javabetter.cn/collection/gailan.html) 。 
  
@@ -737,7 +520,7 @@ if (e.hash == hash &&
  完整代码可见：[开源代码](https://javabetter.cn/collection/hashmap-source.html) 
  
  
-### 24. 🌟HashMap 是线程安全的吗？ 
+ HashMap 是线程安全的吗？ 
  
  > 推荐阅读： [HashMap 详解](https://javabetter.cn/collection/hashmap.html) 
  
@@ -750,23 +533,23 @@ if (e.hash == hash &&
     因为线程 1 执行完 `table = newTab` 之后，线程 2 中的 `table` 已经发生了改变，比如说索引 3 的键值对移动到了索引 7 的位置，此时线程 2 去 `get` 索引 3 的元素就 `get` 不到了。 
  
  
-### 25. 🌟怎么解决 HashMap 线程不安全的问题呢？ 
+ 怎么解决 HashMap 线程不安全的问题呢？ 
  
  在早期的 JDK 版本中，可以用 `Hashtable` 来保证线程安全。`Hashtable` 在方法上加了 `synchronized` 关键字 。 
  另外，可以通过 `Collections.synchronizedMap` 方法返回一个线程安全的 Map，内部是通过 `synchronized` 对象锁来保证线程安全的，比在方法上直接加 `synchronized` 关键字更轻量级。 
  更优雅的解决方案是使用并发工具包下的 `ConcurrentHashMap` ，使用了 CAS + `synchronized` 关键字来保证线程安全。 
  
  
-### 26. HashMap 内部节点是有序的吗？ 
+ HashMap 内部节点是有序的吗？ 
  无序的，根据 `hash` 值随机插入。 
  
  
-### 27. 讲讲 LinkedHashMap 怎么实现有序的？ 
+ 讲讲 LinkedHashMap 怎么实现有序的？ 
  LinkedHashMap 在 HashMap 的基础上维护了一个双向链表，通过 `before` 和 `after` 标识前置节点和后置节点。 
  从而实现插入的顺序或访问顺序。 
  
  
-### 28. 讲讲 TreeMap 怎么实现有序的？ 
+ 讲讲 TreeMap 怎么实现有序的？ 
  TreeMap 通过 key 的比较器来决定元素的顺序，如果没有指定比较器，那么 key 必须实现 `Comparable` 接口 。 
  
  TreeMap 的底层是红黑树，红黑树是一种自平衡的二叉查找树，每个节点都大于其左子树中的任何节点，小于其右子节点树种的任何节点。 
@@ -775,129 +558,9 @@ if (e.hash == hash &&
 * 查找的时候从根节点开始，利用二叉查找树的特点，逐步向左子树或者右子树递归查找，直到找到目标元素。 
  
  
-### 29. TreeMap 和 HashMap 的区别 
+ TreeMap 和 HashMap 的区别 
 *   **HashMap** 是基于数组+链表+红黑树实现的，`put` 元素的时候会先计算 key 的哈希值，然后通过哈希值计算出元素在数组中的存放下标，然后将元素插入到指定的位置，如果发生哈希冲突，会使用链表来解决，如果链表长度大于 8，会转换为红黑树。 
 *   **TreeMap** 是基于红黑树实现的，`put` 元素的时候会先判断根节点是否为空，如果为空，直接插入到根节点，如果不为空，会通过 key 的比较器来判断元素应该插入到左子树还是右子树。 
  
  在没有发生哈希冲突的情况下，HashMap 的查找效率是 $O(1)$ 。适用于查找操作比较频繁的场景。 
  TreeMap 的查找效率是 $O(logn)$ 。并且保证了元素的顺序，因此适用于需要大量范围查找或者有序遍历的场景。 
- 
- 
- 
- 
- 
- 
- 
- Set 
- 
-### 30. 讲讲 HashSet 的底层实现？ 
- HashSet 是由 HashMap 实现的，只不过值由一个固定的 Object 对象填充，而键用于操作。 
-```java
- public class HashSet < E > 
- extends AbstractSet < E > 
- implements Set < E >, Cloneable , java . io . Serializable 
- { 
- static final long serialVersionUID = - 5024744406713321676L ; 
- private transient HashMap < E , Object > map ; 
- // Dummy value to associate with an Object in the backing Map 
- private static final Object PRESENT = new Object (); 
- // …… 
- } 
-```
- 实际开发中，HashSet 并不常用，比如，如果我们需要按照顺序存储一组元素，那么 ArrayList 和 LinkedList 更适合；如果我们需要存储键值对并根据键进行查找，那么 HashMap 可能更适合。 
- HashSet 主要用于去重，比如，我们需要统计一篇文章中有多少个不重复的单词，就可以使用 HashSet 来实现。 
-```java
- // 创建一个 HashSet 对象 
- HashSet < String > set = new HashSet <>(); 
- 
- // 添加元素 
- set . add ( "沉默" ); 
- set . add ( "王二" ); 
- set . add ( "陈清扬" ); 
- set . add ( "沉默" ); 
- 
- // 输出 HashSet 的元素个数 
- System . out . println ( "HashSet size: " + set . size ()); // output: 3 
- 
- // 遍历 HashSet 
- for ( String s : set ) { 
- System . out . println ( s ); 
- } 
-```
- HashSet 会自动去重，因为它是用 HashMap 实现的，HashMap 的键是唯一的，相同键会覆盖掉原来的键，于是第二次 `add` 一个相同键的元素会直接覆盖掉第一次的键。 
- 
- 
- **HashSet 和 ArrayList 的区别** 
- 
-*   **ArrayList** 是基于动态数组实现的，**HashSet** 是基于 HashMap 实现的。 
-*   **ArrayList** 允许重复元素和 `null` 值，可以有多个相同的元素；**HashSet** 保证每个元素唯一，不允许重复元素，基于元素的 `hashCode` 和 `equals` 方法来确定元素的唯一性。 
-*   **ArrayList** 保持元素的插入顺序，可以通过索引访问元素；**HashSet** 不保证元素的顺序，元素的存储顺序依赖于哈希算法，并且可能随着元素的添加或删除而改变。 
- 
- 
- 
- **HashSet 怎么判断元素重复，重复了是否 put** 
- HashSet 的 `add` 方法是通过调用 HashMap 的 `put` 方法实现的： 
-```java
- public boolean add ( E e ) { 
- return map . put ( e , PRESENT )== null ; 
- } 
-```
- 所以 HashSet 判断元素重复的逻辑底层依然是 HashMap 的底层逻辑： 
- 
- HashMap 在插入元素时，通常需要三步： 
- 第一步，通过 `hash` 方法计算 key 的哈希值。 
-```java
- static final int hash ( Object key ) { 
- int h ; 
- return ( key == null ) ? 0 : ( h = key . hashCode ()) ^ ( h >>> 16 ); 
- } 
-```
- 第二步，数组进行第一次扩容。 
-```java
- if (( tab = table ) == null || ( n = tab . length ) == 0 ) 
- n = ( tab = resize ()). length ; 
-```
- 第三步，根据哈希值计算 key 在数组中的下标，如果对应下标正好没有存放数据，则直接插入。 
-```java
- if (( p = tab [ i = ( n - 1 ) & hash ]) == null ) 
- tab [ i ] = newNode ( hash , key , value , null ); 
-```
- 如果对应下标已经有数据了，就需要判断是否为相同的 key，是则覆盖 value，否则需要判断是否为树节点，是则向树中插入节点，否则向链表中插入数据。 
-```java
- else { 
- Node < K , V > e ; K k ; 
- if ( p . hash == hash && 
- (( k = p . key ) == key || ( key != null && key . equals ( k )))) 
- e = p ; 
- else if ( p instanceof TreeNode ) 
- e = (( TreeNode < K , V >) p ). putTreeVal ( this , tab , hash , key , value ); 
- else { 
- for ( int binCount = 0 ; ; ++ binCount ) { 
- if (( e = p . next ) == null ) { 
- p . next = newNode ( hash , key , value , null ); 
- if ( binCount >= TREEIFY_THRESHOLD - 1 ) // -1 for 1st 
- treeifyBin ( tab , hash ); 
- break ; 
- } 
- if ( e . hash == hash && 
- (( k = e . key ) == key || ( key != null && key . equals ( k )))) 
- break ; 
- p = e ; 
- } 
- } 
- } 
-```
- 也就是说，HashSet 通过元素的哈希值来判断元素是否重复，如果重复了，会覆盖原来的值。 
-```java
- if ( e != null ) { // existing mapping for key 
- V oldValue = e . value ; 
- if (! onlyIfAbsent || oldValue == null ) 
- e . value = value ; 
- afterNodeAccess ( e ); 
- return oldValue ; 
- } 
-```
- 
- 
- 
- 

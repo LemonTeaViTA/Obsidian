@@ -43,9 +43,11 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 
 ## Page conventions
 
+- **知识颗粒度（适度拆分原则）**：为了方便阅读、学习和建立知识体系，不要拆分得过细（避免产生只有几行字的孤立碎片），也不要保留上万字的巨型文档。推荐采用**“主题聚类（Concept-Cluster）”**的颗粒度。例如将 `List体系` 作为一个文件（内含 ArrayList、LinkedList 及其对比），而不是拆成四五个小文件。对于异常庞大且极具重点的主题（如 `HashMap核心原理`），则应当独立成篇。
+- **目录思维（MOC）**：在分类文件夹中，配合一个 `Index` 或 `MOC`（Map of Content）页面，将分散的知识点按照学习顺序串联起来。
 - Keep page titles stable and descriptive.
 - Use short frontmatter only when it helps automation or filtering.
-- Prefer one-page-per-topic and keep all topic pages under `wiki/`.
+- Prefer one-page-per-topic and keep all topic pages under `wiki/` or categorized folders according to user preference.
 - Treat Q&A, summaries, and notes as the same kind of knowledge artifact. Do not enforce separate `questions` or `notes` categories.
 
 ## Starting point for this vault

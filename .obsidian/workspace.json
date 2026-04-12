@@ -11,14 +11,10 @@
             "id": "f49609097e68c6e8",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "wiki/并发编程篇.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "并发编程篇"
+              "title": "新标签页"
             }
           }
         ]
@@ -95,7 +91,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "wiki/并发编程篇.md",
                 "collapseAll": true,
                 "extraContext": true,
                 "sortOrder": "alphabetical",
@@ -105,7 +100,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "并发编程篇 的反向链接列表"
+              "title": "反向链接"
             }
           },
           {
@@ -187,36 +182,41 @@
   },
   "active": "f49609097e68c6e8",
   "lastOpenFiles": [
-    "wiki/并发编程/守护线程.md",
-    "wiki/并发编程/线程上下文切换.md",
-    "wiki/并发编程/ThreadPoolCrashRecovery.md",
-    "wiki/并发编程/ThreadSafety.md",
-    "wiki/并发编程/SleepWait.md",
-    "wiki/并发编程/ForkJoin.md",
-    "wiki/并发编程/DatabaseConnectionPool.md",
-    "wiki/并发编程/CustomThreadPoolExecutor.md",
-    "wiki/并发编程/ThreadPoolUsageNotes.md",
-    "wiki/并发编程/ThreadPoolTuning.md",
-    "wiki/并发编程/ThreadPoolDynamicConfig.md",
-    "wiki/并发编程/ThreadPoolState.md",
-    "wiki/并发编程/ThreadPoolExceptionHandling.md",
-    "wiki/并发编程/CompletableFuture.md",
-    "wiki/并发编程/AtomicStampedReference.md",
-    "wiki/并发编程/PessimisticLock.md",
-    "wiki/并发编程/OptimisticLock.md",
-    "wiki/并发编程/DeadLock.md",
-    "wiki/并发编程/AtomicReference.md",
-    "wiki/并发编程/AtomicInteger.md",
-    "wiki/并发编程/CAS.md",
-    "wiki/并发编程/ThreadPoolExecutor.md",
-    "wiki/并发编程/BlockingQueue.md",
-    "wiki/并发编程/CopyOnWriteArrayList.md",
-    "wiki/并发编程/ConcurrentHashMap.md",
-    "wiki/并发编程/Exchanger.md",
-    "wiki/并发编程",
-    "wiki/hubs",
-    "wiki",
-    "copilot/copilot-custom-prompts",
-    "copilot"
+    "wiki/Spring/Spring索引_MOC.md",
+    "wiki/Redis/Redis索引_MOC.md",
+    "wiki/MySQL/MySQL索引_MOC.md",
+    "wiki/Spring/Spring 基础与 IoC.md",
+    "wiki/Spring/Spring 事务.md",
+    "wiki/Spring/Spring MVC 架构.md",
+    "wiki/Spring/Spring Boot 与微服务.md",
+    "wiki/Spring/AOP 与动态代理.md",
+    "wiki/Spring",
+    "wiki/Redis/高可用与集群.md",
+    "wiki/Redis/缓存经典问题.md",
+    "wiki/Redis/底层数据结构与实战.md",
+    "wiki/Redis/Redis 进阶功能.md",
+    "wiki/Redis/Redis 持久化.md",
+    "wiki/Redis/Redis 基础.md",
+    "wiki/Redis",
+    "wiki/MySQL/高可用与分库分表.md",
+    "wiki/MySQL/锁与事务机制.md",
+    "wiki/MySQL/索引机制详解.md",
+    "wiki/MySQL/引擎与日志.md",
+    "wiki/MySQL/优化与实战.md",
+    "wiki/MySQL/MySQL 基础与架构.md",
+    "wiki/MySQL",
+    "do-cluster.js",
+    "wiki/JVM/JVM索引_MOC.md",
+    "wiki/JVM/JVM 调优.md",
+    "wiki/JVM/JVM 类加载机制.md",
+    "wiki/JVM/JVM 概述.md",
+    "wiki/JVM/JVM 垃圾收集.md",
+    "wiki/JVM/JVM 内存管理.md",
+    "wiki/JVM",
+    "do-jvm2.js",
+    "do-jvm.js",
+    "wiki/Java基础",
+    "do-java.js",
+    "split-java.js"
   ]
 }
