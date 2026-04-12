@@ -23,7 +23,7 @@
 
 ## 算法题库
 
-- [[wiki/LeetCode-Hot100-完整题库|LeetCode Hot100 完整题库]]
+- [[wiki/LeetCode-Hot100/算法机考_MOC|LeetCode Hot100 完整分类导航]]
 
 ## 当前结构说明
 
