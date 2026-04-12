@@ -32,7 +32,7 @@ count.incrementAndGet(); // 原子操作
 ```java
 private volatile String itwanger = "沉默王二";
 ```
- ③、有序性 ：要确保线程不会因为死锁、饥饿、活锁等问题导致无法继续执行。 
+ ③、有序性 ：要确保线程不会因为[[锁|死锁]]、饥饿、活锁等问题导致无法继续执行。 
  
  
  
@@ -136,7 +136,7 @@ class CallableTask implements Callable<String> {
  
 #### 启动一个 Java 程序，你能说说里面有哪些线程吗？
  首先是 main 线程，这是程序执行的入口。 
- 然后是垃圾回收线程，它是一个后台线程，负责回收不再使用的对象。 
+ 然后是[[JVM 垃圾收集|垃圾回收]]线程，它是一个后台线程，负责回收不再使用的对象。 
  还有编译器线程，比如 JIT，负责把一部分热点代码编译后放到 codeCache 中。 
  
  可以通过下面的代码进行检测： 
@@ -715,7 +715,7 @@ class WaitExample {
  如果需要保证变量的内存可见性，可以使用 volatile 关键字 。 
  对于简单的原子变量操作，还可以使用 Atomic 原子类 。 
  对于线程独立的数据，可以使用 ThreadLocal 来为每个线程提供专属的变量副本。 
- 对于需要并发容器的地方，可以使用 ConcurrentHashMap 、 CopyOnWriteArrayList 等。 
+ 对于需要并发容器的地方，可以使用 Concurrent[[HashMap核心原理|HashMap]] 、 CopyOnWriteArrayList 等。 
  
 #### 有个int的变量为0，十个线程轮流对其进行++操作（循环10000次），结果大于10 万还是小于等于10万，为什么？
  在这个场景中，最终的结果会小于 100000，原因是多线程环境下，++ 操作并不是一个原子操作，而是分为读取、加 1、写回三个步骤。 
@@ -1210,7 +1210,7 @@ private static int nextIndex(int i, int len) {
  
 #### 为什么要用线性探测法而不是HashMap 的拉链法来解决哈希冲突？
  ThreadLocalMap 设计的目的是存储线程私有数据，不会有大量的 Key，所以采用线性探测更节省空间。 
- 拉链法还需要单独维护一个链表，甚至红黑树，不适合 ThreadLocal 这种场景。 
+ 拉链法还需要单独维护一个链表，甚至[[Map与红黑树|红黑树]]，不适合 ThreadLocal 这种场景。 
  
  
 #### 开放地址法了解吗？

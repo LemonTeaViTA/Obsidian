@@ -1,5 +1,5 @@
 ### 讲讲 HashSet 的底层实现？ 
- HashSet 是由 HashMap 实现的，只不过值由一个固定的 Object 对象填充，而键用于操作。 
+ HashSet 是由 [[HashMap核心原理|HashMap]] 实现的，只不过值由一个固定的 Object 对象填充，而键用于操作。 
 ```java
  public class HashSet < E > 
  extends AbstractSet < E > 

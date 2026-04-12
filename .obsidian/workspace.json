@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "61f6fb0262f251d2",
+        "id": "439f61714fa7cac0",
         "type": "tabs",
         "children": [
           {
-            "id": "f49609097e68c6e8",
+            "id": "86f228d833c3640a",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -74,8 +74,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "8e2e6e18ae65b413",
@@ -160,8 +159,19 @@
               "icon": "lucide-list",
               "title": "并发编程篇 的大纲"
             }
+          },
+          {
+            "id": "e0ca4871b891917c",
+            "type": "leaf",
+            "state": {
+              "type": "copilot-chat-view",
+              "state": {},
+              "icon": "message-square",
+              "title": "Copilot"
+            }
           }
-        ]
+        ],
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
@@ -180,8 +190,18 @@
       "copilot:Open Copilot Chat": false
     }
   },
-  "active": "f49609097e68c6e8",
+  "active": "15fb59fda1f5b4b5",
   "lastOpenFiles": [
+    "未命名 1.canvas",
+    "2026-04-12.md",
+    "未命名 5.base",
+    "link-graph.js",
+    "未命名 4.base",
+    "未命名 3.base",
+    "未命名 2.base",
+    "未命名 1.base",
+    "未命名.base",
+    "未命名.canvas",
     "wiki/Spring/Spring索引_MOC.md",
     "wiki/Redis/Redis索引_MOC.md",
     "wiki/MySQL/MySQL索引_MOC.md",
@@ -205,18 +225,9 @@
     "wiki/MySQL/优化与实战.md",
     "wiki/MySQL/MySQL 基础与架构.md",
     "wiki/MySQL",
-    "do-cluster.js",
     "wiki/JVM/JVM索引_MOC.md",
     "wiki/JVM/JVM 调优.md",
     "wiki/JVM/JVM 类加载机制.md",
-    "wiki/JVM/JVM 概述.md",
-    "wiki/JVM/JVM 垃圾收集.md",
-    "wiki/JVM/JVM 内存管理.md",
-    "wiki/JVM",
-    "do-jvm2.js",
-    "do-jvm.js",
-    "wiki/Java基础",
-    "do-java.js",
-    "split-java.js"
+    "wiki/JVM/JVM 概述.md"
   ]
 }

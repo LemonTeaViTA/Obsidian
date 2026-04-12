@@ -26,7 +26,7 @@
  -XX:+UseParallelGC ：设置并行收集器 
  -XX:+UseParalledlOldGC ：设置并行老年代收集器 
  -XX:+UseConcMarkSweepGC ：设置并发收集器 ### 配置并行收集的参数有哪些？
- -XX:MaxGCPauseMillis=n ：设置最大垃圾回收停顿时间 
+ -XX:MaxGCPauseMillis=n ：设置最大[[JVM 垃圾收集|垃圾回收]]停顿时间 
  -XX:GCTimeRatio=n ：设置垃圾回收时间占程序运行时间的比例 
  -XX:+CMSIncrementalMode ：设置增量模式，适合单 CPU 环境 
  -XX:ParallelGCThreads=n ：设置并行收集器的线程数 ### 打印 GC 回收的过程日志信息的参数有哪些？
@@ -92,5 +92,5 @@
  假如是因为大对象直接分配到老年代导致的 Full GC 频繁，可以通过 -XX:PretenureSizeThreshold 参数设置大对象直接进入老年代的阈值。 
  或者将大对象拆分成小对象，减少大对象的创建。比如说分页。 
  假如是因为内存泄漏导致的频繁 Full GC，可以通过分析堆内存 dump 文件找到内存泄漏的对象，再找到内存泄漏的代码位置。 
- 假如是因为长生命周期的对象进入到了老年代，要及时释放资源，比如说 ThreadLocal、数据库连接、IO 资源等。 
+ 假如是因为长生命周期的对象进入到了老年代，要及时释放资源，比如说 [[线程基础与ThreadLocal|ThreadLocal]]、数据库连接、IO 资源等。 
  假如是因为 GC 参数配置不合理导致的频繁 Full GC，可以通过调整 GC 参数来优化 GC 行为。或者直接更换更适合的 GC 收集器，如 G1、ZGC 等。

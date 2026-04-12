@@ -128,7 +128,7 @@
  可以通过 java -XX:+PrintFlagsFinal -version | grep TLAB 命令查看当前 JVM 是否开启了 TLAB。 
  
  如果开启了 TLAB，会看到类似以下的输出，其中 bool UseTLAB 的值为 true。 
- 我们编写一个简单的测试类，创建大量对象并强制触发垃圾回收，查看 TLAB 的使用情况。 
+ 我们编写一个简单的测试类，创建大量对象并强制触发[[JVM 垃圾收集|垃圾回收]]，查看 TLAB 的使用情况。 
  class TLABDemo { 
  public static void main ( String [] args ) { 
  for ( int i = 0 ; i < 10_000_000 ; i ++) { 
@@ -254,7 +254,7 @@
  软引用于描述一些非必须对象，通过 SoftReference 类实现。软引用的对象在内存不足时会被回收。 
  // softRef 就是一个软引用 
  SoftReference < String > softRef = new SoftReference <>( new String ( "沉默王二" )); 
- 弱引用用于描述一些短生命周期的非必须对象，如 ThreadLocal 中的 Entry，就是通过 WeakReference 类实现的。弱引用的对象会在下一次垃圾回收时会被回收，不论内存是否充足。 
+ 弱引用用于描述一些短生命周期的非必须对象，如 [[线程基础与ThreadLocal|ThreadLocal]] 中的 Entry，就是通过 WeakReference 类实现的。弱引用的对象会在下一次垃圾回收时会被回收，不论内存是否充足。 
  static class Entry extends WeakReference < ThreadLocal <?>> { 
  /** The value associated with this ThreadLocal . */ 
  Object value ; 
@@ -449,7 +449,7 @@
  29452 为 pid，顺带作为文件名。 
  
  
- 看看有没有线程死锁、死循环或长时间等待这些问题。 
+ 看看有没有线程[[锁|死锁]]、死循环或长时间等待这些问题。 
  
  第五步，可以使用 jstat -gcutil [pid] 5000 10 每隔 5 秒输出 GC 信息，输出 10 次，查看 YGC 和 Full GC 次数。 
  

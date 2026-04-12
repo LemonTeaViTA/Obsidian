@@ -460,7 +460,7 @@ SELECT COUNT(email) FROM users;
  逻辑函数： 
  
  IF() : 如果条件为真，则返回一个值；否则返回另一个值。 
- CASE : 根据一系列条件返回值。 
+ [[锁|CAS]]E : 根据一系列条件返回值。 
  
  -- IF函数 
  SELECT IF ( 1 > 0 , 'True' , 'False' ) AS simple_if; 

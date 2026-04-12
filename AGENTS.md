@@ -50,6 +50,12 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 - Prefer one-page-per-topic and keep all topic pages under `wiki/` or categorized folders according to user preference.
 - Treat Q&A, summaries, and notes as the same kind of knowledge artifact. Do not enforce separate `questions` or `notes` categories.
 
+## Copilot & Tooling Lessons Learned (Do Not Repeat)
+
+- **PowerShell Encoding**: When generating or executing multi-line Node.js scripts via the PowerShell terminal pipeline (`echo ... > script.js`), PowerShell defaults to UTF-16-LE with BOM, which inherently breaks Node.js parsing (`SyntaxError`). **Always use `create_file` or edit tools to write scripts**, do not write them via shell echoing streams.
+- **Markdown Global Search/Replace**: When performing mass text operations on the Obsidian workspace (such as inserting `[[...]]` links or editing headings), never blindly use global regex loops across the whole file. Always split the text strictly by code blocks (` ``` ` and `` ` ``) or use Markdown AST parsing to avoid breaking explicit code snippets and URLs.
+- **Strict Data Validation**: When proving no data was lost during mass file splitting, character-by-character validation (by stripping numbers and whitespace: `/[^a-zA-Z\u4e00-\u9fa5]/g`) works perfectly. However, always remember that `fs.readdirSync()` returns files **alphabetically**, which will fail linear character sequence validation against the original monolithic file. You must reconstruct the concatenated text in the *exact chronological order* the original file was partitioned.
+
 ## Starting point for this vault
 
 - The Java and JVM notes already act as the core wiki content.

@@ -383,7 +383,7 @@
  
  从实现机制上来说，Spring AOP 是基于动态代理实现的，在运行时为目标对象创建代理，通过代理来执行切面逻辑。而 AspectJ 是通过字节码织入来实现的，它直接修改目标类的字节码，把切面逻辑编织到目标方法中。 
  在实际项目中，我们大部分时候用的都是 Spring AOP，因为它能满足绝大多数需求，而且使用简单。只有在遇到 Spring AOP 无法解决的问题时，比如需要织入第三方 jar 包中的方法，或者监控字段才会考虑引入 AspectJ。 
- Spring AOP 借鉴了很多 AspectJ 的概念和注解，我们在 Spring 中使用的 @Aspect 、 @Pointcut 这些注解，其实都是 AspectJ 定义的。 ### 说说 AOP 和反射的区别？（补充） 
+ Spring AOP 借鉴了很多 AspectJ 的概念和注解，我们在 Spring 中使用的 @Aspect 、 @Pointcut 这些注解，其实都是 AspectJ 定义的。 ### 说说 AOP 和[[注解、反射与 Java 8|反射]]的区别？（补充） 
  
  2024 年 7 月 27 日增补。 
  

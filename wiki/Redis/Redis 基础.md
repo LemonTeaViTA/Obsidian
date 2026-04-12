@@ -72,7 +72,7 @@ appendonly yes # 开启 AOF 持久化
  
  Redis 的 Zset 还可以用来实现积分榜、热搜榜，通过 score 字段进行排序，然后取前 N 个元素，就能实现 TOPN 的榜单功能。 
  
- 利用 Redis 的 SETNX 命令或者 Redisson 还可以实现分布式锁，确保同一时间只有一个节点可以持有锁；为了防止出现死锁，可以给锁设置一个超时时间，到期后自动释放；并且最好开启一个监听线程，当任务尚未完成时给锁自动续期。 
+ 利用 Redis 的 SETNX 命令或者 Redisson 还可以实现分布式锁，确保同一时间只有一个节点可以持有锁；为了防止出现[[锁|死锁]]，可以给锁设置一个超时时间，到期后自动释放；并且最好开启一个监听线程，当任务尚未完成时给锁自动续期。 
  
  如果是秒杀接口，还可以使用 Lua 脚本来实现令牌桶算法，限制每秒只能处理 N 个请求。 
  -- KEYS[1]: 令牌桶的key 
@@ -349,7 +349,7 @@ appendonly yes # 开启 AOF 持久化
  int kqueue ( void ); 
  int kevent ( int kq , const struct kevent * changelist , int nchanges , struct kevent * eventlist , int nevents , const struct timespec * timeout ); 
  IOCP 是 Windows 系统下的 IO 多路复用机制，使用使用完成端口模型而非事件通知。 
- HANDLE CreateIoCompletionPort ( HANDLE FileHandle , HANDLE ExistingCompletionPort , ULONG_PTR CompletionKey , DWORD NumberOfConcurrentThreads ); 
+ HANDLE Create[[Spring 基础与 IoC|IoC]]ompletionPort ( HANDLE FileHandle , HANDLE ExistingCompletionPort , ULONG_PTR CompletionKey , DWORD NumberOfConcurrentThreads ); 
  
  
  举个例子说一下 IO 多路复用？ 
@@ -375,7 +375,7 @@ appendonly yes # 开启 AOF 持久化
  poll 改进了连接数上限问题，不再用 BitsMap 来传入 FD，取而代之的是动态数组 pollfd，但本质上仍是线性遍历，性能没有提升太多。 
  
  select和poll的模式都是，一次将参数拷贝到内核空间，等有结果了再一次拷贝出去。 
- epoll 将监听的 FD 注册进内核的红黑树，由内核在事件触发时将就绪的 FD 放入 ready list。应用程序通过 epoll_wait 获取就绪的 FD，从而避免遍历所有连接的开销。 
+ epoll 将监听的 FD 注册进内核的[[Map与红黑树|红黑树]]，由内核在事件触发时将就绪的 FD 放入 ready list。应用程序通过 epoll_wait 获取就绪的 FD，从而避免遍历所有连接的开销。 
  
  epoll 最大的优点是：支持事件驱动 + 边缘触发，ADD 时拷贝一次，epoll_wait 时利用 MMAP 和用户共享空间，直接拷贝数据到用户空间，因此在高并发场景下性能远高于 select 和 poll。 ### Redis为什么早期选择单线程？ 
  第一，单线程模型不需要考虑复杂的锁机制，不存在多线程环境下的死锁、竞态条件等问题，开发起来更快，也更容易维护。 

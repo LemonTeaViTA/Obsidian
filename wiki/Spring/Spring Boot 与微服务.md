@@ -199,7 +199,7 @@ com.example.demo.autoconfigure.AnotherAutoConfiguration ### 🌟Spring Boot 启
  
  2024 年 07 月 09 日新增 
  
- 从定位上来说，Spring 是一个完整的应用开发框架，提供了 IoC 容器、AOP 等各种功能模块。Spring Boot 不是一个独立的框架，而是基于 Spring 框架的脚手架，它的目标是让 Spring 应用的开发和部署变得简单高效。 
+ 从定位上来说，Spring 是一个完整的应用开发框架，提供了 [[Spring 基础与 IoC|IoC]] 容器、[[AOP 与动态代理|AOP]] 等各种功能模块。Spring Boot 不是一个独立的框架，而是基于 Spring 框架的脚手架，它的目标是让 Spring 应用的开发和部署变得简单高效。 
  Spring 项目需要我们手动管理每个 jar 包的版本，经常会遇到版本冲突的问题。比如我们要用 Spring MVC，需要引入 spring-webmvc、jackson-databind、hibernate-validator 等一堆依赖，还要确保版本兼容。Spring Boot 通过 starter 机制解决了这个问题，只需要引入 spring-boot-starter-web 这一个依赖就可以了，它包含了所有相关的 jar 包，而且版本都是测试过的，可以兼容的。 
  
  
