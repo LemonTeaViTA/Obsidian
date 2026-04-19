@@ -50,6 +50,18 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 - Prefer one-page-per-topic and keep all topic pages under `wiki/` or categorized folders according to user preference.
 - Treat Q&A, summaries, and notes as the same kind of knowledge artifact. Do not enforce separate `questions` or `notes` categories.
 
+## Algorithm Notes Conventions (算法笔记生成与排版规范)
+
+- **结构大一统**：绝不使用陈旧的加粗标签（如 `**题目**`）。严格采用以下 Markdown 标题层级结构写题解：
+  - `### 题目名称`
+  - `#### 解题思路`（必须包含直观的物理隐喻和坑点揭秘）
+  - `#### 代码实现`（需标明解法版本，如基础版/优化版）
+  - `#### 复杂度分析`（严禁遗漏，需详细点出空间优化点和时间来源）
+- **教学循序渐进（Progressive Disclosure）**：绝不能为了秀代码简短而一步到位直接给出空间极致优化的代码（如 $O(1)$ 原地篡改或 1D 滚动数组）。初次展示**必须是**最常规、符合直觉的基础解法（如经典的 2D DP 打表矩阵），然后再以“进阶”形式铺出降维优化版。
+- **物理隐喻与大白话解析**：讲解核心逻辑时，大量使用直观的比喻（如“洋葱模型”、“武林淘汰赛”），讲透死循环、边界坑、以及“为什么要用 `n+1` 数组防越界”等极其本质的原因。段落化自然拆解，不要堆叠断句条目。
+- **避免孤岛与双向链接 (Cross-Linking)**：当碰到诸如《最长回文子串》（既可用区间 DP，也可双指针）等多面型题目时，必须在不同的 Markdown 页面以锚点形式（`[[文件名#对应的标题]]`）留下**双向链接**。明确告知学习者该方案的平替最优解在哪个文件。
+- **强制更新工作流**：每次解答完问题、重构了笔记排版，**必须**同步将详细的改动项与总结的知识心得（类似“知识串联”或“教学改进”）写入根目录的 `优化记录.md` 中。
+
 ## Copilot & Tooling Lessons Learned (Do Not Repeat)
 
 - **PowerShell Encoding**: When generating or executing multi-line Node.js scripts via the PowerShell terminal pipeline (`echo ... > script.js`), PowerShell defaults to UTF-16-LE with BOM, which inherently breaks Node.js parsing (`SyntaxError`). **Always use `create_file` or edit tools to write scripts**, do not write them via shell echoing streams.

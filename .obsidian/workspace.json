@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "wiki/算法/堆.md",
+                "file": "wiki/算法/动态规划.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "堆"
+              "title": "动态规划"
             }
           }
         ]
@@ -194,6 +194,24 @@
   },
   "active": "33595230469a7957",
   "lastOpenFiles": [
+    "wiki/算法/字符串.md",
+    "wiki/算法/动态规划.md",
+    "wiki/Java基础篇.md",
+    "wiki/Redis篇.md",
+    "wiki/面试题目.md",
+    "wiki/集合框架篇.md",
+    "wiki/并发编程篇.md",
+    "wiki/Java基础/异常与 IO.md",
+    "wiki/Java基础/Java 概述.md",
+    "wiki/Java基础/下一批待整理.md",
+    "wiki/Java基础/基础语法.md",
+    "wiki/Java基础/面向对象.md",
+    "wiki/Java基础/包装类与 Object.md",
+    "wiki/Java基础/String.md",
+    "wiki/Java基础/Java基础索引_MOC.md",
+    "wiki/Java基础/注解、反射与 Java 8.md",
+    "wiki/算法/图.md",
+    "wiki/算法/堆.md",
     "wiki/MySQL/MySQL 基础与架构.md",
     "wiki/MySQL/优化与实战.md",
     "wiki/MySQL/MySQL索引_MOC.md",
@@ -202,16 +220,7 @@
     "wiki/MySQL/索引机制详解.md",
     "wiki/MySQL/高可用与分库分表.md",
     "wiki/算法/栈与队列.md",
-    "wiki/算法/堆.md",
-    "wiki/算法/二分查找.md",
-    "wiki/算法/贪心算法.md",
-    "wiki/算法/动态规划.md",
-    "wiki/算法/图.md",
-    "wiki/算法/树.md",
-    "wiki/算法/数组.md",
-    "优化记录.md",
     "未命名 1.canvas",
-    "2026-04-12.md",
     "未命名 5.base",
     "link-graph.js",
     "未命名 4.base",
@@ -220,16 +229,7 @@
     "未命名 1.base",
     "未命名.base",
     "未命名.canvas",
-    "wiki/Spring/Spring索引_MOC.md",
-    "wiki/Redis/Redis索引_MOC.md",
-    "wiki/Spring/Spring 基础与 IoC.md",
-    "wiki/Spring/Spring 事务.md",
-    "wiki/Spring/Spring MVC 架构.md",
-    "wiki/Spring/Spring Boot 与微服务.md",
-    "wiki/Spring/AOP 与动态代理.md",
     "wiki/Spring",
-    "wiki/Redis/高可用与集群.md",
-    "wiki/Redis/缓存经典问题.md",
     "wiki/Redis",
     "wiki/MySQL"
   ]
