@@ -1,3 +1,12 @@
+---
+module: 集合框架
+tags: [集合, List, ArrayList, LinkedList]
+difficulty: medium
+last_reviewed: 2026-04-20
+---
+
+# List 体系
+
 ## List 体系
 
 ### 🌟ArrayList 和 LinkedList 有什么区别？
@@ -142,3 +151,10 @@ CopyOnWriteArrayList list = new CopyOnWriteArrayList();
 `CopyOnWriteArrayList` 采用了一种读写分离的并发策略。`CopyOnWriteArrayList` 容器允许并发读，读操作是无锁的。至于写操作，比如说向容器中添加一个元素，首先将当前容器复制一份，然后在新副本上执行写操作，结束之后再将原容器的引用指向新容器。
 
 
+
+## 相关链接
+
+- [[集合框架概述]] — 集合框架整体结构
+- [[HashMap核心原理]] — Map 与 List 的使用场景对比
+- [[锁]] — CopyOnWriteArrayList 使用 ReentrantLock 实现线程安全
+- [[线程基础与ThreadLocal]] — ArrayList 非线程安全，多线程需用 CopyOnWriteArrayList

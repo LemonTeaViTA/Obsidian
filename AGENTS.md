@@ -69,7 +69,7 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 - **Strict Data Validation**: When proving no data was lost during mass file splitting, character-by-character validation (by stripping numbers and whitespace: `/[^a-zA-Z\u4e00-\u9fa5]/g`) works perfectly. However, always remember that `fs.readdirSync()` returns files **alphabetically**, which will fail linear character sequence validation against the original monolithic file. You must reconstruct the concatenated text in the *exact chronological order* the original file was partitioned.
 - **Git Operations & Uploads**: Do NOT proactively run `git push`, `git commit`, or attempt to upload updates yourself. Your role is strictly to update the documentation and files locally. The user will take full responsibility for uploading and syncing changes via Git.
 - **Backtick / AST Escaping in PowerShell**: Beware of passing raw Markdown strings containing syntax blocks (```) directly into `node -e` or PowerShell commands, as they will almost always break shell escaping. Use `fs.writeFileSync()` via a standalone JS script or directly use the `create_file` / `replace_string_in_file` tools.
-- **Update Automations**: Whenever performing major codebase refactoring (e.g. changing coding languages, re-grouping files, or reformatting), **always** automatically update the progress tracking flags in `README.md`, `OPS-导入进度.md`, and `HANDOVER.md` without waiting for the user to tell you.
+- **Update Automations**: Whenever performing major codebase refactoring (e.g. changing coding languages, re-grouping files, or reformatting), **always** automatically update `README.md` and append a log entry to `优化记录.md` without waiting for the user to tell you.
 
 ## Starting point for this vault
 

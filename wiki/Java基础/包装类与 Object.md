@@ -1,4 +1,13 @@
-## 包装类与 Object
+---
+module: Java基础
+tags: [Java, 包装类, Object, hashCode, equals]
+difficulty: medium
+last_reviewed: 2026-04-20
+---
+
+# 包装类与 Object
+## 包装类
+
 ### Integer 127 与 128 的 `==` 比较结果？
 
 **答案：**
@@ -25,6 +34,8 @@ Integer c = 128, d = 128; // c == d -> false
 
 ---
 
+## Object 类
+
 ### Object 类的常见方法？
 
 **答案：**
@@ -41,3 +52,11 @@ Integer c = 128, d = 128; // c == d -> false
 其中 `equals/hashCode` 需要成对考虑。
 
 ---
+
+## 相关链接
+
+- [[基础语法]] — 基本类型与包装类转换
+- [[面向对象]] — Object 是所有类的父类
+- [[String]] — String 重写了 equals/hashCode
+- [[HashMap核心原理]] — hashCode/equals 是 HashMap 的基础
+- [[JVM 内存管理]] — 自动装箱拆箱与对象创建

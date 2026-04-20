@@ -1,4 +1,13 @@
-## String
+---
+module: Java基础
+tags: [Java, String, 字符串常量池]
+difficulty: medium
+last_reviewed: 2026-04-20
+---
+
+# String
+## String 基础
+
 ### String 是基本数据类型吗？可以被继承吗？
 
 **答案：**
@@ -23,6 +32,8 @@
 - 特殊并发修改场景才考虑 `StringBuffer`。
 
 ---
+
+## String 与字符串常量池
 
 ### `new String("abc")` 和 `"abc"` 的区别？
 
@@ -59,3 +70,10 @@
 用途是统一字符串引用、减少重复对象。
 
 ---
+
+## 相关链接
+
+- [[基础语法]] — Java 基础语法
+- [[包装类与 Object]] — String 与 hashCode/equals
+- [[JVM 内存管理]] — 字符串常量池存储在方法区（JDK 7+ 在堆中）
+- [[HashMap核心原理]] — String 作为 key 的特殊性

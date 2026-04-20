@@ -1,4 +1,13 @@
-## Map 体系 
+---
+module: 集合框架
+tags: [集合, HashMap, 红黑树, ConcurrentHashMap]
+difficulty: hard
+last_reviewed: 2026-04-20
+---
+
+# HashMap 核心原理
+
+## Map 体系
 
 Map 中最重要的就是 HashMap 了，面试基本被问出包浆了，一定要好好准备。 
 
@@ -564,3 +573,11 @@ if (e.hash == hash &&
  
  在没有发生哈希冲突的情况下，HashMap 的查找效率是 $O(1)$ 。适用于查找操作比较频繁的场景。 
  TreeMap 的查找效率是 $O(logn)$ 。并且保证了元素的顺序，因此适用于需要大量范围查找或者有序遍历的场景。 
+
+## 相关链接
+
+- [[集合框架概述]] — 集合框架整体结构
+- [[Set体系与HashSet]] — HashSet 底层基于 HashMap
+- [[List体系]] — List 与 Map 的使用场景对比
+- [[锁]] — ConcurrentHashMap 使用 CAS+synchronized 保证线程安全
+- [[JVM 内存管理]] — HashMap 扩容涉及大量对象创建，影响 GC
