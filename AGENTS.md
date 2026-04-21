@@ -50,6 +50,16 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 - Prefer one-page-per-topic and keep all topic pages under `wiki/` or categorized folders according to user preference.
 - Treat Q&A, summaries, and notes as the same kind of knowledge artifact. Do not enforce separate `questions` or `notes` categories.
 
+## Interview Q&A Conventions (面试题解维护规范)
+
+- **三步同步**：每次在 wiki 文件中新增或修改面试题解，必须同步完成以下三步：
+  1. 在对应 wiki 文件中编写题解（`###` 主题目，`####` 子题目）
+  2. 在 `wiki/面试题目.md` 对应模块下追加 checklist 条目：`- [ ] 题目 ➡️ 👉 [[文件名#标题|查看核心解析]]`
+  3. 在根目录 `优化记录.md` 当天日期下追加变更日志
+- **链接精确性**：checklist 中的 `[[文件名#标题]]` 锚点必须与 wiki 文件中的实际标题完全一致，包括空格和标点。
+- **去重检查**：新增条目前，先检查 `面试题目.md` 中是否已存在相同或近似题目，避免重复录入。
+- **模块归属**：题目必须归入正确的模块分类（并发编程、JVM、集合框架、Spring、Redis、计算机网络、MySQL 基础与底层等），不得混放。
+
 ## Algorithm Notes Conventions (算法笔记生成与排版规范)
 
 - **结构大一统**：绝不使用陈旧的加粗标签（如 `**题目**`）。严格采用以下 Markdown 标题层级结构写题解：
@@ -60,7 +70,13 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 - **教学循序渐进（Progressive Disclosure）**：绝不能为了秀代码简短而一步到位直接给出空间极致优化的代码（如 $O(1)$ 原地篡改或 1D 滚动数组）。初次展示**必须是**最常规、符合直觉的基础解法（如经典的 2D DP 打表矩阵），然后再以“进阶”形式铺出降维优化版。
 - **物理隐喻与大白话解析**：讲解核心逻辑时，大量使用直观的比喻（如“洋葱模型”、“武林淘汰赛”），讲透死循环、边界坑、以及“为什么要用 `n+1` 数组防越界”等极其本质的原因。段落化自然拆解，不要堆叠断句条目。
 - **避免孤岛与双向链接 (Cross-Linking)**：当碰到诸如《最长回文子串》（既可用区间 DP，也可双指针）等多面型题目时，必须在不同的 Markdown 页面以锚点形式（`[[文件名#对应的标题]]`）留下**双向链接**。明确告知学习者该方案的平替最优解在哪个文件。
-- **强制更新工作流**：每次解答完问题、重构了笔记排版，**必须**同步将详细的改动项与总结的知识心得（类似“知识串联”或“教学改进”）写入根目录的 `优化记录.md` 中。
+- **强制更新工作流**：每次解答完问题、重构了笔记排版，**必须**同步将详细的改动项与总结的知识心得（类似”知识串联”或”教学改进”）写入根目录的 `优化记录.md` 中。
+- **优化记录格式规范**：每条记录统一为两行结构，聚焦”改了什么”和”为什么改”：
+  ```
+  - `文件路径` — 一句话描述改动内容
+    **原因**：一句话描述改动原因
+  ```
+  同一天、同一文件的多项改动可合并为一条。避免冗长的修辞和重复描述。
 
 ## Copilot & Tooling Lessons Learned (Do Not Repeat)
 
