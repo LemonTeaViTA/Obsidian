@@ -38,7 +38,7 @@ last_reviewed: 2026-04-20
 
 #### 为什么还需要 HandlerAdapter？
 
-Spring MVC 支持多种风格的处理器，比如基于 `@Controller` 注解的处理器、实现了 Controller 接口的处理器等。如果没有处理器适配器，DispatcherServlet ���需要硬编码每种处理器的调用方式，新增一种 Controller 类型，就必须改 DispatcherServlet 的代码。
+Spring MVC 支持多种风格的处理器，比如基于 `@Controller` 注解的处理器、实现了 Controller 接口的处理器等。如果没有处理器适配器，DispatcherServlet 就需要硬编码每种处理器的调用方式，新增一种 Controller 类型，就必须改 DispatcherServlet 的代码。
 
 因此，Spring 引入了 HandlerAdapter 作为适配器，屏蔽不同控制器的差异，给 DispatcherServlet 提供一个统一的调用入口。
 

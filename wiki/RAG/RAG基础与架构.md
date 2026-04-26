@@ -328,3 +328,14 @@ class ChunkMetadata:
 **HN 社区的务实建议：** 不建议用它转图片（LLM 直接看图更好）；不建议用 Markdown 表格喂电子表格数据（LLM 对表格理解本来就差）。
 
 > 项目地址：https://github.com/microsoft/markitdown
+
+---
+
+## 相关文档
+
+- [[检索召回与优化]] — 混合检索、BM25、RRF 融合、重排、评估体系、Agentic RAG
+- [[Baize项目/RAG管道设计|RAG管道设计]] — Baize 项目的解析、分片、向量化、检索实现
+- [[模型选型]] — Embedding 模型选型（Qwen3-Embedding-0.6B / 1024 维度）
+- [[百万级扩展方案]] — 百万级文档的存储与检索压力应对
+- [[对话上下文管理]] — 上下文截断、摘要压缩、多轮对话管理
+- [[Agent核心概念]] — Agent 架构中 RAG 的定位（Memory vs RAG）

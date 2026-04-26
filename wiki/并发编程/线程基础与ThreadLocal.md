@@ -1224,7 +1224,7 @@ private static int nextIndex(int i, int len) {
 
 #### 为什么要用线性探测法而不是HashMap 的拉链法来解决哈希冲突？
  ThreadLocalMap 设计的目的是存储线程私有数据，不会有大量的 Key，所以采用线性探测更节省空间。
- 拉链法还需要单独维护一个链表，甚至[[Map与红黑树|红黑树]]，不适合 ThreadLocal 这种场景。
+ 拉链法还需要单独维护一个链表，甚至[[HashMap核心原理#你对红黑树了解多少？|红黑树]]，不适合 ThreadLocal 这种场景。
 
 
 #### 开放地址法了解吗？

@@ -27,7 +27,7 @@ INNER JOIN orders ON users.id = orders.user_id;
 
 #### 什么是外连接？
 
-和内连接不同，外连接不仅返回两个表中匹配的行，还返回没有匹配的行，用 null 来���充。
+和内连接不同，外连接不仅返回两个表中匹配的行，还返回没有匹配的行，用 null 来填充。
 
 外连接又分为左外连接 left join 和右外连接 right join。left join 会保留左表中符合条件的所有记录，如果右表中有匹配的记录，就返回匹配的记录，否则就用 null 填充。
 
@@ -194,7 +194,7 @@ SELECT COUNT(email) FROM users;
 | ⑤ | GROUP BY | 进行分组 |
 | ⑥ | HAVING | 过滤聚合后的数据 |
 | ⑦ | SELECT | 选择最终返回的列 |
-| ⑧ | DISTINCT | 进行��重 |
+| ⑧ | DISTINCT | 进行去重 |
 | ⑨ | ORDER BY | 对最终结果排序 |
 | ⑩ | LIMIT | 限制返回行数 |
 

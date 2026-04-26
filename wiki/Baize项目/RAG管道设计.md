@@ -1,6 +1,7 @@
 # RAG 管道设计：分片、解析、向量化、检索
 
 > 问题：RAG 项目里的分片是怎么设计的？内容解析和向量化怎么做的？检索召回怎么做的？
+> 理论基础：[[RAG基础与架构]]（架构与分块策略） · [[检索召回与优化]]（混合检索与评估）
 
 ---
 
@@ -57,7 +58,7 @@ String[] sentences = paragraph.split("(?<=[。！？；])|(?<=[.!?;])\\s+");
 
 ### Embedding 模型
 - **本地部署**：Qwen3-Embedding-0.6B，通过 vLLM 提供 OpenAI 兼容接口（端口 6666，GPU 5）
-- 0.6B 参数量，非常轻量，单卡 24G 只��� 40% 显存即可运行
+- 0.6B 参数量，非常轻量，单卡 24G 只占 40% 显存即可运行
 - 向量维度：**1024**（`word_embedding_dimension`）
 - Pooling 策略：**last token pooling** + L2 normalize
 - 相似度函数：**cosine**
