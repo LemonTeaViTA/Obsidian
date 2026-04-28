@@ -10,14 +10,12 @@ last_reviewed: 2026-04-20
 ## 并发基础概念
 
 ### 并行跟并发有什么区别？
-
  并行是多核 CPU 上的多任务处理，多个任务在同一时间真正地同时执行。
  并发是单核 CPU 上的多任务处理，多个任务在同一时间段内交替执行，通过时间片轮转实现交替执行，用于解决 IO 密集型任务的瓶颈。
 
  举个例子，就好像我们去食堂打饭，并行就是每个人对应一个阿姨，同时打饭；而并发就是一个阿姨，轮流给每个人打饭，假如有个人磨磨唧唧，阿姨就会吆喝下一个人，这样就能提高食堂的打饭效率。
 
 #### 你是如何理解线程安全的？
-
  如果一段代码块或者一个方法被多个线程同时执行，还能够正确地处理共享数据，那么这段代码块或者这个方法就是线程安全的。
  可以从三个要素来确保线程安全：
  ①、原子性 ：一个操作要么完全执行，要么完全不执行，不会出现中间状态。
@@ -36,12 +34,10 @@ private volatile String itwanger = "沉默王二";
  ③、有序性 ：程序的执行顺序按照代码的先后顺序执行，在多线程环境下，需要保证指令不会因为 JVM 的指令重排序而导致执行顺序与预期不符。
 
 ### 🌟说说进程和线程的区别？
-
  进程说简单点就是我们在电脑上启动的一个个应用。它是操作系统分配资源的最小单位。
  线程是进程中的独立执行单元。多个线程可以共享同一个进程的资源，如内存；每个线程都有自己独立的栈和寄存器。
 
 #### 如何理解协程？
-
  协程被视为比线程更轻量级的并发单元，可以在单线程中实现并发执行，由我们开发者显式调度。
  协程是在用户态进行调度的，避免了线程切换时的内核态开销。
  Java 自身是不支持协程的，我们可以使用 Quasar、Kotlin 等框架来实现协程。
@@ -56,7 +52,6 @@ fun main() = runBlocking {
 ```
 
 #### 线程间是如何进行通信的？
-
  原则上可以通过消息传递和共享内存两种方法来实现。Java 采用的是共享内存的并发模型。
  这个模型被称为 Java 内存模型，简写为 JMM，它决定了一个线程对共享变量的写入，何时对另外一个线程可见。当然了，本地内存是 JMM 的一个抽象概念，并不真实存在。
  用一句话来概括就是：共享变量存储在主内存中，每个线程的私有本地内存，存储的是这个共享变量的副本。
@@ -69,7 +64,7 @@ fun main() = runBlocking {
 ## 线程基础
 
 ### 🌟说说线程有几种创建方式？
- 有三种，分别是继承 Thread 类、实现 Runnable 接口、实现 Callable 接口。
+ 有四种，分别是继承 Thread 类、实现 Runnable 接口、实现 Callable 接口、创建线程池。
 
  第一种需要重写父类 Thread 的 run() 方法，并且调用 start() 方法启动线程。
 ```java
@@ -120,6 +115,34 @@ class CallableTask implements Callable<String> {
 ```
  这种方法的优点是可以获取线程的执行结果。
 
+第四种：通过线程池（ExecutorService）创建和管理线程
+线程池提供了一种管理和复用线程的机制。你不需要每次都手动 `new Thread()`，而是把实现了 `Runnable` 或 `Callable` 的任务交给线程池去执行。
+```java
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+class ThreadPoolTask implements Runnable {
+    @Override
+    public void run() {
+        System.out.println("看完二哥的 Java 进阶之路，上岸了! (使用线程池)");
+    }
+}
+
+public class ThreadPoolExample {
+    public static void main(String[] args) {
+        // 创建一个固定大小为 5 的线程池
+        ExecutorService executorService = Executors.newFixedThreadPool(5);
+        
+        // 提交任务给线程池执行
+        executorService.execute(new ThreadPoolTask());
+        
+        // 关闭线程池
+        executorService.shutdown();
+    }
+}
+```
+**这种方法的优点是极其明显的：** 它可以复用已存在的线程，降低线程创建和销毁造成的资源消耗；能有效控制最大并发线程数，提高系统资源的使用率，避免过多资源竞争导致系统阻塞。
+
  一个 8G 内存的系统最多能创建多少个线程?
  理论上大约 8000 个。
  创建线程的时候，至少需要分配一个虚拟机栈，在 64 位操作系统中，默认大小为 1M，因此一个线程大约需要 1M 的内存。
@@ -132,7 +155,6 @@ class CallableTask implements Callable<String> {
  首先是 main 线程，这是程序执行的入口。
  然后是[[JVM 垃圾收集|垃圾回收]]线程，它是一个后台线程，负责回收不再使用的对象。
  还有编译器线程，比如 JIT，负责把一部分热点代码编译后放到 codeCache 中。
-
  可以通过下面的代码进行检测：
 ```java
 class ThreadLister {
@@ -154,18 +176,11 @@ Thread: Signal Dispatcher (ID=4)
 Thread: Finalizer (ID=3)
 ```
  简单解释下：
-
  Thread: main (ID=1) - 主线程，Java 程序启动时由 JVM 创建。
  Thread: Reference Handler (ID=2) - 这个线程是用来处理引用对象的，如软引用、弱引用和虚引用。负责清理被 JVM 回收的对象。
  Thread: Finalizer (ID=3) - 终结器线程，负责调用对象的 finalize 方法。对象在垃圾回收器标记为可回收之前，由该线程执行其 finalize 方法，用于执行特定的资源释放操作。
  Thread: Signal Dispatcher (ID=4) - 信号调度线程，处理来自操作系统的信号，将它们转发给 JVM 进行进一步处理，例如响应中断、停止等信号。
  Thread: Monitor Ctrl-Break (ID=5) - 监视器线程，通常由一些特定的 IDE 创建，用于在开发过程中监控和管理程序执行或者处理中断。
-
-
-
-
-
-
 
 ### 调用 start 方法时会执行 run 方法，那怎么不直接调用 run方法？
  调用 start() 会创建一个新的线程，并异步执行 run() 方法中的代码。
@@ -190,22 +205,12 @@ main
 Thread-0
 ```
  也就是说，调用 start() 方法会通知 JVM，去调用底层的线程调度机制来启动新线程。
-
  调用 start() 后，线程进入就绪状态，等待操作系统调度；一旦调度执行，线程会执行其 run() 方法中的代码。
-
-
-
-
-
-
 
 ### 线程有哪些常用的调度方法？
  比如说 start 方法用于启动线程并让操作系统调度执行；sleep 方法用于让当前线程休眠一段时间；wait 方法会让当前线程等待，notify 会唤醒一个等待的线程。
-
-
 #### 说说wait方法和notify方法？
  当线程 A 调用共享对象的 wait() 方法时，线程 A 会被阻塞挂起，直到：
-
  线程 B 调用了共享对象的 notify() 方法或者 notifyAll() 方法；
  其他线程调用线程 A 的 interrupt() 方法，导致线程 A 抛出 InterruptedException 异常。
 
@@ -213,17 +218,11 @@ Thread-0
  当线程 A 调用共享对象的 notify() 方法后，会唤醒一个在这个共享对象上调用 wait 系列方法被挂起的线程。
  共享对象上可能会有多个线程在等待，具体唤醒哪个线程是随机的。
  如果调用的是 notifyAll 方法，会唤醒所有在这个共享变量上调用 wait 系列方法而被挂起的线程。
-
-
 #### 说说 sleep 方法？
  当线程 A 调用了 Thread 的 sleep 方法后，线程 A 会暂时让出指定时间的执行权。
  指定的睡眠时间到了后该方法会正常返回，接着参与 CPU 调度，获取到 CPU 资源后可以继续执行。
-
-
 #### 说说yield方法？
  yield() 方法的目的是让当前线程让出 CPU 使用权，回到就绪状态。但是线程调度器可能会忽略。
-
-
 #### 说说interrupt方法？
  interrupt() 方法用于通知线程停止，但不会直接终止线程，需要线程自行处理中断标志。
  常与 isInterrupted() 或 Thread.interrupted() 配合使用。
@@ -237,18 +236,8 @@ Thread thread = new Thread(() -> {
 thread.start();
 thread.interrupt(); // 中断线程
 ```
-
-
 #### 说说 stop 方法？
  stop 方法用来强制停止线程，目前已经处于废弃状态，因为 stop 方法可能会在不一致的状态下释放锁，破坏对象的一致性。
-
-
-
-
-
-
-
-
 
 ### 线程有几种状态？
  6 种。
@@ -297,9 +286,6 @@ class ThreadStateExample {
 | TIMED_WAITING | 当线程调用带有超时参数的方法时，如 Thread.sleep(long millis)、Object.wait(long timeout) 或 LockSupport.parkNanos()，它将进入超时等待状态。线程在指定的等待时间过后会自动返回可运行状态。 |
 | TERMINATED | 当线程的 run() 方法执行完毕后，或者因为一个未捕获的异常终止了执行，线程进入终止状态。一旦线程终止，它的生命周期结束，不能再被重新启动。 |
 
-
-
-
 #### 如何强制终止线程？
  第一步，调用线程的 interrupt() 方法，请求终止线程。
  第二步，在线程的 run() 方法中检查中断状态，如果线程被中断，就退出线程。
@@ -330,55 +316,33 @@ public class Main {
 	}
 }
 ```
- 中断结果：
-
-
-
-
-
-
-
 
 ### 什么是线程上下文切换？
-
 线程上下文切换是指 CPU 从一个线程切换到另一个线程执行时的过程。在切换过程中，CPU 需要保存当前线程的执行状态，并加载下一个线程的上下文。之所以要这样，是因为 CPU 在同一时刻只能执行一个线程，为了实现多线程并发执行，需要不断地在多个线程之间切换。
-
 为了让用户感觉多个线程是在同时执行的，CPU 资源的分配采用了时间片轮转的方式，线程在时间片内占用 CPU 执行任务。当线程使用完时间片后，就会让出 CPU 让其他线程占用。
 
 #### 线程切换的触发机制有哪些？
-
-线程切换不是随机发生的，它有明确的触发条件，可以分为**被动切换（被操作系统强制打断）**和**主动切换（线程自己让出 CPU）**两大类：
+线程切换不是随机发生的，它有明确的触发条件，可以分为**被动切换（被操作系统强制打断）和** **主动切换（线程自己让出 CPU）两大类：
 
 **被动切换（抢占式）：**
 - **时间片耗尽**：操作系统给每个线程分配一个时间片（通常几毫秒到几十毫秒），时钟中断一到，不管你代码跑到哪一行，直接打断换人。这是最常见的切换原因。
 - **更高优先级线程就绪**：一个高优先级线程从阻塞状态被唤醒（比如 I/O 完成），操作系统会立刻抢占当前低优先级线程的 CPU。
-
-**主动切换（协作式）：**
+**主动切换（协作式）：
 - **阻塞等待**：线程调用了阻塞操作（`sleep()`、`wait()`、阻塞 I/O、获取锁失败），自己主动放弃 CPU 进入等待队列。
 - **主动让出**：线程调用 `Thread.yield()` 提示调度器"我可以让一让"，但调度器不一定采纳。
 - **线程终止**：线程执行完毕或抛出未捕获异常，CPU 自然要分配给别人。
 
 #### 完整的切换流程是怎样的？
-
 可以用"换班交接"来理解——老员工下班前必须把工位状态拍照存档，新员工上班时按照自己上次的存档恢复工位：
-
 1. **触发中断**：时钟中断到达或线程主动让出，CPU 从用户态陷入内核态。
 2. **保存当前线程上下文**：操作系统把当前线程的寄存器状态（程序计数器 PC、栈指针 SP、通用寄存器等）保存到该线程的**内核栈**或**线程控制块（TCB）**中。这就是"拍照存档"。
 3. **调度器选择下一个线程**：内核的调度算法（CFS、优先级队列等）从就绪队列中挑出下一个要运行的线程。
 4. **恢复新线程上下文**：把新线程之前保存的寄存器状态从 TCB 中加载回 CPU 寄存器。如果新旧线程属于不同进程，还需要切换页表（虚拟地址空间），这会导致 TLB 缓存失效，代价更大。
 5. **返回用户态**：CPU 跳转到新线程上次被打断的那条指令继续执行。
-
 整个过程大约耗时几微秒到几十微秒。线程切换比进程切换快，因为同一进程内的线程共享地址空间，不需要切换页表和刷新 TLB。
 
 #### 线程可以被多核调度吗？
-
 多核处理器提供了并行执行多个线程的能力。每个核心可以独立执行一个或多个线程，操作系统的任务调度器会根据策略和算法，如优先级调度、轮转调度等，决定哪个线程何时在哪个核心上运行。
-
-
-
-
-
-
 
 ### 守护线程了解吗？
  了解，守护线程是一种特殊的线程，它的作用是为其他线程提供服务。
@@ -388,8 +352,6 @@ public class Main {
 #### 守护线程和用户线程有什么区别呢？
  区别之一是当最后一个非守护线程束时， JVM 会正常退出，不管当前是否存在守护线程，也就是说守护线程是否结束并不影响 JVM 退出。
  换而言之，只要有一个用户线程还没结束，正常情况下 JVM 就不会退出。
-
-
 
 ### 线程间有哪些通信方式？
  线程之间传递信息的方式有多种，比如说使用 volatile 和 synchronized 关键字共享对象、使用 wait() 和 notify() 方法实现生产者-消费者模式、使用 Exchanger 进行数据交换、使用 Condition 实现线程间的协调等。
@@ -449,7 +411,6 @@ public class Main {
 }
 ```
 
-
 #### wait() 和 notify() 方法的使用方式了解吗？
  一个线程调用共享对象的 wait() 方法时，它会进入该对象的等待池，释放已经持有的锁，进入等待状态。
  一个线程调用 notify() 方法时，它会唤醒在该对象等待池中等待的一个线程，使其进入锁池，等待获取锁。
@@ -505,8 +466,7 @@ public class Main {
 ```
  Condition 也提供了类似的方法， await() 负责阻塞、 signal() 和 signalAll() 负责通知。
  通常与锁 ReentrantLock 一起使用，为线程提供了一种等待某个条件成真的机制，并允许其他线程在该条件变化时通知等待线程。
-
-
+ 
 #### Exchanger 的使用方式了解吗？
  Exchanger 是一个同步点，可以在两个线程之间交换数据。一个线程调用 exchange() 方法，将数据传递给另一个线程，同时接收另一个线程的数据。
 ```java
@@ -540,7 +500,6 @@ class Main {
 }
 ```
 
-
 #### CompletableFuture 的使用方式了解吗？
  CompletableFuture 是 Java 8 引入的一个类，支持异步编程，允许线程在完成计算后将结果传递给其他线程。
 ```java
@@ -558,20 +517,13 @@ class Main {
 }
 ```
 
-
-
-
-
 ## 线程通信与同步
 
 ### 请说说 sleep 和 wait 的区别？（补充）
-
- 2024 年 03 月 21 日增补
-
  sleep 会让当前线程休眠，不需要获取对象锁，属于 Thread 类的方法；wait 会让获得对象锁的线程等待，要提前获得对象锁，属于 Object 类的方法。
+ 
  详细解释下。
  ①、所属类不同
-
  sleep() 方法专属于 Thread 类。
  wait() 方法专属于 Object 类。
 
@@ -655,14 +607,12 @@ Thread 2 执行完了 notify
 Thread 1 醒来了，并且退出同步代码块
 ```
  这表明 waitingThread 在调用 wait 后确实释放了锁。
+ 
  ③、使用条件不同
-
  sleep() 方法可以在任何地方被调用。
  wait() 方法必须在同步代码块或同步方法中被调用，这是因为调用 wait() 方法的前提是当前线程必须持有对象的锁。否则会抛出 IllegalMonitorStateException 异常。
 
-
  ④、唤醒方式不同
-
  调用 sleep 方法后，线程会进入 TIMED_WAITING 状态，即在指定的时间内暂停执行。当指定的时间结束后，线程会自动恢复到 RUNNABLE 状态，等待 CPU 调度再次执行。
  调用 wait 方法后，线程会进入 WAITING 状态，直到有其他线程在同一对象上调用 notify 或 notifyAll 方法，线程才会从 WAITING 状态转变为 RUNNABLE 状态，准备再次获得 CPU 的执行权。
 
@@ -707,13 +657,7 @@ class WaitExample {
 }
 ```
 
-
-
-
-
 ### 怎么保证线程安全？（补充）
-
-
  线程安全是指在并发环境下，多个线程访问共享资源时，程序能够正确地执行，而不会出现数据不一致的问题。
  为了保证线程安全，可以使用 synchronized 关键字 对方法加锁，对代码块加锁。线程在执行同步方法、同步代码块时，会获取类锁或者对象锁，其他线程就会阻塞并等待锁。
  如果需要更细粒度的锁，可以使用 ReentrantLock 并发重入锁 等。
@@ -864,7 +808,6 @@ class DistributedKeyManager {
 }
 ```
 
-
 #### 说一个线程安全的使用场景？
  单例模式。在多线程环境下，如果多个线程同时尝试创建实例，单例类必须确保只创建一个实例，并提供一个全局访问点。
  饿汉式是一种比较直接的实现方式，它通过在类加载时就立即初始化单例对象来保证线程安全。
@@ -901,14 +844,8 @@ class LazySingleton {
 }
 ```
 
-
 #### 能说一下 Hashtable 的底层数据结构吗？
  与 HashMap 类似，Hashtable 的底层数据结构也是一个数组加上链表的方式，然后通过 synchronized 加锁来保证线程安全。
-
-
-
-
-
 
 ## ThreadLocal
 
@@ -943,31 +880,20 @@ localVariable.remove();
 #### ThreadLocal 有哪些优点？
  每个线程访问的变量副本都是独立的，避免了共享变量引起的线程安全问题。由于 ThreadLocal 实现了变量的线程独占，使得变量不需要同步处理，因此能够避免资源竞争。
  ThreadLocal 可用于跨方法、跨类时传递上下文数据，不需要在方法间传递参数。
-
-
-
-
-
-
+ 
 ### 你在工作中用到过 ThreadLocal 吗？
  有用到过，用来存储用户信息。
-
  技术派实战项目 是典型的 MVC 架构，登录后的用户每次访问接口，都会在请求头中携带一个 token，在控制层可以根据这个 token，解析出用户的基本信息。
  假如在服务层和持久层也要用到用户信息，就可以在控制层拦截请求把用户信息存入 ThreadLocal。
-
  这样我们在任何一个地方，都可以取出 ThreadLocal 中存的用户信息。
-
  很多其它场景的 cookie、session 等等数据隔离都可以通过 ThreadLocal 去实现。
-
-
-
 
 ### 🌟ThreadLocal 怎么实现的呢？
  当我们创建一个 ThreadLocal 对象并调用 set 方法时，其实是在当前线程中初始化了一个 ThreadLocalMap。
 
  ThreadLocalMap 是 ThreadLocal 的一个静态内部类，它内部维护了一个 Entry 数组，key 是 ThreadLocal 对象，value 是线程的局部变量，这样就相当于为每个线程维护了一个变量副本。
 
- Entry 继承了 WeakReference，它限定了 key 是一个弱引用，弱引用的好处是当内存不足时，JVM 会回收 ThreadLocal 对象，并且将其对应的 Entry.value 设置为 null，这样可以在很大程度上避免内存泄漏。
+ Entry 继承了 WeakReference，限定了 key 是一个弱引用。 当外部的强引用断开，且**发生垃圾回收（GC）时**，JVM 会回收 ThreadLocal 对象，导致 Map 中出现 **Key 为 null 的废弃 Entry**。 由于 Value 是强引用且伴随线程同生共死，这**会导致内存泄漏**。 但正因为 Key 变成了 null，ThreadLocalMap 内部可以在后续调用 get/set 方法时，识别出这些 null Key，并主动将对应的 Value 置为 null 帮助 GC 清理。**不过，为了彻底避免内存泄漏，依然需要开发者手动调用 `remove()`。**
 ```java
 static class Entry extends WeakReference<ThreadLocal<?>> {
 	/** The value associated with this ThreadLocal. */
@@ -991,7 +917,7 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 
 #### 什么是弱引用，什么是强引用？
  我先说一下强引用，比如 User user = new User("沉默王二") 中，user 就是一个强引用， new User("沉默王二") 就是强引用对象。
- 当 user 被置为 null 时（ user = null ）， new User("沉默王二") 对象就会被垃圾回收；否则即便是内存空间不足，JVM 也不会回收 new User("沉默王二") 这个强引用对象，宁愿抛出 OutOfMemoryError。
+ 当 user 被置为 null 时（ user = null ）， new User("沉默王二") 对象就会被垃圾回收；否则即便是内存空间不足，JVM 也不会回收 new User("沉默王二") 这个强引用对象，宁愿抛出OutOfMemoryError。
  弱引用，比如说在使用 ThreadLocal 中，Entry 的 key 就是一个弱引用对象。
 ```java
 ThreadLocal<User> userThreadLocal = new ThreadLocal<>();
@@ -1000,23 +926,18 @@ userThreadLocal.set(new User("沉默王二"));
  userThreadLocal 是一个强引用， new ThreadLocal<>() 是一个强引用对象；
  new User("沉默王二") 是一个强引用对象。
  调用 set 方法后，会将 key = new ThreadLocal<>() 放入 ThreadLocalMap 中，此时的 key 是一个弱引用对象。当 JVM 进行垃圾回收时，如果发现了弱引用对象，就会将其回收。
-
+ 
  其关系链就是：
-
  ThreadLocal 强引用 -> ThreadLocal 对象。
  Thread 强引用 -> ThreadLocalMap。
  ThreadLocalMap[i] 强引用了 -> Entry。
  Entry.key 弱引用 -> ThreadLocal 对象。
  Entry.value 强引用 -> 线程的局部变量对象。
 
-
-
-
 ### 🌟ThreadLocal 内存泄露是怎么回事？
  ThreadLocalMap 的 Key 是 弱引用，但 Value 是强引用。
  如果一个线程一直在运行，并且 value 一直指向某个强引用对象，那么这个对象就不会被回收，从而导致内存泄漏。
-
-
+ 
 #### 那怎么解决内存泄漏问题呢？
  很简单，使用完 ThreadLocal 后，及时调用 remove() 方法释放内存空间。
 ```java
@@ -1054,8 +975,6 @@ public void clear() {
 ```
  然后执行 expungeStaleEntry() 方法，清除 key 为 null 的 Entry。
 
-
-
 #### 那为什么 key 要设计成弱引用？
  弱引用的好处是，当内存不足的时候，JVM 能够及时回收掉弱引用的对象。
  比如说：
@@ -1064,10 +983,7 @@ WeakReference key = new WeakReference(new ThreadLocal());
 ```
  key 是弱引用， new WeakReference(new ThreadLocal()) 是弱引用对象，当 JVM 进行垃圾回收时，只要发现了弱引用对象，就会将其回收。
  一旦 key 被回收，ThreadLocalMap 在进行 set、get 的时候就会对 key 为 null 的 Entry 进行清理。
-
  总结一下，在 ThreadLocal 被垃圾收集后，下一次访问 ThreadLocalMap 时，Java 会自动清理那些键为 null 的 entry，这个过程会在执行 get() 、 set() 、 remove() 时触发。
-
-
 
 #### 你了解哪些 ThreadLocal 的改进方案？
  在 JDK 20 Early-Access Build 28 版本中，出现了 ThreadLocal 的改进方案，即 ScopedValue 。
@@ -1097,10 +1013,6 @@ context.set("value-set-in-parent");
 // 在子线程中可以读取，值是"value-set-in-parent"
 String value = context.get();
 ```
-
-
-
-
 
 ### ThreadLocalMap 的源码看过吗？
  有研究过。
@@ -1217,15 +1129,10 @@ private static int nextIndex(int i, int len) {
  ThreadLocalMap 设计的目的是存储线程私有数据，不会有大量的 Key，所以采用线性探测更节省空间。
  拉链法还需要单独维护一个链表，甚至[[HashMap核心原理#你对红黑树了解多少？|红黑树]]，不适合 ThreadLocal 这种场景。
 
-
 #### 开放地址法了解吗？
  简单来说，就是这个坑被人占了，那就接着去找空着的坑。
-
  如果我们插入一个 value=27 的数据，通过 hash 计算后应该落入第 4 个槽位，而槽位 4 已经有数据了，而且 key 和当前的不等。
  此时就会线性向后查找，一直找到 Entry 为 null 的槽位才会停止。
-
-
-
 
 ### ThreadLocalMap 扩容机制了解吗？
  了解。
@@ -1296,16 +1203,11 @@ private void resize() {
 ```
  一句话总结：ThreadLocalMap 采用的是“先清理再扩容”的策略，扩容时，数组长度翻倍，并重新计算索引，如果发生哈希冲突，采用线性探测法来解决。
 
-
-
 ### 父线程能用 ThreadLocal 给子线程传值吗？
  不能。
-
  因为 ThreadLocal 变量存储在每个线程的 ThreadLocalMap 中，而子线程不会继承父线程的 ThreadLocalMap。
  可以使用 InheritableThreadLocal 来解决这个问题。
-
  子线程在创建的时候会拷贝父线程的 InheritableThreadLocal 变量。
-
  来看一下使用示例：
 ```java
 class InheritableThreadLocalExample {
@@ -1348,7 +1250,6 @@ private void init(ThreadGroup g, Runnable target, String name, long stackSize) {
 ```
 
 ## 相关链接
-
 - [[Java 内存模型]] — 线程可见性问题的根源
 - [[锁]] — synchronized/Lock 解决线程安全问题
 - [[线程池]] — 线程的复用与管理

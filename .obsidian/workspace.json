@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "wiki/并发编程/线程基础与ThreadLocal.md",
+                "file": "wiki/并发编程/锁.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "线程基础与ThreadLocal"
+              "title": "锁"
             }
           }
         ]
@@ -180,10 +180,10 @@
             "state": {
               "type": "file-properties",
               "state": {
-                "file": "wiki/并发编程/线程基础与ThreadLocal.md"
+                "file": "wiki/并发编程/锁.md"
               },
               "icon": "lucide-info",
-              "title": "线程基础与ThreadLocal的笔记属性"
+              "title": "锁的笔记属性"
             }
           }
         ],
@@ -208,6 +208,10 @@
   "active": "33595230469a7957",
   "lastOpenFiles": [
     "wiki/并发编程/并发编程索引_MOC.md",
+    "wiki/并发编程/Java 内存模型.md",
+    "wiki/并发编程/线程基础与ThreadLocal.md",
+    "wiki/并发编程/线程池.md",
+    "wiki/并发编程/并发工具类.md",
     "wiki/集合框架/集合框架索引_MOC.md",
     "wiki/集合框架/集合框架概述.md",
     "wiki/面试题目.md",
@@ -229,10 +233,6 @@
     "wiki/Java基础/String.md",
     "wiki/Java基础/Java基础索引_MOC.md",
     "wiki/Java基础/注解、反射与 Java 8.md",
-    "wiki/算法/图.md",
-    "wiki/算法/堆.md",
-    "wiki/MySQL/MySQL 基础与架构.md",
-    "wiki/MySQL/优化与实战.md",
     "未命名 1.canvas",
     "未命名 5.base",
     "link-graph.js",
