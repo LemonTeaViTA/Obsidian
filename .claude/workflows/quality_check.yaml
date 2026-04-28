@@ -1,0 +1,187 @@
+# Quality Check Workflow Configuration
+# 质量检查工作流配置
+
+name: "Quality Check"
+description: "检查 wiki 文件的链接完整性、内容重复、结构一致性等"
+version: "1.0.0"
+
+# 触发方式
+trigger:
+  - manual  # 手动触发
+  - scheduled  # 定期执行（如每周一次）
+
+# 检查范围
+scope:
+  directories:
+    - "wiki/"
+  file_types:
+    - "*.md"
+  exclude:
+    - "wiki/.obsidian/"
+    - "wiki/templates/"
+
+# 检查项目
+checks:
+  # 1. 链接完整性检查
+  - name: "link_integrity"
+    enabled: true
+    description: "检查所有 [[...]] 链接是否有效"
+    rules:
+      - check: "broken_links"
+        description: "检测断链（目标文件或锚点不存在）"
+        pattern: '\[\[([^\]]+)\]\]'
+        severity: "error"
+
+      - check: "nested_links"
+        description: "检测嵌套链接（[[xxx|[[yyy]]]]）"
+        pattern: '\[\[[^\]]*\[\[[^\]]*\]\][^\]]*\]\]'
+        severity: "error"
+
+      - check: "malformed_links"
+        description: "检测格式错误的链接"
+        severity: "warning"
+
+  # 2. 内容重复检查
+  - name: "content_duplication"
+    enabled: true
+    description: "检测跨文件的相似段落"
+    rules:
+      - check: "similar_paragraphs"
+        description: "检测相似度 > 80% 的段落"
+        threshold: 0.8
+        min_length: 100  # 最小段落长度（字符数）
+        severity: "warning"
+        suggestion: "建议合并或使用 [[]] 引用"
+
+  # 3. 结构一致性检查
+  - name: "structure_consistency"
+    enabled: true
+    description: "检查文档结构是否符合规范"
+    rules:
+      # 算法题解结构
+      - check: "algorithm_structure"
+        description: "检查算法题解是否遵循统一的标题结构"
+        target_files: "wiki/算法/**/*.md"
+        expected_structure:
+          - level: 3
+            pattern: "^### .+$"
+            description: "题目名称"
+          - level: 4
+            pattern: "^#### 解题思路$"
+            description: "解题思路"
+          - level: 4
+            pattern: "^#### 代码实现$"
+            description: "代码实现"
+          - level: 4
+            pattern: "^#### 复杂度分析$"
+            description: "复杂度分析"
+        severity: "warning"
+
+      # 面试题解结构
+      - check: "interview_structure"
+        description: "检查面试题解是否遵循 ### 主题目 + #### 子题目结构"
+        target_files: "wiki/**/*篇.md"
+        expected_structure:
+          - level: 3
+            pattern: "^### .+$"
+            description: "主题目"
+          - level: 4
+            pattern: "^#### .+$"
+            description: "子题目"
+        severity: "info"
+
+      # 检测旧格式
+      - check: "deprecated_format"
+        description: "检测孤立的加粗标签（**题目**）"
+        pattern: '^\*\*(题目|解题思路|代码实现|复杂度分析)\*\*'
+        severity: "warning"
+        suggestion: "应使用 Markdown 标题（### 或 ####）"
+
+  # 4. 面试题目同步检查
+  - name: "interview_sync"
+    enabled: true
+    description: "检查面试题解与面试题目.md 的同步状态"
+    rules:
+      - check: "missing_checklist"
+        description: "检查 wiki 文件中的面试题解是否在面试题目.md中有对应的 checklist"
+        target_file: "wiki/面试题目.md"
+        severity: "warning"
+
+      - check: "broken_anchors"
+        description: "检查 checklist 中的锚点链接是否准确"
+        pattern: '\[\[([^#\]]+)#([^\]|]+)(?:\|[^\]]+)?\]\]'
+        severity: "error"
+
+      - check: "duplicate_questions"
+        description: "检测重复题目"
+        similarity_threshold: 0.9
+        severity: "warning"
+
+  # 5. 孤岛页面检测
+  - name: "orphan_pages"
+    enabled: true
+    description: "检测没有任何入站链接的 wiki 文件"
+    rules:
+      - check: "no_inbound_links"
+        description: "检测没有被其他文件引用的页面"
+        severity: "info"
+        exclude:
+          - "wiki/index.md"
+          - "wiki/面试题目.md"
+          - "wiki/优化记录.md"
+        suggestion: "建议在 wiki/index.md 或相关 MOC 页面中添加链接"
+
+  # 6. 优化记录完整性
+  - name: "changelog_completeness"
+    enabled: true
+    description: "检查最近的 wiki 变更是否记录在优化记录.md"
+    rules:
+      - check: "unrecorded_changes"
+        description: "检查最近 7 天是否有 wiki 文件变更但未记录"
+        days: 7
+        method: "git_log"
+        target_file: "优化记录.md"
+        severity: "warning"
+
+# 报告格式
+report:
+  format: "markdown"
+  sections:
+    - name: "断链"
+      icon: "🔗"
+      severity_filter: ["error"]
+
+    - name: "重复内容"
+      icon: "📋"
+      severity_filter: ["warning"]
+
+    - name: "结构问题"
+      icon: "📐"
+      severity_filter: ["warning", "info"]
+
+    - name: "面试题目"
+      icon: "📝"
+      severity_filter: ["error", "warning"]
+
+    - name: "孤岛页面"
+      icon: "🏝️"
+      severity_filter: ["info"]
+
+    - name: "优化记录"
+      icon: "📊"
+      severity_filter: ["warning"]
+
+  output_file: ".claude/reports/quality_check_{timestamp}.md"
+
+# 自动修复
+auto_fix:
+  enabled: false  # 默认不自动修复，需要用户确认
+  fixable_issues:
+    - "nested_links"  # 可以自动修复嵌套链接
+    - "deprecated_format"  # 可以自动转换旧格式
+
+# 日志设置
+logging:
+  enabled: true
+  log_file: ".claude/logs/quality_check.log"
+  level: "info"

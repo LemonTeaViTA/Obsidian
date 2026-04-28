@@ -1,0 +1,157 @@
+# Content Extraction Workflow Configuration
+# 内容提取工作流配置
+
+name: "Content Extraction"
+description: "从 staged 文件中提取核心内容，整理到 wiki 文件"
+version: "1.0.0"
+
+# 触发方式
+trigger:
+  - manual  # 手动触发（用户指定文件）
+
+# 输入输出目录
+directories:
+  input: "raws/staged/"
+  output_wiki: "wiki/"
+  output_processed: "raws/processed/"
+
+# 提取规则（基于 feedback_raw_organize.md）
+extraction_rules:
+  # 必须包含的内容
+  must_include:
+    - name: "问题背景"
+      description: "现有技术的痛点/缺点"
+      prompt: "这篇文章解决了什么问题？现有技术有什么痛点？"
+
+    - name: "解决方案"
+      description: "该研究/框架如何解决问题"
+      prompt: "这篇文章提出了什么解决方案？核心创新点是什么？"
+
+    - name: "项目链接"
+      description: "GitHub 地址、论文地址"
+      prompt: "提取所有项目链接（GitHub、论文、官网等）"
+      format: "放在内容后面，方便找到项目代码"
+
+  # 必须排除的内容
+  must_exclude:
+    - "安装命令"
+    - "代码示例"
+    - "软硬件要求"
+    - "使用场景营销文案"
+    - "使用教程"
+    - "配置步骤"
+
+  # 数据来源标注规则
+  data_source_citation:
+    enabled: true
+    format: "> 数据来源：[文章标题](source URL)"
+    description: "实验数据、性能数字必须标注来源链接（可点击），不是作者名字"
+    source_field: "frontmatter.source"
+
+# 归属判断规则
+target_wiki_rules:
+  # 项目相关内容
+  - condition: "category == 'project'"
+    targets:
+      - "wiki/Baize项目/"  # 如果对 Baize 项目改进有帮助
+      - "wiki/项目实战/"    # 其他项目相关
+    note: "可以两边都放，但不要重复写，用 [[]] 引用"
+
+  # RAG 相关内容
+  - condition: "category == 'rag'"
+    targets:
+      - "wiki/RAG/RAG基础与架构.md"
+      - "wiki/RAG/检索召回与优化.md"
+      - "wiki/RAG/RAG管道设计.md"
+    note: "根据具体内容选择合适的文件"
+
+  # Agent 相关内容
+  - condition: "category == 'agent'"
+    targets:
+      - "wiki/Agent/Agent核心概念.md"
+      - "wiki/Agent/Agent工程实践.md"
+    note: "概念性内容放核心概念，工程实践放工程实践"
+
+  # Java 相关内容
+  - condition: "category == 'java'"
+    targets:
+      - "wiki/Java基础篇.md"
+      - "wiki/集合框架篇.md"
+      - "wiki/并发编程篇.md"
+      - "wiki/JVM篇.md"
+
+  # MySQL 相关内容
+  - condition: "category == 'mysql'"
+    targets:
+      - "wiki/MySQL篇.md"
+      - "wiki/MySQL/"  # 子目录
+
+  # Redis 相关内容
+  - condition: "category == 'redis'"
+    targets:
+      - "wiki/Redis篇.md"
+      - "wiki/Redis/"  # 子目录
+
+  # Spring 相关内容
+  - condition: "category == 'spring'"
+    targets:
+      - "wiki/Spring篇.md"
+      - "wiki/Spring/"  # 子目录
+
+# 工作流程
+workflow:
+  steps:
+    - step: 1
+      name: "读取文件"
+      action: "读取指定的 staged 文件（一次只处理一个）"
+
+    - step: 2
+      name: "提取核心内容"
+      action: "按照 extraction_rules 提取内容"
+      output: "生成 Markdown 格式的提取预览"
+
+    - step: 3
+      name: "确定目标位置"
+      action: "根据 target_wiki_rules 建议写入的 wiki 文件路径和章节位置"
+
+    - step: 4
+      name: "用户审核"
+      action: "向用户展示提取预览，等待确认"
+      required: true
+      note: "必须人工审核，不可跳过"
+
+    - step: 5
+      name: "写入 wiki"
+      action: "确认后将内容写入对应的 wiki 文件"
+      condition: "user_confirmed == true"
+
+    - step: 6
+      name: "更新元数据"
+      action: |
+        - 更新 raw 文件的 frontmatter（status: processed, extracted_to: [...]）
+        - 移动文件到 raws/processed/
+        - 在 优化记录.md 中追加变更日志
+
+    - step: 7
+      name: "处理拒绝"
+      action: "如果用户拒绝，修改提取内容并重新预览"
+      condition: "user_confirmed == false"
+
+# 重要原则
+principles:
+  - "一篇一篇来：绝不批量整理，每篇都需要用户审核"
+  - "逐步确认：先汇报核心内容和整理方向，确认后再写入"
+  - "质量优先：宁可慢，不可错"
+  - "保留来源：所有数据必须标注来源链接"
+  - "避免重复：使用 [[]] 引用而非复制粘贴"
+
+# 日志设置
+logging:
+  enabled: true
+  log_file: ".claude/logs/content_extraction.log"
+  level: "info"
+
+# 变更日志格式（写入 优化记录.md）
+changelog_format: |
+  - `{wiki_file_path}` — {change_description}
+    **原因**：{reason}

@@ -1,0 +1,150 @@
+# Raw Intake Workflow Configuration
+# 原始文档接收工作流配置
+
+name: "Raw Intake"
+description: "自动分类 inbox 中的原始文档，并移动到对应的 staged 子目录"
+version: "1.0.0"
+
+# 触发方式
+trigger:
+  - manual  # 手动触发
+  - on_new_file  # 当 inbox 中有新文件时自动触发（需要文件监控）
+
+# 输入输出目录
+directories:
+  input: "raws/inbox/"
+  output: "raws/staged/"
+
+# 分类规则（按优先级排序）
+classification_rules:
+  # RAG 相关
+  - category: rag
+    keywords:
+      - "RAG"
+      - "检索"
+      - "向量"
+      - "召回"
+      - "Embedding"
+      - "知识库"
+      - "文档解析"
+      - "分块"
+      - "chunk"
+      - "重排"
+      - "rerank"
+      - "MinerU"
+      - "BookRAG"
+      - "向量数据库"
+      - "ElasticSearch"
+      - "混合检索"
+      - "BM25"
+      - "RRF"
+    priority: high
+
+  # Agent 相关
+  - category: agent
+    keywords:
+      - "Agent"
+      - "智能体"
+      - "Harness"
+      - "Memory"
+      - "Skills"
+      - "MCP"
+      - "工作流"
+      - "ReAct"
+      - "Reflection"
+      - "Multi-Agent"
+      - "Claude Code"
+      - "LangChain"
+      - "A2A"
+    priority: high
+
+  # 项目相关（优先级最高，因为最具体）
+  - category: project
+    keywords:
+      - "派聪明"
+      - "PaiSmart"
+      - "Baize"
+      - "项目设计"
+      - "需求分析"
+      - "接口文档"
+      - "库表设计"
+      - "面试题预测"
+    priority: highest
+
+  # Java 相关
+  - category: java
+    keywords:
+      - "Java"
+      - "JVM"
+      - "集合"
+      - "并发"
+      - "线程"
+      - "HashMap"
+      - "ConcurrentHashMap"
+      - "synchronized"
+      - "volatile"
+      - "ThreadLocal"
+    priority: medium
+
+  # MySQL 相关
+  - category: mysql
+    keywords:
+      - "MySQL"
+      - "数据库"
+      - "InnoDB"
+      - "索引"
+      - "B+树"
+      - "事务"
+      - "MVCC"
+      - "锁"
+      - "redo log"
+      - "binlog"
+    priority: medium
+
+  # Redis 相关
+  - category: redis
+    keywords:
+      - "Redis"
+      - "缓存"
+      - "Lua"
+      - "分布式锁"
+      - "持久化"
+      - "RDB"
+      - "AOF"
+      - "哨兵"
+      - "集群"
+    priority: medium
+
+  # Spring 相关
+  - category: spring
+    keywords:
+      - "Spring"
+      - "SpringBoot"
+      - "IoC"
+      - "AOP"
+      - "微服务"
+      - "Nacos"
+      - "Eureka"
+      - "Feign"
+      - "Gateway"
+    priority: medium
+
+# 默认分类（如果没有匹配到任何规则）
+default_category: "uncategorized"
+
+# 默认优先级
+default_priority: "medium"
+
+# 是否需要用户确认
+require_confirmation: true
+
+# 批处理设置
+batch:
+  enabled: true
+  max_files_per_batch: 10  # 每批最多处理 10 个文件
+
+# 日志设置
+logging:
+  enabled: true
+  log_file: ".claude/logs/raw_intake.log"
+  level: "info"  # debug | info | warning | error

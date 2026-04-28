@@ -1,0 +1,248 @@
+# Cross-Link Builder Workflow Configuration
+# 交叉链接构建工作流配置
+
+name: "Cross-Link Builder"
+description: "分析 wiki 文件之间的语义关联，自动建议双向链接"
+version: "1.0.0"
+
+# 触发方式
+trigger:
+  - manual  # 手动触发
+  - after_quality_check  # 在质量检查后执行
+
+# 检查范围
+scope:
+  directories:
+    - "wiki/"
+  file_types:
+    - "*.md"
+  exclude:
+    - "wiki/.obsidian/"
+    - "wiki/templates/"
+    - "wiki/优化记录.md"
+
+# 概念提取规则
+concept_extraction:
+  methods:
+    # 方法 1: 基于标题提取
+    - name: "heading_extraction"
+      description: "从 ### 和 #### 标题中提取概念"
+      pattern: '^#{2,4}\s+(.+)$'
+      weight: 1.0
+
+    # 方法 2: 基于加粗文本提取
+    - name: "bold_extraction"
+      description: "从加粗文本中提取概念"
+      pattern: '\*\*([^*]+)\*\*'
+      weight: 0.5
+
+    # 方法 3: 基于代码块标题提取
+    - name: "code_title_extraction"
+      description: "从代码块前的描述中提取概念"
+      pattern: '```(\w+)'
+      weight: 0.3
+
+  # 概念过滤规则
+  filters:
+    min_length: 2  # 最小长度（字符数）
+    max_length: 50  # 最大长度
+    exclude_patterns:
+      - '^\d+$'  # 纯数字
+      - '^[a-zA-Z]$'  # 单个字母
+      - '^(是|的|了|吗|呢|啊)$'  # 停用词
+
+# 语义关联规则
+semantic_relations:
+  # 1. 同义词关系
+  - type: "synonym"
+    description: "同义词或近义词"
+    examples:
+      - ["并发", "多线程", "并行"]
+      - ["缓存", "Cache"]
+      - ["索引", "Index"]
+      - ["锁", "Lock"]
+    detection_method: "keyword_matching"
+    link_suggestion: "双向链接"
+
+  # 2. 上下位关系
+  - type: "hypernym"
+    description: "上下位关系（如 HashMap 是集合框架的一部分）"
+    examples:
+      - parent: "集合框架"
+        children: ["HashMap", "ArrayList", "LinkedList", "HashSet"]
+      - parent: "JVM"
+        children: ["垃圾回收", "类加载", "内存模型"]
+      - parent: "Spring"
+        children: ["IoC", "AOP", "SpringBoot"]
+      - parent: "MySQL"
+        children: ["索引", "事务", "锁", "MVCC"]
+      - parent: "Redis"
+        children: ["持久化", "集群", "哨兵"]
+      - parent: "RAG"
+        children: ["检索", "召回", "重排", "Embedding"]
+      - parent: "Agent"
+        children: ["Memory", "Skills", "MCP", "Harness"]
+    detection_method: "hierarchy_matching"
+    link_suggestion: "子概念链接到父概念，父概念列出子概念"
+
+  # 3. 对比关系
+  - type: "contrast"
+    description: "对比关系（如悲观锁 vs 乐观锁）"
+    examples:
+      - ["悲观锁", "乐观锁"]
+      - ["进程", "线程"]
+      - ["同步", "异步"]
+      - ["BIO", "NIO", "AIO"]
+      - ["RDB", "AOF"]
+      - ["主从复制", "哨兵", "集群"]
+      - ["BM25", "向量检索"]
+    detection_method: "contrast_pattern_matching"
+    patterns:
+      - "A vs B"
+      - "A 和 B 的区别"
+      - "A 与 B 对比"
+    link_suggestion: "双向链接，并在对比章节中互相引用"
+
+  # 4. 依赖关系
+  - type: "dependency"
+    description: "依赖关系（如 Spring AOP 依赖动态代理）"
+    examples:
+      - source: "Spring AOP"
+        target: "动态代理"
+      - source: "动态代理"
+        target: "反射"
+      - source: "MVCC"
+        target: "undo log"
+      - source: "分布式锁"
+        target: "Lua 脚本"
+      - source: "RAG"
+        target: "Embedding"
+      - source: "Agent"
+        target: "LLM"
+    detection_method: "dependency_pattern_matching"
+    patterns:
+      - "基于 A"
+      - "依赖 A"
+      - "使用 A 实现"
+      - "底层是 A"
+    link_suggestion: "源概念链接到目标概念"
+
+# 链接建议生成规则
+link_suggestion_rules:
+  # 规则 1: 当文件 A 中提及概念 X，且概念 X 在文件 B 中有详细解释
+  - rule: "mention_to_detail"
+    condition: |
+      - 文件 A 中提及概念 X（非标题）
+      - 文件 B 中有概念 X 的详细解释（作为标题或主要内容）
+      - 文件 A 中尚未链接到文件 B
+    action: "建议在文件 A 中添加链接到文件 B"
+    format: "[[文件B#概念X|概念X]]"
+
+  # 规则 2: 反向链接
+  - rule: "reverse_link"
+    condition: |
+      - 文件 A 链接到文件 B
+      - 文件 B 中没有链接回文件 A
+      - 文件 B 的内容与文件 A 相关
+    action: "建议在文件 B 中添加反向链接到文件 A"
+    format: "参见：[[文件A]]"
+    location: "章节末尾或相关文档部分"
+
+  # 规则 3: 对比关系链接
+  - rule: "contrast_link"
+    condition: |
+      - 文件 A 中讨论概念 X
+      - 文件 B 中讨论概念 Y
+      - X 和 Y 是对比关系
+    action: "建议在两个文件中互相添加对比链接"
+    format: "对比：[[文件B#概念Y|概念Y]]"
+
+  # 规则 4: 依赖关系链接
+  - rule: "dependency_link"
+    condition: |
+      - 文件 A 中讨论概念 X
+      - 概念 X 依赖概念 Y
+      - 文件 B 中详细解释概念 Y
+    action: "建议在文件 A 中添加链接到文件 B"
+    format: "基于 [[文件B#概念Y|概念Y]]"
+
+# 链接插入策略
+link_insertion:
+  # 策略 1: 首次提及
+  - strategy: "first_mention"
+    description: "在概念首次提及时插入链接"
+    enabled: true
+
+  # 策略 2: 所有提及
+  - strategy: "all_mentions"
+    description: "在所有提及处插入链接"
+    enabled: false  # 默认关闭，避免过度链接
+
+  # 策略 3: 章节级别
+  - strategy: "section_level"
+    description: "每个章节（### 或 ####）中首次提及时插入链接"
+    enabled: true
+
+  # 避免链接的位置
+  avoid_linking_in:
+    - "code_blocks"  # 代码块内
+    - "inline_code"  # 行内代码
+    - "urls"  # URL 中
+    - "existing_links"  # 已有链接中
+
+# 工作流程
+workflow:
+  steps:
+    - step: 1
+      name: "扫描文件"
+      action: "扫描所有 wiki 文件，提取关键概念和实体"
+
+    - step: 2
+      name: "分析关联"
+      action: "分析概念之间的语义关联（同义词、上下位、对比、依赖）"
+
+    - step: 3
+      name: "生成建议"
+      action: "根据 link_suggestion_rules 生成双向链接建议"
+
+    - step: 4
+      name: "用户审核"
+      action: "向用户展示建议，等待确认"
+      required: true
+
+    - step: 5
+      name: "批量插入"
+      action: "确认后批量插入链接"
+      condition: "user_confirmed == true"
+
+    - step: 6
+      name: "更新记录"
+      action: "在 优化记录.md 中追加变更日志"
+
+# 输出格式
+output:
+  format: "markdown"
+  sections:
+    - name: "链接建议"
+      description: "按文件分组显示链接建议"
+      group_by: "file"
+
+    - name: "统计信息"
+      description: "显示建议数量、关联类型分布等"
+
+  preview_format: |
+    [序号] {source_file}:{line_number}
+      "{original_text}" → 建议链接到 [[{target_file}#{anchor}|{display_text}]]
+      关联类型: {relation_type}
+      理由: {reason}
+
+# 日志设置
+logging:
+  enabled: true
+  log_file: ".claude/logs/cross_link_builder.log"
+  level: "info"
+
+# 变更日志格式
+changelog_format: |
+  - 交叉链接优化 — 在 {file_count} 个文件中添加了 {link_count} 个双向链接
+    **原因**：增强知识图谱的连接性，消除孤岛页面

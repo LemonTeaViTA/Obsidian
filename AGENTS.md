@@ -11,6 +11,199 @@ This vault is maintained as a persistent knowledge base. Treat the existing note
 
 ## Canonical flows
 
+## Raw Sources Management (原始文档管理)
+
+### Directory Structure
+
+```
+raws/
+├── inbox/           # 新导入的原始文件（未分类）
+├── staged/          # 已分类待整理（按主题分类）
+│   ├── rag/
+│   ├── agent/
+│   ├── java/
+│   ├── mysql/
+│   ├── redis/
+│   ├── spring/
+│   └── project/     # 项目相关（如 PaiSmart）
+├── processed/       # 已整理完成
+└── archive/         # 不需要整理的存档
+```
+
+### Frontmatter Schema
+
+每个 raw 文件必须包含以下 frontmatter 字段：
+
+```yaml
+---
+title: "文章标题"
+source: "原文链接"
+author: "作者"
+published: 2026-04-27
+created: 2026-04-27
+status: inbox | staged | processed | archived
+category: rag | agent | java | mysql | redis | spring | project
+priority: high | medium | low
+extracted_to: ["wiki/RAG/xxx.md", "wiki/Agent/yyy.md"]
+notes: "简短备注"
+description: "文章描述"
+tags:
+  - "clippings"
+---
+```
+
+### Agent Workflow 1: Raw Intake（原始文档接收）
+
+**触发时机**：用户将新文件放入 `raws/inbox/` 或明确要求分类
+
+**工作流程**：
+1. 扫描 `raws/inbox/` 目录，列出所有未分类的 `.md` 文件
+2. 逐个读取文件，分析标题、描述和内容前 500 字
+3. 根据关键词推断分类（category）：
+   - RAG: 检索、向量、Embedding、知识库、文档解析、召回、重排
+   - Agent: 智能体、Harness、Memory、Skills、MCP、工作流、ReAct
+   - Java: Java、JVM、集合、并发、线程池、HashMap
+   - MySQL: MySQL、数据库、索引、事务、锁、MVCC
+   - Redis: Redis、缓存、持久化、分布式锁
+   - Spring: Spring、SpringBoot、IoC、AOP、微服务
+   - Project: 派聪明、PaiSmart、Baize、具体项目名
+4. 向用户展示分类建议，等待确认
+5. 确认后：
+   - 更新文件的 frontmatter（status: staged, category: xxx）
+   - 移动文件到 `raws/staged/{category}/`
+6. 生成分类报告
+
+**输出示例**：
+```
+已分类 15 个文件：
+  - RAG: 8 个
+  - Agent: 3 个
+  - Project: 4 个
+
+待处理文件：
+  - staged/rag/: 36 个
+  - staged/agent/: 5 个
+  - staged/project/: 21 个
+```
+
+### Agent Workflow 2: Content Extraction（内容提取）
+
+**触发时机**：用户明确要求整理某个 staged 文件，或执行批量整理命令
+
+**工作流程**：
+1. 读取指定的 `staged/` 文件（一次只处理一个）
+2. 按照 `feedback_raw_organize.md` 的规范提取核心内容：
+   - **记录研究解决了什么问题**：现有技术痛点 + 该研究如何解决 + 核心创新点
+   - **项目链接必须保留**：GitHub、论文地址放在内容后面
+   - **不记录使用教程**：跳过安装命令、代码示例、软硬件要求
+   - **数据来源必须标注链接**：实验数据、性能数字标注来源 `> 数据来源：[文章标题](source URL)`
+3. 生成提取预览，向用户展示：
+   - 提取的核心内容（Markdown 格式）
+   - 建议写入的 wiki 文件路径
+   - 建议的章节位置
+4. 等待用户确认（必须人工审核）
+5. 确认后：
+   - 将内容写入对应的 wiki 文件
+   - 更新 raw 文件的 frontmatter（status: processed, extracted_to: ["wiki/xxx.md"]）
+   - 移动文件到 `raws/processed/`
+   - 在 `优化记录.md` 中追加变更日志
+6. 如果用户拒绝，修改提取内容并重新预览
+
+**重要原则**：
+- **一篇一篇来**：绝不批量整理，每篇都需要用户审核
+- **逐步确认**：先汇报核心内容和整理方向，确认后再写入
+- **质量优先**：宁可慢，不可错
+
+### Agent Workflow 3: Quality Check（质量检查）
+
+**触发时机**：用户明确要求质量检查，或定期执行（如每周一次）
+
+**检查项目**：
+
+1. **链接完整性检查**：
+   - 扫描所有 `wiki/` 文件中的 `[[...]]` 链接
+   - 检测断链（目标文件或锚点不存在）
+   - 检测嵌套链接（`[[xxx|[[yyy]]]]`）
+   - 生成断链报告
+
+2. **内容重复检查**：
+   - 检测跨文件的相似段落（使用简单的文本相似度）
+   - 标记可能的重复内容
+   - 建议合并或使用 `[[]]` 引用
+
+3. **结构一致性检查**：
+   - 检查算法题解是否遵循统一的标题结构（`### 题目名称` → `#### 解题思路` → `#### 代码实现` → `#### 复杂度分析`）
+   - 检查面试题解是否遵循 `###` 主题目 + `####` 子题目结构
+   - 检查是否有孤立的加粗标签（`**题目**`）
+
+4. **面试题目同步检查**：
+   - 扫描所有 wiki 文件中的面试题解（`###` 或 `####` 标题）
+   - 检查 `wiki/面试题目.md` 中是否有对应的 checklist 条目
+   - 检查 checklist 中的锚点链接是否准确
+   - 检测重复题目
+
+5. **孤岛页面检测**：
+   - 检测没有任何入站链接的 wiki 文件
+   - 建议在 `wiki/index.md` 或相关 MOC 页面中添加链接
+
+6. **优化记录完整性**：
+   - 检查最近 7 天是否有 wiki 文件变更但未记录在 `优化记录.md`
+   - 使用 `git log` 对比
+
+**输出示例**：
+```
+=== 质量检查报告 ===
+
+[断链] 发现 3 处断链：
+  - wiki/Redis/缓存经典问题.md:45 → [[不存在的文件]]
+  - wiki/面试题目.md:120 → [[MySQL篇#不存在的锚点]]
+
+[重复内容] 发现 2 处可能重复：
+  - wiki/RAG/检索召回与优化.md 与 wiki/Agent/Agent工程实践.md 
+    相似段落：Embedding 三代演进（建议使用引用）
+
+[结构问题] 发现 1 处结构不一致：
+  - wiki/算法/动态规划.md:67 使用了旧的加粗标签 **题目**
+
+[面试题目] 发现 2 处未同步：
+  - wiki/Spring/AOP 与动态代理.md:34 的题目未添加到面试题目.md
+
+[孤岛页面] 发现 1 个孤岛：
+  - wiki/临时笔记.md（无入站链接）
+```
+
+### Agent Workflow 4: Cross-Link Builder（交叉链接构建）
+
+**触发时机**：用户明确要求构建交叉链接，或在质量检查后执行
+
+**工作流程**：
+1. 扫描所有 `wiki/` 文件，提取关键概念和实体
+2. 分析概念之间的语义关联：
+   - 同义词（如 "并发" 和 "多线程"）
+   - 上下位关系（如 "HashMap" 是 "集合框架" 的一部分）
+   - 对比关系（如 "悲观锁" vs "乐观锁"）
+   - 依赖关系（如 "Spring AOP" 依赖 "动态代理"）
+3. 生成双向链接建议：
+   - 在文件 A 中提及概念 X 时，建议链接到文件 B
+   - 在文件 B 中添加反向链接到文件 A
+4. 向用户展示建议，等待确认
+5. 确认后批量插入链接（使用 `[[文件名#锚点|显示文本]]` 格式）
+6. 更新 `优化记录.md`
+
+**输出示例**：
+```
+=== 交叉链接建议 ===
+
+[1] wiki/MySQL/锁与事务机制.md:67
+  "悲观锁和乐观锁" → 建议链接到 [[并发编程/锁#悲观锁与乐观锁|悲观锁和乐观锁]]
+
+[2] wiki/并发编程/锁.md:120
+  建议添加反向链接：MySQL 中的锁机制 → [[MySQL/锁与事务机制]]
+
+[3] wiki/Spring/AOP 与动态代理.md:45
+  "反射" → 建议链接到 [[Java基础/反射与注解#反射机制|反射]]
+```
+
 ## Human-in-the-loop default
 
 - For source ingest, default to preview-only mode.
