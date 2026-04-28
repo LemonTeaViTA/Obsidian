@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "wiki/MySQL/锁与事务机制.md",
+                "file": "wiki/并发编程/线程基础与ThreadLocal.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "锁与事务机制"
+              "title": "线程基础与ThreadLocal"
             }
           }
         ]
@@ -173,8 +173,21 @@
               "icon": "lucide-ghost",
               "title": "copilot-chat-view"
             }
+          },
+          {
+            "id": "a9628de1c1f6e44d",
+            "type": "leaf",
+            "state": {
+              "type": "file-properties",
+              "state": {
+                "file": "wiki/并发编程/线程基础与ThreadLocal.md"
+              },
+              "icon": "lucide-info",
+              "title": "线程基础与ThreadLocal的笔记属性"
+            }
           }
-        ]
+        ],
+        "currentTab": 6
       }
     ],
     "direction": "horizontal",
@@ -194,9 +207,13 @@
   },
   "active": "33595230469a7957",
   "lastOpenFiles": [
+    "wiki/并发编程/并发编程索引_MOC.md",
+    "wiki/集合框架/集合框架索引_MOC.md",
+    "wiki/集合框架/集合框架概述.md",
+    "wiki/面试题目.md",
+    "wiki/MySQL/锁与事务机制.md",
     "wiki/MySQL/索引机制详解.md",
     "wiki/计算机网络篇.md",
-    "wiki/面试题目.md",
     "wiki/算法/动态规划.md",
     "wiki/算法/字符串.md",
     "wiki/Java基础篇.md",
@@ -216,10 +233,6 @@
     "wiki/算法/堆.md",
     "wiki/MySQL/MySQL 基础与架构.md",
     "wiki/MySQL/优化与实战.md",
-    "wiki/MySQL/MySQL索引_MOC.md",
-    "wiki/MySQL/引擎与日志.md",
-    "wiki/MySQL/锁与事务机制.md",
-    "wiki/MySQL/高可用与分库分表.md",
     "未命名 1.canvas",
     "未命名 5.base",
     "link-graph.js",
