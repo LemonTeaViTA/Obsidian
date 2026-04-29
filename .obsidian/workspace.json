@@ -4,21 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "a799ee4a3f854882",
+        "id": "2b095fe04810944a",
         "type": "tabs",
         "children": [
           {
-            "id": "33595230469a7957",
+            "id": "11b486b2f96b2b7a",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "wiki/并发编程/线程池.md",
+                "file": "wiki/算法/回溯算法.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "线程池"
+              "title": "回溯算法"
             }
           }
         ]
@@ -179,11 +179,9 @@
             "type": "leaf",
             "state": {
               "type": "file-properties",
-              "state": {
-                "file": "wiki/并发编程/线程池.md"
-              },
+              "state": {},
               "icon": "lucide-info",
-              "title": "线程池的笔记属性"
+              "title": "笔记属性"
             }
           }
         ],
@@ -205,8 +203,10 @@
       "bases:新建数据库": false
     }
   },
-  "active": "33595230469a7957",
+  "active": "11b486b2f96b2b7a",
   "lastOpenFiles": [
+    "wiki/Git.md",
+    "wiki/并发编程/线程池.md",
     "wiki/面试题目.md",
     "wiki/并发编程/锁.md",
     "wiki/并发编程/线程基础与ThreadLocal.md",
@@ -214,7 +214,6 @@
     "wiki/并发编程/并发容器和框架.md",
     "wiki/并发编程/并发工具类.md",
     "wiki/并发编程/Java 内存模型.md",
-    "wiki/并发编程/线程池.md",
     "wiki/集合框架/集合框架索引_MOC.md",
     "wiki/集合框架/集合框架概述.md",
     "wiki/MySQL/锁与事务机制.md",
@@ -232,7 +231,6 @@
     "wiki/Java基础/基础语法.md",
     "wiki/Java基础/面向对象.md",
     "wiki/Java基础/包装类与 Object.md",
-    "wiki/Java基础/String.md",
     "未命名 1.canvas",
     "未命名 5.base",
     "link-graph.js",
