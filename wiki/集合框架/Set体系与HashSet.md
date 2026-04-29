@@ -50,7 +50,7 @@ for (String s : set) {
 
 HashSet 会自动去重，因为它是用 HashMap 实现的，HashMap 的键是唯一的，相同键会覆盖掉原来的键，于是第二次 `add` 一个相同键的元素会直接覆盖掉第一次的键。
 
-### **HashSet 和 ArrayList 的区别**
+### HashSet 和 ArrayList 的区别
 
 - **ArrayList** 是基于动态数组实现的，**HashSet** 是基于 HashMap 实现的。
 - **ArrayList** 允许重复元素和 `null` 值，可以有多个相同的元素；**HashSet** 保证每个元素唯一，不允许重复元素，基于元素的 `hashCode` 和 `equals` 方法来确定元素的唯一性。

@@ -7,6 +7,8 @@ last_reviewed: 2026-04-20
 
 # List 体系
 
+## ArrayList 与 LinkedList
+
 ### 🌟ArrayList 和 LinkedList 有什么区别？
 
 ArrayList 是基于数组实现的，LinkedList 是基于链表实现的。
@@ -108,6 +110,8 @@ private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOExceptio
 - **场景**：`java.util.concurrent` 包下的容器都是安全失败，可以在多线程下并发使用，并发修改，比如 `CopyOnWriteArrayList` 类。
 
 ---
+
+## 线程安全
 
 ### 有哪几种实现 ArrayList 线程安全的方法？ 
 
