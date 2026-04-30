@@ -128,33 +128,11 @@ Agent 不是常驻进程，每个对话都是完整的加载-执行-销毁循环
 
 ---
 
-## 五、Memory 和 Session 的区别
+## 五、Memory 系统
 
-### 短期记忆（Session）
+OpenClaw 的 Memory 系统详细机制（两层架构、索引建立、混合检索、按需注入）见 [[Agent核心概念#五、Memory 系统]]。
 
-存储在 `~/.openclaw/agents/{agentId}/sessions/*.jsonl`，自动记录每次对话内容，是最原始的未经处理的记忆。
+此处补充 OpenClaw 特有的实现细节：
 
-### 长期记忆（Memory）
-
-存储在 `~/.openclaw/workspace/MEMORY.md` 和 `memory/*.md`，从短期记忆中提炼出需要重点记住的内容（用户偏好、身份信息、回答偏好等）。
-
-### 两种转换机制
-
-**机制一：session-memory Hook**：用户执行 `/new` 重置会话时触发，自动将上一个会话的关键内容转换为 Markdown 文件。
-
-**机制二：Memory Flush（Compaction）**：Session 接近 context 上限时触发，提取重要信息写入 Memory。
-
-### Memory 索引建立四步
-
-1. **发现**：监控 MEMORY.md 和 memory/*.md 的变化，标记 dirty
-2. **切块**：把 Markdown 切成多个 chunk，每块表达一段完整意思
-3. **索引**：每个 chunk 同时走向量索引（语义召回）和 FTS 全文索引（关键词命中）
-4. **落库**：chunk、元信息、全文索引、向量索引都放到本地 SQLite
-
-**关键架构观点**：Markdown 文件是记忆本体（source of truth），SQLite 只是加速层。
-
-### 混合检索：FTS5 + BM25 + sqlite-vec
-
-- **FTS5 + BM25**：精确词项命中，适合搜索 `nomic-embed-text` 这类精确关键词
-- **sqlite-vec**：语义相似召回，适合"上次说过的那个写作偏好"这类模糊语义查询
-- 两边结果融合返回，互补短板
+- **Session 存储路径**：`~/.openclaw/agents/{agentId}/sessions/*.jsonl`
+- **Memory 存储路径**：`~/.openclaw/workspace/MEMORY.md` 和 `memory/*.md`
