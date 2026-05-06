@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'if [[ \"${tool_input.file_path}\" == *.md ]]; then bash /home/ubuntu/ADgai/dsq/Obsidian/.claude/scripts/validate-md.sh \"${tool_input.file_path}\"; fi'",
+            "timeout": 10000,
+            "exitCodeBehavior": "allow"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(bash /home/ubuntu/ADgai/dsq/Obsidian/.claude/scripts/validate-md.sh *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ]
+  }
+}
