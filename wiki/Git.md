@@ -45,6 +45,7 @@ git checkout -b xxx
 # 2. 开发 → 提交
 git add .
 git commit -m "XXX"
+想要修改commit，可以通过  git commit --amend -m "XXX"
 git push -u origin xxx
 
 # 3. GitHub 上发 PR → 审核 → 合并
