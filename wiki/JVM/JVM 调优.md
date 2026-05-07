@@ -181,9 +181,170 @@ jmap -dump:format=b,file=heap pid
 - 假如是因为长生命周期的对象进入到了老年代，要及时释放资源，比如说 ThreadLocal、数据库连接、IO 资源等。
 - 假如是因为 GC 参数配置不合理导致的频繁 Full GC，可以通过调整 GC 参数来优化 GC 行为，或者直接更换更适合的 GC 收集器，如 G1、ZGC 等。
 
+---
+
+## GC 日志逐行解读
+
+### 怎么看 Parallel / CMS 的 GC 日志？
+
+```
+2026-05-07T10:15:32.123+0800: 45.678: [GC (Allocation Failure)
+  [PSYoungGen: 102400K->12800K(122880K)]
+  204800K->120320K(262144K), 0.0567890 secs]
+  [Times: user=0.15 sys=0.01, real=0.06 secs]
+```
+
+逐段解读：
+
+| 片段 | 含义 |
+|------|------|
+| `45.678` | JVM 启动后 45.678 秒 |
+| `GC (Allocation Failure)` | Minor GC，触发原因是分配失败（Eden 满） |
+| `PSYoungGen: 102400K->12800K(122880K)` | 新生代：GC 前 100M → GC 后 12.5M，总容量 120M |
+| `204800K->120320K(262144K)` | 整个堆：GC 前 200M → GC 后 117.5M，总容量 256M |
+| `0.0567890 secs` | 本次 GC 耗时 ~57ms |
+| `user=0.15 sys=0.01 real=0.06` | 用户态 CPU 0.15s、系统 CPU 0.01s、墙钟时间 0.06s |
+
+==`user` 远大于 `real` 说明是多线程 GC（并行），正常==。
+==`user < real` 或 `sys` 很大要警惕：可能是 GC 线程被操作系统调度抢占、有 IO 抖动==。
+
+---
+
+### G1 的 GC 日志怎么读？
+
+```
+2026-05-07T10:15:32.123+0800: 45.678: [GC pause (G1 Evacuation Pause) (young), 0.0234567 secs]
+   [Parallel Time: 20.1 ms, GC Workers: 8]
+   [Eden: 512.0M(512.0M)->0.0B(520.0M)
+    Survivors: 8.0M->16.0M
+    Heap: 1.5G(2.0G)->1.0G(2.0G)]
+```
+
+关键字：
+
+- ==`G1 Evacuation Pause`==：G1 的核心操作，把存活对象从旧 Region 复制到新 Region
+- ==`(young)`==：只回收年轻代；==`(mixed)`==：混合回收（年轻代 + 部分老年代 Region）
+- ==`Parallel Time`==：并行阶段耗时
+- ==`Eden / Survivors / Heap` 变化==：GC 前后的 Region 分配情况
+
+**G1 特有的 GC 阶段**（完整并发周期）：
+
+```
+[GC pause (G1 Humongous Allocation) (young) (initial-mark)]  ← 初始标记（STW）
+[GC concurrent-root-region-scan-start]                        ← 并发扫描
+[GC concurrent-mark-start]                                    ← 并发标记
+[GC remark]                                                   ← 最终标记（STW）
+[GC cleanup]                                                  ← 清理（STW，统计 Region 回收价值）
+```
+
+---
+
+## 典型故障案例
+
+### 案例 1：CMS Concurrent Mode Failure
+
+**症状**：CMS 日志出现 `concurrent mode failure` + 退化为 Serial Old（单线程 Full GC），STW 几秒。
+
+**根因**：并发清理还没完成，老年代又满了，CMS 没办法只能 STW。
+
+**常见触发场景：**
+
+1. ==`CMSInitiatingOccupancyFraction` 设得太高==（默认 92%，太晚触发 CMS）
+2. ==老年代碎片化严重==，有空间但没连续空间
+3. ==新生代晋升速度过快==，CMS 来不及并发回收
+
+**处理：**
+
+```bash
+# 提前触发 CMS（降低阈值）
+-XX:CMSInitiatingOccupancyFraction=70
+-XX:+UseCMSInitiatingOccupancyOnly    # 只看这个阈值，不自适应
+
+# 控制晋升
+-XX:MaxTenuringThreshold=15            # 年龄阈值
+-XX:SurvivorRatio=8                    # Eden:Survivor = 8:1
+
+# 定期压缩老年代，避免碎片
+-XX:+UseCMSCompactAtFullCollection
+-XX:CMSFullGCsBeforeCompaction=5       # 每 5 次 Full GC 压缩一次
+```
+
+> [!warning] CMS 已在 JDK 14 移除
+> 如果面试官问 CMS，重点不是让你调 CMS，而是考察你是否理解"并发 GC 的核心矛盾"。CMS 的坑基本是 G1 解决的主要问题。
+
+---
+
+### 案例 2：G1 Humongous 对象导致的 Full GC
+
+**症状**：明明堆还很空闲，却频繁 Full GC，日志里有 `G1 Humongous Allocation`。
+
+**根因**：==超过 Region 50% 的大对象直接进老年代 Humongous 区==，且 Humongous 对象在 G1 里回收很激进——JDK 8u40 之前甚至只有 Full GC 才能回收 Humongous。
+
+**定位：**
+
+```bash
+# 看日志里有没有 Humongous 字样
+grep -i "humongous" gc.log
+
+# 找出代码里的大对象
+jmap -histo <pid> | head -20
+```
+
+**典型凶手：**
+
+- 一次性查数据库几十万行，查出大 List/大 String
+- 大的 JSON 序列化后的 byte[]
+- 大的 Excel/PDF 导出缓冲区
+
+**处理：**
+
+```bash
+# 增大 Region，让对象不再算 Humongous
+-XX:G1HeapRegionSize=16m     # 默认 1-32M，按堆大小自适应
+
+# 或者拆分业务：分页查询、流式处理
+```
+
+---
+
+### 案例 3：Metaspace 持续增长导致 Full GC 频繁
+
+**症状**：`Full GC` 频繁，但 `Old Gen` 使用率不高，`Metaspace` 使用率持续上涨。
+
+**根因**：ClassLoader 泄漏 —— 动态生成的类（Groovy、Spring CGLIB、JSP）加载进来但无法被卸载。
+
+**定位：**
+
+```bash
+# JDK 8+
+jcmd <pid> GC.class_stats | sort -k3 -rn | head -20
+
+# 或者 dump 看 ClassLoader
+jmap -clstats <pid>
+```
+
+**典型凶手：**
+
+- Spring Boot DevTools 热部署反复加载
+- Groovy 脚本每次执行都 new GroovyClassLoader
+- Fastjson 1.x 动态生成序列化类未复用
+
+**处理：**
+
+```bash
+# 先让它早 OOM 暴露问题（别无脑调大）
+-XX:MaxMetaspaceSize=256m
+-XX:+HeapDumpOnOutOfMemoryError
+
+# 代码层：复用 ClassLoader、关闭 DevTools、升级 Fastjson 2.x
+```
+
+---
+
 ## 相关链接
 
 - [[JVM 内存管理]] — 内存区域划分是调优的基础
 - [[JVM 垃圾收集]] — GC 收集器选型与 GC 日志分析
+- [[JVM JIT与字节码]] — JIT 预热、CodeCache 调优
 - [[JVM 类加载机制]] — 类加载问题排查
 - [[线程基础与ThreadLocal]] — 线程数与线程栈大小影响内存分配
