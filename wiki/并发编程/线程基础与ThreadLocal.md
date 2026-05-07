@@ -1,8 +1,8 @@
 ---
 module: 并发编程
-tags: [并发, 线程, ThreadLocal]
+tags: [并发, 线程, ThreadLocal, CompletableFuture, Condition]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-07
 ---
 
 # 线程基础与ThreadLocal
@@ -53,7 +53,7 @@ fun main() = runBlocking {
 
 #### 线程间是如何进行通信的？
  原则上可以通过消息传递和共享内存两种方法来实现。Java 采用的是共享内存的并发模型。
- 这个模型被称为 Java 内存模型，简写为 JMM，它决定了一个线程对共享变量的写入，何时对另外一个线程可见。当然了，本地内存是 JMM 的一个抽象概念，并不真实存在。
+ 这个模型被称为 [[Java 内存模型]]，简写为 JMM，它决定了一个线程对共享变量的写入，何时对另外一个线程可见。当然了，本地内存是 JMM 的一个抽象概念，并不真实存在。
  用一句话来概括就是：共享变量存储在主内存中，每个线程的私有本地内存，存储的是这个共享变量的副本。
 
  线程 A 与线程 B 之间如要通信，需要要经历 2 个步骤：
@@ -467,6 +467,65 @@ public class Main {
 ```
  Condition 也提供了类似的方法， await() 负责阻塞、 signal() 和 signalAll() 负责通知。
  通常与锁 ReentrantLock 一起使用，为线程提供了一种等待某个条件成真的机制，并允许其他线程在该条件变化时通知等待线程。
+
+#### Condition 的核心用法？和 wait/notify 有什么区别？
+
+==Condition 最大的优势是支持多个等待队列，可以精准唤醒特定条件的线程==，而 `wait/notify` 只有一个等待队列，只能随机唤醒。
+
+**经典场景：生产者-消费者（有界队列）**
+
+```java
+class BoundedQueue<T> {
+    private final LinkedList<T> queue = new LinkedList<>();
+    private final int capacity;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition notFull = lock.newCondition();   // 队列未满条件
+    private final Condition notEmpty = lock.newCondition();  // 队列非空条件
+
+    public BoundedQueue(int capacity) { this.capacity = capacity; }
+
+    // 生产者
+    public void put(T item) throws InterruptedException {
+        lock.lock();
+        try {
+            while (queue.size() == capacity) {
+                notFull.await();    // 队列满了，等待"未满"信号
+            }
+            queue.addLast(item);
+            notEmpty.signal();      // 通知消费者：队列非空了
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    // 消费者
+    public T take() throws InterruptedException {
+        lock.lock();
+        try {
+            while (queue.isEmpty()) {
+                notEmpty.await();   // 队列空了，等待"非空"信号
+            }
+            T item = queue.removeFirst();
+            notFull.signal();       // 通知生产者：队列未满了
+            return item;
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+```
+
+> [!tip] Condition vs wait/notify 对比
+> | 对比项 | wait/notify | Condition |
+> |--------|------------|-----------|
+> | 所属 | Object 类 | [[锁\|ReentrantLock]] 的 API |
+> | 等待队列 | 只有一个 | 可以有多个（精准唤醒） |
+> | 释放锁 | 自动释放 monitor | 自动释放关联的 Lock |
+> | 超时等待 | `wait(timeout)` | `await(timeout, unit)` 更灵活 |
+> | 中断响应 | 支持 | 支持，还有 `awaitUninterruptibly()` |
+
+> [!warning] 为什么用 while 而不是 if？
+> `await()` 返回后条件可能已经被其他线程改变（虚假唤醒），必须用 `while` 重新检查条件。这是并发编程的基本规范。
  
 #### Exchanger 的使用方式了解吗？
  Exchanger 是一个同步点，可以在两个线程之间交换数据。一个线程调用 exchange() 方法，将数据传递给另一个线程，同时接收另一个线程的数据。
@@ -502,20 +561,84 @@ class Main {
 ```
 
 #### CompletableFuture 的使用方式了解吗？
- CompletableFuture 是 Java 8 引入的一个类，支持异步编程，允许线程在完成计算后将结果传递给其他线程。
-```java
-class Main {
-	public static void main(String[] args) {
-		CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-			// 模拟长时间计算
-			return "Message from CompletableFuture";
-		});
 
-		future.thenAccept(message -> {
-			System.out.println("Received: " + message);
-		});
-	}
-}
+CompletableFuture 是 Java 8 引入的异步编程工具，解决了传统 `Future` 的两大痛点：==不能链式调用==、==get() 会阻塞线程==。
+
+**基本用法：**
+
+```java
+// 1. 异步执行（有返回值）
+CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+    // 在 ForkJoinPool.commonPool() 中执行
+    return queryFromDB();
+});
+
+// 2. 异步执行（无返回值）
+CompletableFuture<Void> future2 = CompletableFuture.runAsync(() -> {
+    sendEmail();
+});
+```
+
+**链式调用（核心优势）：**
+
+```java
+CompletableFuture<String> result = CompletableFuture
+    .supplyAsync(() -> queryUser(userId))        // 异步查询用户
+    .thenApply(user -> user.getName())           // 转换：User → String
+    .thenApply(name -> "Hello, " + name);        // 再转换
+
+// thenApply vs thenCompose
+// thenApply：同步转换（Function<T, R>）
+// thenCompose：异步转换（Function<T, CompletableFuture<R>>），类似 flatMap
+CompletableFuture<Order> orderFuture = userFuture
+    .thenCompose(user -> queryOrderAsync(user.getId()));  // 返回新的 CompletableFuture
+```
+
+**组合多个异步任务：**
+
+```java
+// 两个任务都完成后合并结果
+CompletableFuture<String> nameFuture = CompletableFuture.supplyAsync(() -> queryName());
+CompletableFuture<Integer> ageFuture = CompletableFuture.supplyAsync(() -> queryAge());
+
+CompletableFuture<String> combined = nameFuture.thenCombine(ageFuture,
+    (name, age) -> name + " is " + age + " years old");
+
+// 多个任务全部完成
+CompletableFuture<Void> all = CompletableFuture.allOf(future1, future2, future3);
+
+// 多个任务任一完成（用于竞速）
+CompletableFuture<Object> any = CompletableFuture.anyOf(future1, future2, future3);
+```
+
+**异常处理：**
+
+```java
+CompletableFuture<String> result = CompletableFuture
+    .supplyAsync(() -> riskyOperation())
+    .exceptionally(ex -> {
+        log.error("失败", ex);
+        return "默认值";           // 异常时返回兜底值
+    });
+
+// handle：无论成功失败都会执行
+CompletableFuture<String> result2 = CompletableFuture
+    .supplyAsync(() -> riskyOperation())
+    .handle((value, ex) -> {
+        if (ex != null) return "默认值";
+        return value;
+    });
+```
+
+> [!warning] CompletableFuture 的常见坑
+> 1. 默认使用 `ForkJoinPool.commonPool()`，线程数有限，IO 密集型任务应传入自定义线程池
+> 2. 异常会被"吞掉"——如果不调用 `get()`/`join()`/`exceptionally()`，异常不会抛出
+> 3. `get()` 会阻塞，尽量用 `thenAccept/thenApply` 保持异步
+
+```java
+// 推荐：使用自定义线程池
+ExecutorService ioPool = Executors.newFixedThreadPool(10);
+CompletableFuture.supplyAsync(() -> queryDB(), ioPool);
 ```
 
 ## 线程通信与同步
@@ -940,6 +1063,10 @@ userThreadLocal.set(new User("沉默王二"));
  如果一个线程一直在运行，并且 value 一直指向某个强引用对象，那么这个对象就不会被回收，从而导致内存泄漏。
  
 #### 那怎么解决内存泄漏问题呢？
+
+> [!warning] 必须在 finally 中调用 remove()
+> Key 是弱引用会被 GC 回收，但 Value 是强引用，线程不终止就不会释放。线程池场景下线程复用，泄漏尤为严重。
+
  很简单，使用完 ThreadLocal 后，及时调用 remove() 方法释放内存空间。
 ```java
 try {

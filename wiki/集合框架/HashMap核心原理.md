@@ -2,7 +2,7 @@
 module: 集合框架
 tags: [集合, HashMap, 红黑树, ConcurrentHashMap]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-07
 ---
 
 # HashMap 核心原理
@@ -518,25 +518,118 @@ if (e.hash == hash &&
  
  
  ### 讲讲 LinkedHashMap 怎么实现有序的？ 
- LinkedHashMap 在 HashMap 的基础上维护了一个双向链表，通过 `before` 和 `after` 标识前置节点和后置节点。 
- 从而实现插入的顺序或访问顺序。 
+
+ LinkedHashMap 在 [[HashMap核心原理|HashMap]] 的基础上维护了一个==双向链表==，通过 `before` 和 `after` 标识前置节点和后置节点，从而实现插入顺序或访问顺序。
+
+```java
+// LinkedHashMap 的节点，继承 HashMap.Node，增加了双向链表指针
+static class Entry<K,V> extends HashMap.Node<K,V> {
+    Entry<K,V> before, after;  // 双向链表
+}
+```
+
+**两种排序模式：**
+
+```java
+// 插入顺序（默认）：按 put 的先后顺序遍历
+LinkedHashMap<String, Integer> insertOrder = new LinkedHashMap<>();
+insertOrder.put("B", 2);
+insertOrder.put("A", 1);
+insertOrder.put("C", 3);
+// 遍历顺序：B → A → C（按插入顺序）
+
+// 访问顺序：每次 get/put 都会把该节点移到链表尾部
+LinkedHashMap<String, Integer> accessOrder = new LinkedHashMap<>(16, 0.75f, true);
+accessOrder.put("A", 1);
+accessOrder.put("B", 2);
+accessOrder.put("C", 3);
+accessOrder.get("A");  // A 被移到尾部
+// 遍历顺序：B → C → A（最近访问的在最后）
+```
+
+#### 用 LinkedHashMap 实现 LRU 缓存
+
+==这是面试高频题==，利用访问顺序模式 + 重写 `removeEldestEntry` 即可：
+
+```java
+class LRUCache<K, V> extends LinkedHashMap<K, V> {
+    private final int capacity;
+
+    public LRUCache(int capacity) {
+        super(capacity, 0.75f, true);  // accessOrder = true
+        this.capacity = capacity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > capacity;  // 超过容量时自动删除最久未访问的
+    }
+}
+
+// 使用
+LRUCache<String, String> cache = new LRUCache<>(3);
+cache.put("A", "1");
+cache.put("B", "2");
+cache.put("C", "3");
+cache.get("A");        // A 被访问，移到尾部
+cache.put("D", "4");   // 超过容量，B 被淘汰（最久未访问）
+// 剩余：C → A → D
+```
+
+> [!tip] 面试追问：为什么不直接用 HashMap + 手动维护链表？
+> 可以，但 LinkedHashMap 已经帮你做了。如果面试官要求手写 LRU，就需要 HashMap + 自定义双向链表（`O(1)` 的 get 和 put）。
  
  
  ### 讲讲 TreeMap 怎么实现有序的？ 
- TreeMap 通过 key 的比较器来决定元素的顺序，如果没有指定比较器，那么 key 必须实现 `Comparable` 接口 。 
- 
- TreeMap 的底层是红黑树，红黑树是一种自平衡的二叉查找树，每个节点都大于其左子树中的任何节点，小于其右子节点树种的任何节点。 
- 
+
+ TreeMap 通过 key 的比较器来决定元素的顺序，如果没有指定比较器，那么 key 必须实现 `Comparable` 接口。
+
+ TreeMap 的底层是==红黑树==，红黑树是一种自平衡的二叉查找树，每个节点都大于其左子树中的任何节点，小于其右子节点树中的任何节点。
+
 * 插入或者删除元素时通过旋转和染色来保持树的平衡。 
-* 查找的时候从根节点开始，利用二叉查找树的特点，逐步向左子树或者右子树递归查找，直到找到目标元素。 
- 
- 
+* 查找的时候从根节点开始，利用二叉查找树的特点，逐步向左子树或者右子树递归查找，直到找到目标元素。
+
+#### TreeMap 的自定义排序和范围查询？
+
+```java
+// 自然排序：key 实现 Comparable
+TreeMap<Integer, String> scores = new TreeMap<>();
+scores.put(90, "优秀");
+scores.put(60, "及格");
+scores.put(80, "良好");
+scores.put(70, "中等");
+// 遍历顺序：60 → 70 → 80 → 90（自然升序）
+
+// 自定义 Comparator：按字符串长度排序
+TreeMap<String, Integer> map = new TreeMap<>(Comparator.comparingInt(String::length));
+map.put("apple", 1);
+map.put("hi", 2);
+map.put("banana", 3);
+// 遍历顺序：hi → apple → banana
+
+// 范围查询（TreeMap 独有 API，HashMap 做不到）
+scores.subMap(70, 90);     // {70=中等, 80=良好}（左闭右开）
+scores.headMap(80);        // {60=及格, 70=中等}（小于 80 的）
+scores.tailMap(80);        // {80=良好, 90=优秀}（大于等于 80 的）
+scores.floorKey(75);       // 70（小于等于 75 的最大 key）
+scores.ceilingKey(75);     // 80（大于等于 75 的最小 key）
+scores.firstKey();         // 60（最小 key）
+scores.lastKey();          // 90（最大 key）
+```
+
+> [!warning] TreeMap 的 key 不能为 null
+> HashMap 允许一个 null key，但 TreeMap 不允许，因为需要通过比较器比较 key 的大小，null 无法参与比较。
+
  ### TreeMap 和 HashMap 的区别 
-*   **HashMap** 是基于数组+链表+红黑树实现的，`put` 元素的时候会先计算 key 的哈希值，然后通过哈希值计算出元素在数组中的存放下标，然后将元素插入到指定的位置，如果发生哈希冲突，会使用链表来解决，如果链表长度大于 8，会转换为红黑树。 
-*   **TreeMap** 是基于红黑树实现的，`put` 元素的时候会先判断根节点是否为空，如果为空，直接插入到根节点，如果不为空，会通过 key 的比较器来判断元素应该插入到左子树还是右子树。 
- 
- 在没有发生哈希冲突的情况下，HashMap 的查找效率是 $O(1)$ 。适用于查找操作比较频繁的场景。 
- TreeMap 的查找效率是 $O(logn)$ 。并且保证了元素的顺序，因此适用于需要大量范围查找或者有序遍历的场景。 
+
+| 对比项 | HashMap | TreeMap |
+|--------|---------|---------|
+| 底层结构 | 数组 + 链表 + 红黑树 | 纯红黑树 |
+| 是否有序 | 无序 | 按 key 排序 |
+| 查找效率 | $O(1)$（无冲突） | $O(\log n)$ |
+| null key | 允许一个 | 不允许 |
+| 适用场景 | 快速查找 | 范围查询、有序遍历 |
+| 线程安全 | 否（用 [[并发工具类\|ConcurrentHashMap]]） | 否（用 `Collections.synchronizedSortedMap`） |
 
 ## 相关链接
 

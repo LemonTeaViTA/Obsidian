@@ -1,8 +1,8 @@
 ---
 module: Java基础
-tags: [Java, 反射, 注解, Lambda, Stream]
+tags: [Java, 反射, 注解, Lambda, Stream, Optional]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-07
 ---
 
 # 注解、反射与 Java 8
@@ -12,7 +12,7 @@ last_reviewed: 2026-04-20
 
 **答案：**
 
-注解本质是”元数据标记”，用于在编译期或运行期驱动行为。本质上是一个继承了 `Annotation` 的接口，运行时由 JVM 用动态代理实现。
+注解本质是==元数据标记==，用于在编译期或运行期驱动行为。本质上是一个继承了 `Annotation` 的接口，运行时由 JVM 用动态代理实现。
 
 **四个元注解（修饰注解的注解）：**
 
@@ -58,7 +58,7 @@ System.out.println(log.value());  // “查询用户”
 
 **答案：**
 
-反射允许在**运行时**检查并操作类信息（字段、方法、构造器），即使在编译期不知道具体类型。
+==反射允许在运行时检查并操作类信息==（字段、方法、构造器），即使在编译期不知道具体类型。
 
 **核心 API：**
 
@@ -85,8 +85,8 @@ Object result = method.invoke(user, "参数");
 ```
 
 **典型应用：**
-- Spring IoC：通过反射创建 Bean、注入依赖
-- JDK 动态代理：基于反射调用目标方法
+- [[Spring 基础与 IoC|Spring IoC]]：通过反射创建 Bean、注入依赖
+- [[AOP 与动态代理|JDK 动态代理]]：基于反射调用目标方法
 - 测试框架（JUnit）：自动发现并执行 `@Test` 方法
 - 序列化框架（Jackson）：通过反射读写字段
 
@@ -122,7 +122,7 @@ Object result = method.invoke(user, "参数");
 
 **答案：**
 
-Lambda 是函数式接口实例的简写形式，核心作用是让行为参数化，减少样板代码。
+Lambda 是函数式接口实例的简写形式，核心作用是==让行为参数化，减少样板代码==。
 
 ```java
 // 传统匿名内部类
@@ -225,7 +225,7 @@ Map<Integer, List<String>> byLength = names.stream()
     .collect(Collectors.groupingBy(String::length));
 ```
 
-**惰性求值（重要）：**
+**==惰性求值==（重要）：** ==中间操作不立即执行，只有遇到终端操作才触发==
 
 ```java
 // 中间操作不立即执行，只有遇到终端操作才触发
