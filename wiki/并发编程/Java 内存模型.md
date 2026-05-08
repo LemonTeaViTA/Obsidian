@@ -2,13 +2,11 @@
 module: 并发编程
 tags: [并发, JMM, volatile, happens-before]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-08
 ---
 
 # Java 内存模型
 
-> 来源： [并发编程篇](../并发编程篇.md)
-> 关联： [volatile](volatile.md), [synchronized](synchronized.md)
 ## 核心结论
 Java 内存模型描述了线程之间共享变量的可见性、有序性和原子性问题。
 ## 入口

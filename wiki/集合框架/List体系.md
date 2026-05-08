@@ -2,7 +2,7 @@
 module: 集合框架
 tags: [集合, List, ArrayList, LinkedList]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-08
 ---
 
 # List 体系

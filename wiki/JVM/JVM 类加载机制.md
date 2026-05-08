@@ -2,7 +2,7 @@
 module: JVM
 tags: [JVM, 类加载, 双亲委派]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-07
 ---
 
 # JVM 类加载机制
@@ -61,60 +61,19 @@ last_reviewed: 2026-04-20
 
 ### Class 文件的结构长什么样？
 
-==Class 文件是一组以 8 字节为单位的二进制流==，结构严格固定：
+==Class 文件是一组以 8 字节为单位的二进制流==，以魔数 `0xCAFEBABE` 开头，包含常量池、访问标志、字段表、方法表（含字节码）等结构。主版本号标识编译时的 JDK 版本（JDK 8=52, JDK 17=61）。
 
-```
-ClassFile {
-    u4  magic;                // 魔数 0xCAFEBABE，标识这是合法的 class 文件
-    u2  minor_version;        // 次版本号
-    u2  major_version;        // 主版本号：JDK 8=52, JDK 11=55, JDK 17=61, JDK 21=65
-    u2  constant_pool_count;
-    cp_info constant_pool[];  // 常量池：字符串/类名/方法签名的字面量
-    u2  access_flags;         // public/final/abstract 等标志位
-    u2  this_class;
-    u2  super_class;
-    u2  interfaces_count;
-    u2  interfaces[];
-    u2  fields_count;
-    field_info fields[];      // 字段表
-    u2  methods_count;
-    method_info methods[];    // 方法表（包含字节码）
-    u2  attributes_count;
-    attribute_info attributes[];
-}
-```
+查看字节码：`javap -v -p MyClass.class`
 
-**查看命令：**
-
-```bash
-# 看字节码助记符 + 常量池
-javap -v -p MyClass.class
-
-# 十六进制查看原始字节（确认魔数）
-xxd MyClass.class | head -1
-# 输出：00000000: cafe babe 0000 0034 ...    ← 0x0034 = 52 = JDK 8
-```
-
-> [!tip] "高版本 JDK 跑不了低版本 class"的真相
-> 错误 `Unsupported class file version 61.0` 就是指：运行时 JVM 主版本号低于 61（JDK 17），但 class 文件要求 61。JVM 只能**向下兼容**运行旧版本 class，不能向上。
+完整的 ClassFile 结构定义和查看命令见 [[JVM JIT与字节码#类文件结构（Class File）]]。
 
 ---
 
 ### 五大 invoke 指令族
 
-Java 方法调用在字节码层面对应 5 条指令：
+Java 方法调用在字节码层面对应 5 条指令：`invokestatic`（静态方法）、`invokespecial`（构造器/private/super）、`invokevirtual`（实例方法，动态分派）、`invokeinterface`（接口方法）、`invokedynamic`（Lambda/动态绑定）。
 
-| 指令 | 调用对象 | 分派方式 | 典型场景 |
-|------|---------|---------|---------|
-| `invokestatic` | 静态方法 | 静态分派（编译期确定） | `Math.max(a, b)` |
-| `invokespecial` | 构造器、private、super.X | 静态分派 | `new X()`、`super.method()` |
-| `invokevirtual` | 普通实例方法 | **动态分派**（运行时查 vtable） | `list.add(x)` |
-| `invokeinterface` | 接口方法 | **动态分派**（查 itable） | `map.get(k)` |
-| `invokedynamic` | 动态绑定 | **运行时通过 BootstrapMethod 解析** | Lambda、字符串拼接（JDK9+） |
-
-==前 4 种的目标方法在编译期或加载期就能确定，`invokedynamic` 是 JDK 7 才引入的"终极动态"==——调用点的链接动作被推迟到运行时，由用户提供的引导方法（Bootstrap Method）决定最终调用谁。
-
-详细讲解（含 Lambda 实现原理）见 [[JVM JIT与字节码#五大 invoke 指令族（面试高频）]]。
+详细对比表格、代码示例和 Lambda 实现原理见 [[JVM JIT与字节码#五大 invoke 指令族（面试高频）]]。
 
 ---
 

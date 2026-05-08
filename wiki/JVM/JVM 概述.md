@@ -2,7 +2,7 @@
 module: JVM
 tags: [JVM, 架构]
 difficulty: easy
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-08
 ---
 
 # JVM 概述

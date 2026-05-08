@@ -2,7 +2,7 @@
 module: JVM
 tags: [JVM, 内存模型, 堆, 栈, 方法区]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-07
 ---
 
 # JVM 内存管理
@@ -188,17 +188,7 @@ ByteBuffer direct = ByteBuffer.allocateDirect(1024);
 
 当对象不再被任何引用指向时，就会变成垃圾。垃圾收集器会通过可达性分析算法判断对象是否存活，如果对象不可达，就会被回收。
 
-垃圾收集器通过标记清除、标记复制、标记整理等算法来回收内存，将对象占用的内存空间释放出来。
-
-不同参数代表对应的垃圾收集器：
-
-| 新生代 | 老年代 | JVM 参数 |
-|--------|--------|----------|
-| Serial | Serial | `-XX:+UseSerialGC` |
-| Parallel Scavenge | Serial | `-XX:+UseParallelGC -XX:-UseParallelOldGC` |
-| Parallel Scavenge | Parallel Old | `-XX:+UseParallelGC -XX:+UseParallelOldGC` |
-| ParNew | CMS | `-XX:+UseParNewGC -XX:+UseConcMarkSweepGC` |
-| G1 | G1 | `-XX:+UseG1GC` |
+垃圾收集器通过标记清除、标记复制、标记整理等算法来回收内存。各收集器的详细对比和参数配置见 [[JVM 垃圾收集#🌟知道哪些垃圾收集器？]]。
 
 ### 堆内存是如何分配的？
 
@@ -404,53 +394,11 @@ public void testStackAllocation() {
 }
 ```
 
-#### 什么是逃逸分析？
+#### 逃逸分析的详细原理？
 
-逃逸分析是一种 JVM 优化技术，用来分析对象的作用域和生命周期，判断对象是否逃逸出方法或线程。如果对象没有逃逸，就可以进行栈上分配、同步消除、标量替换等优化。
+逃逸分析是 JIT 编译器的核心优化技术，分析对象是否逃逸出方法或线程，从而确定是否做栈上分配、同步消除、标量替换。
 
-```bash
-java -XX:+PrintFlagsFinal -version | grep DoEscapeAnalysis
-```
-
-#### 逃逸具体是指什么？
-
-方法逃逸：对象被方法外部的代码引用，生命周期超出了方法的范围：
-
-```java
-public Person createPerson() {
-    return new Person(); // 对象逃逸出方法
-}
-```
-
-线程逃逸：对象被另外一个线程引用，生命周期超出了当前线程：
-
-```java
-public void threadEscapeExample() {
-    Person p = new Person();
-    new Thread(() -> {
-        System.out.println(p);
-    }).start();
-}
-```
-
-#### 逃逸分析会带来什么好处？
-
-第一，如果确定一个对象不会逃逸，那么就可以考虑栈上分配，垃圾收集的压力就降低很多。
-
-第二，如果逃逸分析能够确定一个对象不会逃逸出线程，那么这个对象就不用加锁，从而减少线程同步的开销。
-
-第三，如果对象的字段在方法中独立使用，JVM 可以将对象分解为标量变量，避免对象分配：
-
-```java
-// 优化前
-Point p = new Point(1, 2);
-System.out.println(p.getX() + p.getY());
-
-// 优化后（标量替换）
-int x = 1;
-int y = 2;
-System.out.println(x + y);
-```
+详细原理（方法逃逸/线程逃逸的判定、三大优化的代码示例）见 [[JVM JIT与字节码#逃逸分析的三大优化]]。
 
 ## 内存溢出与内存泄漏
 

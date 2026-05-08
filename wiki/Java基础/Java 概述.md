@@ -2,8 +2,7 @@
 module: Java基础
 tags: [Java, 基础, JVM, 跨平台]
 difficulty: easy
-last_reviewed: 2026-05-20
-aliases: [Java概述, Java简介]
+last_reviewed: 2026-05-08
 ---
 
 # Java 概述

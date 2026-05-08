@@ -1,10 +1,8 @@
 ---
-aliases:
-  - 并发编程
-  - Java Concurrency
-tags:
-  - java/并发编程
-  - MOC
+module: 并发编程
+tags: [并发编程, MOC]
+difficulty: hard
+last_reviewed: 2026-05-08
 ---
 
 # Java 并发编程 MOC (Map of Content)

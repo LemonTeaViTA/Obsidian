@@ -1,10 +1,8 @@
 ---
-aliases:
-  - JVM
-  - Java 虚拟机
-tags:
-  - java/jvm
-  - MOC
+module: JVM
+tags: [JVM, MOC]
+difficulty: hard
+last_reviewed: 2026-05-08
 ---
 
 # JVM 篇 MOC (Map of Content)
@@ -49,3 +47,9 @@ tags:
 
 > **学习笔记提示**：
 > JVM 不是靠死记硬背的理论概念！在学习过程中，必须在脑海里建立**动态内存快照**（如：一个对象分配了多少字节、它在栈还是在堆上生存、它是怎么一步步熬过 Minor GC 进入老年代的），并结合具体命令实敲分析，才是真正的进阶。
+
+## 相关链接
+
+- [[Java基础索引_MOC]] — Java 语言基础是理解 JVM 的前提
+- [[并发编程索引_MOC]] — JMM、volatile、synchronized 与 JVM 内存模型紧密关联
+- [[集合框架索引_MOC]] — HashMap 扩容、ConcurrentHashMap 锁机制涉及 JVM 对象分配

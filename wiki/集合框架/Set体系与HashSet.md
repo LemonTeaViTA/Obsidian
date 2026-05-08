@@ -2,7 +2,7 @@
 module: 集合框架
 tags: [集合, Set, HashSet]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-08
 ---
 
 # Set 体系与 HashSet

@@ -2,7 +2,7 @@
 module: JVM
 tags: [JVM, 调优, GC调优, 性能]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-08
 ---
 
 # JVM 调优

@@ -33,6 +33,67 @@ private volatile String itwanger = "沉默王二";
 ```
  ③、有序性 ：程序的执行顺序按照代码的先后顺序执行，在多线程环境下，需要保证指令不会因为 JVM 的指令重排序而导致执行顺序与预期不符。
 
+### volatile 关键字的作用？
+
+volatile 有两个核心作用：**保证可见性** 和 **禁止指令重排**，但不保证原子性。
+
+**1. 保证可见性**
+
+普通变量：线程 A 修改后存在自己的工作内存，线程 B 不一定能看到最新值。加了 volatile 之后，写操作立即刷新到主内存，读操作每次都从主内存重新读取。
+
+```java
+// 没有 volatile，线程 B 可能永远看不到 flag = true
+private boolean flag = false;
+
+// 加了 volatile，线程 B 能立即看到线程 A 的修改
+private volatile boolean flag = false;
+```
+
+**2. 禁止指令重排（内存屏障）**
+
+经典场景：双重检查锁（DCL）单例模式
+
+```java
+public class Singleton {
+    private static volatile Singleton instance; // 必须加 volatile
+
+    public static Singleton getInstance() {
+        if (instance == null) {
+            synchronized (Singleton.class) {
+                if (instance == null) {
+                    instance = new Singleton(); // 分三步：分配内存→初始化→赋值引用
+                }
+            }
+        }
+        return instance;
+    }
+}
+```
+
+不加 volatile 时，"初始化"和"赋值引用"两步可能被重排，导致另一个线程拿到未初始化完成的对象。
+
+**3. 不保证原子性**
+
+```java
+volatile int count = 0;
+count++; // 不是原子操作！= read + modify + write 三步
+```
+
+需要原子性时用 `AtomicInteger` 或 `synchronized`。
+
+> [!warning] volatile 不能替代锁
+> volatile 只保证可见性和有序性，不保证原子性。`count++` 这类复合操作在多线程下仍然不安全，必须用 `AtomicInteger` 或 `synchronized`。
+
+**volatile vs synchronized**：
+
+| | volatile | synchronized |
+|---|---|---|
+| 可见性 | ✅ | ✅ |
+| 有序性 | ✅（禁止重排） | ✅ |
+| 原子性 | ❌ | ✅ |
+| 性能 | 轻量 | 重量（涉及锁） |
+| 适用场景 | 状态标志位、DCL 单例 | 复合操作、临界区 |
+
 ### 🌟说说进程和线程的区别？
  进程说简单点就是我们在电脑上启动的一个个应用。它是操作系统分配资源的最小单位。
  线程是进程中的独立执行单元。多个线程可以共享同一个进程的资源，如内存；每个线程都有自己独立的栈和寄存器。
