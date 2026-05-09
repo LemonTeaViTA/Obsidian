@@ -1,3 +1,10 @@
+---
+module: LLM
+tags: [LLM, AI编程, Claude Code, Codex, Cursor]
+difficulty: medium
+last_reviewed: 2026-05-09
+---
+
 # AI 编程工具
 
 > 本文对比主流 AI 编程工具（Claude Code、Codex、Cursor），分析它们与传统 IDE 的本质区别。
@@ -103,8 +110,13 @@ Cursor 的架构演进是 Harness Engineering 的典型案例：
 
 **MCP（Model Context Protocol）**：AI 编程工具通过 MCP 接入外部能力——代码库索引、数据库查询、CI/CD 系统、文档系统。MCP 是标准化的工具接入协议，工具只需实现一次，所有支持 MCP 的 AI 工具都能调用。
 
-> MCP 详细介绍 → [[LLM/04_Agent核心概念#四、MCP 协议]]
+> MCP 详细介绍 → [[LLM/Agent核心概念#四、MCP 协议]]
 
 **CLI 设计**：Claude Code 和 Codex 本身就是 CLI 工具。好的 AI 编程工具 CLI 的特点：非交互式（所有参数一次性传入）、JSON 输出（AI 直接解析）、支持 `--dry-run` 预览危险操作。
 
-> CLI 设计原则 → [[LLM/06_Agent工程实践#三、CLI 设计]]
+> CLI 设计原则 → [[LLM/Agent工程实践#三、CLI 设计]]
+
+## 相关链接
+
+- [[Agent核心概念]] — AI 编程工具本质是 Coding Agent
+- [[Harness Engineering]] — Harness 思想驱动 AI 编程工具设计

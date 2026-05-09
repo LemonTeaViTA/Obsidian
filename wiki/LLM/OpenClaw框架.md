@@ -1,3 +1,10 @@
+---
+module: LLM
+tags: [LLM, Agent, OpenClaw, 多Agent路由]
+difficulty: medium
+last_reviewed: 2026-05-09
+---
+
 # OpenClaw 框架
 
 > OpenClaw（龙虾）是一个 Agent 框架，支持多 Agent 路由、Gateway 网关、Memory 管理等核心能力。
@@ -136,3 +143,8 @@ OpenClaw 的 Memory 系统详细机制（两层架构、索引建立、混合检
 
 - **Session 存储路径**：`~/.openclaw/agents/{agentId}/sessions/*.jsonl`
 - **Memory 存储路径**：`~/.openclaw/workspace/MEMORY.md` 和 `memory/*.md`
+
+## 相关链接
+
+- [[框架选型]] — OpenClaw vs Hermes 对比
+- [[Agent核心概念]] — 多 Agent 协作模式

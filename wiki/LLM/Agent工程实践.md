@@ -1,3 +1,10 @@
+---
+module: LLM
+tags: [LLM, Agent, LangChain, LangGraph, 可观测性, 成本控制]
+difficulty: hard
+last_reviewed: 2026-05-09
+---
+
 # Agent 工程实践
 
 
@@ -230,7 +237,7 @@ LangGraph 的两个独特能力：
 
 ## 七、LLM 基础与训练
 
-> Transformer 架构、大模型训练三阶段、RLHF vs DPO 完整内容见 [[LLM/01_LLM基础与训练]]。
+> Transformer 架构、大模型训练三阶段、RLHF vs DPO 完整内容见 [[LLM/LLM基础与训练]]。
 
 ---
 ## 八、微服务与可观测性
@@ -558,6 +565,65 @@ Agent 场景下的 Prompt Injection 比普通 LLM 应用危险得多，因为 Ag
 
 ---
 
+## 八-D、Agent 2025-2026 新趋势
+
+### Context Engineering 取代 Prompt Engineering
+
+**范式转变**：Shopify CEO Toby Lutke 提出"Context Engineering"概念——Prompt Engineering 只关注一条指令怎么写，Context Engineering 关注的是**在 LLM 调用时，如何组装最优的完整输入**，包括系统指令、工具描述、检索结果、对话历史、Memory、元数据等所有上下文。
+
+**为什么重要**：Agent 的每次 LLM 调用，Prompt 文本本身可能只占 5%，剩下 95% 是动态组装的上下文。真正决定 Agent 质量的不是那 5% 的措辞，而是上下文的选择、排列和压缩策略。
+
+**Context Engineering 的五个维度**：
+
+| 维度 | 内容 | 典型技术 |
+|------|------|---------|
+| 指令层 | System Prompt + 任务约束 | Harness Engineering、CLAUDE.md |
+| 知识层 | 外部知识注入 | RAG、Knowledge Graph |
+| 记忆层 | 历史交互信息 | Memory 系统、对话摘要 |
+| 工具层 | 可用能力描述 | Function Calling、MCP |
+| 约束层 | 输出格式、安全边界 | JSON Schema、Guard Rails |
+
+> [!tip] 面试高频
+> 被问到"Prompt Engineering"时主动提及 Context Engineering 的演进，展示对 Agent 工程化的深度理解。核心论点：**单次 Prompt 优化的收益天花板很低，真正的杠杆在于上下文管理系统的设计**。
+
+### Computer Use / Browser Use
+
+**是什么**：让 Agent 像人类一样操作桌面 GUI 和浏览器——点击按钮、填写表单、截图理解页面、导��网页。
+
+**技术路线**：
+- **截图 + 多模态理解**：Agent 截取屏幕画面，用多模态 LLM 理解 UI 元素位置和含义，输出鼠标坐标和操作指令（Anthropic Claude Computer Use）
+- **DOM 解析 + 结构化操作**：Agent 直接解析网页 DOM 树，通过 CSS 选择器精确操作元素（Browser Use、Playwright MCP）
+
+**价值**：打通"最后一公里"——很多企业内部系统没有 API，只有 Web 界面。Computer Use 让 Agent 能操作任何有 GUI 的软件，不再依赖 API 集成。
+
+### Agent 评估基准（Benchmarks）
+
+| 基准 | 评估维度 | 代表性任务 |
+|------|---------|-----------|
+| **SWE-bench** | 代码修复能力 | 给定 GitHub Issue，Agent 自主定位 bug 并提交 PR |
+| **GAIA** | 通用 Agent 能力 | 多步推理 + 工具调用 + 网页浏览的综合任务 |
+| **WebArena** | 浏览器操作 | 在真实网站上完成购物、信息查找等任务 |
+| **τ-bench** | 工具使用可靠性 | 多轮对话中工具调用的准确性和鲁棒性 |
+
+> [!warning] Benchmark ≠ 生产能力
+> SWE-bench Verified 上 Claude 4 解决率超过 72%，但这是在理想条件下（单 Issue、清晰描述、有测试用例）。生产环境中 Agent 面对的是模糊需求、多文件变更、缺少测试的场景，实际成功率会大幅下降。
+
+### 2026 Agent 技术趋势
+
+1. **Agent-to-Agent 协议（A2A）**：Google 提出的标准协议，让不同厂商的 Agent 之间能发现能力、协商任务、交换结果。MCP 解决 Agent-to-Tool，A2A 解决 Agent-to-Agent
+2. **长期记忆与个性化**：Agent 从"无状态工具"进化为"有记忆的助手"，跨会话保留用户偏好和工作上下文
+3. **Agent 安全框架成熟**：OWASP Top 10 for LLM 和 Agent 的安全标准逐步建立，Prompt Injection 防御从"最佳实践"变为"工程标准"
+4. **端侧 Agent**：Apple Intelligence、Gemini Nano 等让 Agent 在手机端本地运行，隐私敏感场景不再依赖云端
+
+---
+
 ## 九、Harness Engineering
 
 > 完整内容已独立为 [[Harness Engineering]]，包含三代进化、四大原则、六大核心组件、企业级实战经验（OpenAI Codex / Stripe Minions / Cursor）、Generator-Evaluator 架构、落地路径，以及 DeerFlow / GitNexus / claude-code-from-scratch 等相关开源项目。
+
+## 相关链接
+
+- [[Agent核心概念]] — Agent 理论基础
+- [[Agent Skills体系]] — Skills 的工程管理
+- [[LLM基础与训练]] — 模型选型影响 Agent 效果
+- [[框架选型]] — OpenClaw/Hermes 框架对比

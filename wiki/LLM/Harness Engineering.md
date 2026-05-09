@@ -1,3 +1,10 @@
+---
+module: LLM
+tags: [LLM, Harness, Generator-Evaluator, 工程实践]
+difficulty: hard
+last_reviewed: 2026-05-09
+---
+
 # Harness Engineering
 
 ## 一、从 Prompt Engineering 到 Harness Engineering：三代进化
@@ -203,3 +210,9 @@ AGENTS.md 告诉 Agent 怎么构建项目，**DESIGN.md** 告诉 Agent 项目应
 > 项目地址：https://github.com/FareedKhan-dev/claude-code-from-scratch
 
 > 来源：[小白剖析Claude Code：基于Harness Engineering 智能体系统](https://mp.weixin.qq.com/s?__biz=MzIwNDA5NDYzNA==&mid=2247511570&idx=1&sn=4de78a89b6b9793b0bfa29e9ad92426a&chksm=97f2689a75d3a9bc44d0ebc1316799103d121268cd198f2df2cca66f0acf245bbde70b7f2399&mpshare=1&scene=24&srcid=04086fH5u1mTMY9RpkP44I1O&sharer_shareinfo=699f02024605e87cc162c44a7b8ddfad&sharer_shareinfo_first=699f02024605e87cc162c44a7b8ddfad#rd)
+
+## 相关链接
+
+- [[Prompt与Harness]] — Prompt 到 Harness 的演进
+- [[Agent工程实践]] — Harness 在 Agent 中的应用
+- [[LLM基础与训练]] — 模型能力是 Harness 的基础

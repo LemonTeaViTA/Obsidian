@@ -1,3 +1,10 @@
+---
+module: LLM
+tags: [RAG, 文档解析, 分片, Embedding, 架构]
+difficulty: hard
+last_reviewed: 2026-05-09
+---
+
 # RAG 基础与架构
 
 ## 一、RAG 是什么
@@ -24,6 +31,9 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 
 **RAG vs 微调：** 微调把知识烧进权重，更新成本高；RAG 把知识放在外部，随时可改。企业知识库首选 RAG。
 
+> [!tip] RAG 不是万能的
+> RAG 适合"需要事实依据的问答"，不适合"需要推理或创造的任务"。比如写诗、做数学题、设计架构方案——这些场景 RAG 检索到的文档反而会干扰模型的自由推理。选型时先问：**这个任务的答案是"在某个文档里"还是"需要模型思考出来"？**
+
 ---
 
 ## 二、系统架构：离线 + 在线两阶段
@@ -35,6 +45,9 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 ```
 
 五个模块缺一不可，任何一步出问题都会导致后续全崩。
+
+> [!warning] 分块（Chunking）是 RAG 质量的最大杠杆
+> 实践中 80% 的 RAG 质量问题可以追溯到分块策略不当：chunk 太大导致噪声多、相关性差；chunk 太小导致上下文缺失、答案碎片化。优先优化分块，收益远大于换 Embedding 模型或调检索参数。
 
 ### 在线阶段（查询响应）
 
@@ -412,3 +425,10 @@ class ChunkMetadata:
 - [[百万级扩展方案]] — 百万级文档的存储与检索压力应对
 - [[对话上下文管理]] — 上下文截断、摘要压缩、多轮对话管理
 - [[Agent核心概念]] — Agent 架构中 RAG 的定位（Memory vs RAG）
+
+## 相关链接
+
+- [[RAG检索策略]] — 检索召回的具体策略
+- [[RAG向量与Embedding]] — 向量数据库与 Embedding 选型
+- [[RAG高级技术]] — Agentic RAG / GraphRAG / 自反思 RAG
+- [[LLM基础与训练]] — Embedding 模型是 RAG 的核心组件
