@@ -2,7 +2,7 @@
 module: Spring
 tags: [Spring, AOP, 动态代理, CGLIB, JDK代理]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # AOP 与动态代理
@@ -100,6 +100,9 @@ OOP 通过类和对象封装数据和行为，专注于核心业务逻辑。AOP 
 CGLIB 则是一个第三方的字节码生成库，它通过 ASM 字节码框架动态生成目标类的子类，然后重写父类的方法来插入切面逻辑。
 
 在 Spring Boot 2.0 之后，Spring AOP 默认使用 CGLIB 代理。这是因为 Spring Boot 追求"约定优于配置"，选择 CGLIB 可以简化开发者的心智负担，避免因为忘记实现接口而导致 AOP 不生效的问题。
+
+> [!tip] Spring Boot 2.0+ 为什么改默认为 CGLIB？
+> 因为 JDK 动态代理要求目标类必须实现接口，而实际开发中大量 Service 类并没有接口（直接写 `@Service public class UserService`）。统一用 CGLIB 避免了"有接口走 JDK 代理、无接口走 CGLIB"的不一致行为，减少了"AOP 怎么不生效"的困惑。如果想改回 JDK 代理：`spring.aop.proxy-target-class=false`。
 
 #### 选择 CGLIB 还是 JDK 动态代理？
 

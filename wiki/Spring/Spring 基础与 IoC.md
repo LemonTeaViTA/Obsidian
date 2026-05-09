@@ -2,7 +2,7 @@
 module: Spring
 tags: [Spring, IoC, Bean, 依赖注入]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # Spring 基础与 IoC
@@ -371,6 +371,9 @@ Spring 为了解决循环依赖的问题，还用了三级缓存：
 - `earlySingletonObjects`：二级缓存，存放早期暴露的单例 Bean（解决循环依赖）
 - `singletonFactories`：三级缓存，存放单例 Bean 工厂
 
+> [!warning] 三级缓存只能解决单例 Setter 注入的循环依赖
+> 如果是**构造器注入**的循环依赖（A 构造器依赖 B，B 构造器依赖 A），三级缓存帮不了——因为 Bean 连实例都还没创建，没法提前暴露。Spring 会直接报 `BeanCurrentlyInCreationException`。**面试常考的跟进问题：什么情况下三级缓存解决不了？答：构造器注入。**
+
 ## 依赖注入
 
 ### 为什么IDEA不推荐使用@Autowired注解注入Bean？
@@ -388,6 +391,9 @@ Spring 为了解决循环依赖的问题，还用了三级缓存：
 首先从来源上说，`@Autowired` 是 Spring 框架提供的注解，而 `@Resource` 是 Java EE 标准提供的注解。
 
 从注入方式上说，`@Autowired` 默认按照类型（byType）进行注入，而 `@Resource` 默认按照名称（byName）进行注入。
+
+> [!tip] 阿里 Java 手册推荐用 @Resource
+> 阿里巴巴 Java 开发手册建议使用 `@Resource` 而非 `@Autowired`，原因是：`@Resource` 是 JDK 标准注解（`javax.annotation`），不与 Spring 耦合；而且它先按 name 再按 type 匹配，在多实现类场景下行为更可预测。
 
 当容器中存在多个相同类型的 Bean 时，直接用 `@Autowired` 注入就会报错，因为 Spring 容器不知道该注入哪个实现类。这时候有两种解决方案：使用 `@Autowired + @Qualifier` 指定具体的 Bean 名称，或者使用 `@Resource` 注解按名称进行注入。
 

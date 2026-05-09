@@ -2,7 +2,7 @@
 module: Spring
 tags: [Spring, 事务, 声明式事务, Transactional]
 difficulty: hard
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # Spring 事务
@@ -87,6 +87,9 @@ Spring 定义了七种事务传播行为：
 - **MANDATORY**：必须在一个已有的事务中执行，否则抛出异常。
 - **NEVER**：必须在没有事务的情况下执行，否则抛出异常。
 - **NESTED**：嵌套事务。父事务回滚，它肯定也得回滚。但它自己回滚，却不会影响到父事务。这个特性在处理一些批量操作、希望能部分回滚的场景下特别有用。需要数据库支持 Savepoint 功能，MySQL 就支持。
+
+> [!tip] 面试最爱问的传播行为组合
+> "A 方法调 B 方法，A 是 REQUIRED，B 是 REQUIRES_NEW，A 抛异常 B 会回滚吗？"——**不会**。B 是独立事务，A 的回滚影响不到 B。反过来 B 抛异常如果 A 没 catch，那 A 也会被回滚。这个问题必须能秒答。
 
 #### 事务能在新线程中传播吗？
 

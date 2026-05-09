@@ -2,7 +2,7 @@
 module: Redis
 tags: [Redis, 数据类型]
 difficulty: easy
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # Redis 基础
@@ -45,37 +45,7 @@ docker run -d --name redis -p 6379:6379 redis:7.0-alpine
 
 #### Redis 的高可用方案有部署过吗？
 
-有部署过哨兵机制，生产环境部署的是一主两从的 Redis 实例，再加上三个 Sentinel 节点监控它们。
-
-```ini
-# 主节点配置
-port 6379
-appendonly yes
-
-# 从节点配置
-replicaof 192.168.1.10 6379
-
-# 哨兵节点配置
-sentinel monitor mymaster 192.168.1.10 6379 2
-sentinel down-after-milliseconds mymaster 5000
-sentinel failover-timeout mymaster 60000
-sentinel parallel-syncs mymaster 1
-```
-
-当主节点发生故障时，Sentinel 能够自动检测并协商选出新的主节点，这个过程大概需要 10-15 秒。
-
-另一个大型项目中，使用了 Redis Cluster 集群方案，部署了 6 个节点（3主3从）：
-
-```bash
-redis-server redis-7000.conf
-redis-server redis-7001.conf
-# ...
-
-redis-cli --cluster create \
-  127.0.0.1:7000 127.0.0.1:7001 127.0.0.1:7002 \
-  127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 \
-  --cluster-replicas 1
-```
+有部署过哨兵机制（一主两从 + 三个 Sentinel），也部署过 Redis Cluster（3 主 3 从）。详细的部署配置、主从复制原理、哨兵选举机制和 Cluster 哈希槽分片见 [[高可用与集群]]。
 
 ### Redis 可以用来干什么？
 
@@ -194,7 +164,10 @@ redis.set("user:1", JSON.toJSONString(user));
 
 第一，Redis 的所有数据都放在内存中，而内存的读写速度本身就比磁盘快几个数量级。
 
-第二，Redis 采用了基于 IO 多路复用技术的事件驱动模型来处理客户端请求和执行 Redis 命令。IO 多路复用技术可以在只有一个线程的情况下，同时监听成千上万个客户端连接。Redis 会根据操作系统选择最优的 IO 多路复用技术，比如 Linux 下使用 epoll，macOS 下使用 kqueue 等。
+第二，Redis 采用了基于 IO 多路复用技术的事件驱动模型来处理客户端请求和执行 Redis 命令。IO 多路复用技术可以在只有一个线程的情况下，同时监听成千上万个客户端连接。
+
+> [!tip] Redis 6.0 多线程不是你想的那样
+> Redis 6.0 的多线程只用在**网络 I/O 读写**（解析请求/发送响应），命令执行依然是单线程的。所以 Redis 6.0 不需要加锁，也不会有线程安全问题。面试别说"Redis 6.0 变成多线程了"——这会被扣分。Redis 会根据操作系统选择最优的 IO 多路复用技术，比如 Linux 下使用 epoll，macOS 下使用 kqueue 等。
 
 第三，Redis 对底层数据结构做了极致的优化，比如说 String 的底层数据结构动态字符串支持动态扩容、预分配冗余空间，能够减少内存碎片和内存分配的开销。
 

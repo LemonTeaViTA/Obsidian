@@ -2,7 +2,7 @@
 module: Spring
 tags: [Spring, SpringMVC, DispatcherServlet, RESTful]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # Spring MVC 架构
@@ -49,6 +49,9 @@ Spring MVC 支持多种风格的处理器，比如基于 `@Controller` 注解的
 `@RestController` 相当于 `@Controller` 和 `@ResponseBody` 的结合。当在一个类上使用 `@RestController` 时，它会告诉 Spring 这个类中所有方法的返回值都应该被直接写入 HTTP 响应体中，而不再被解析为视图。
 
 HttpMessageConverter 是实现 RESTful 风格的关键。当 Spring 检测到 `@ResponseBody` 注解时，它会使用 HttpMessageConverter 来将 Controller 方法返回的 Java 对象序列化成指定的格式，如 JSON。默认情况下，如果类路径下有 Jackson 库，Spring Boot 会自动配置 MappingJackson2HttpMessageConverter 来处理 JSON 的转换。
+
+> [!tip] @RequestBody 和 @ResponseBody 的本质
+> 两者都依赖 `HttpMessageConverter`。`@RequestBody` 让 Spring 调用 `read()` 把 HTTP 请求体（JSON）反序列化为 Java 对象；`@ResponseBody` 让 Spring 调用 `write()` 把 Java 对象序列化为 JSON 写入响应体。`@RestController = @Controller + @ResponseBody`，所以其中的方法默认全部返回 JSON。
 
 所以，RESTful 接口的流程可以概括为：请求到达 DispatcherServlet → 通过 HandlerMapping 找到对应的 Controller 方法 → 执行方法并返回数据 → 使用 HttpMessageConverter 将数据转换为 JSON 格式 → 直接写入 HTTP 响应体。RESTful 接口省略了 ViewResolver 和 View 的渲染过程，非常适合前后端分离的应用场景。
 

@@ -1,10 +1,8 @@
 ---
-aliases:
-  - Spring
-  - SpringBoot
-tags:
-  - java/spring
-  - MOC
+module: Spring
+tags: [Spring, MOC]
+difficulty: medium
+last_reviewed: 2026-05-09
 ---
 
 # Spring 篇 MOC (Map of Content)
@@ -46,3 +44,10 @@ Web 开发的老牌功臣。清晰说出 HandlerMapping、HandlerAdapter 和 Vie
 
 > **学习笔记提示**：
 > Spring 的重点不是死记某一个 API 接口，而是要在脑海中建立起**框架如何利用反射和代理对你的普通代码进行“增强”与“挂载”**的动态过程（例如事务是如何无感切入你的普通方法的）。
+
+## 相关链接
+
+- [[Java基础索引_MOC]] — Java 基础是 Spring 的前提
+- [[并发编程索引_MOC]] — Spring 事务与并发控制
+- [[MySQL索引_MOC]] — Spring 事务底层依赖 MySQL 隔离级别
+- [[Redis索引_MOC]] — Spring Cache + RedisTemplate 集成

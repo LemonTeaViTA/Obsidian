@@ -2,7 +2,7 @@
 module: Redis
 tags: [Redis, 事务, Pipeline, Lua, 分布式锁]
 difficulty: medium
-last_reviewed: 2026-04-20
+last_reviewed: 2026-05-09
 ---
 
 # Redis 进阶功能
@@ -304,6 +304,11 @@ Pipeline 不是越大越好，太大会占用过多内存，通常建议每个 P
 ```bash
 SET key value NX PX 3000
 ```
+
+> [!warning] SETNX 分布式锁的三大坑
+> 1. **不设超时 → 死锁**：进程崩溃后锁永远不释放。必须用 `PX` 或 `EX` 设过期时间。
+> 2. **超时太短 → 锁被别人释放**：业务还没执行完锁就过期了，另一个线程拿到锁，两个线程同时操作。解决方案：Redisson 的 **watchdog 自动续期**。
+> 3. **释放别人的锁**：必须用 Lua 脚本保证"先判断后删除"的原子性，不能先 GET 再 DEL。
 
 NX 保证只有在 key 不存在时才能创建成功，PX 设置过期时间用以防止死锁。
 
