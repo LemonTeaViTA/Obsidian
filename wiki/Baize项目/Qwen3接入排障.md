@@ -1,3 +1,10 @@
+---
+module: Baize项目
+tags: [Baize, Qwen3, Thinking, 排障]
+difficulty: easy
+last_reviewed: 2026-05-10
+---
+
 # Qwen3 Thinking 模型接入排障
 
 接入 Qwen3.5-9B thinking 模型过程中遇到的四个问题及解决方案。
@@ -28,3 +35,9 @@
 **现象**：思考框不点击就自动展开。
 **根因**：`v-if="thinkingExpanded || isThinking"` 强制展开。
 **修复**：改为 `v-if="thinkingExpanded"`。
+
+## 相关链接
+
+- [[Baize项目/模型选型]] — 为什么选 Qwen3
+- [[Baize项目/聊天助手模块]] — 流式对话中的 Thinking 处理
+- [[LLM/LLM基础与训练]] — LLM 推理参数调优

@@ -1,10 +1,8 @@
 ---
-aliases:
-  - 集合框架
-  - Java Collections
-tags:
-  - java/集合框架
-  - MOC
+module: 集合框架
+tags: [集合框架, MOC]
+difficulty: hard
+last_reviewed: 2026-05-10
 ---
 
 # Java 集合框架 MOC (Map of Content)
@@ -44,3 +42,10 @@ tags:
 
 > **学习笔记提示**：
 > 集合框架的学习核心在于理解**空间与时间的博弈**，比如从“数组”到“链表”，再到为解决冲突引入的“红黑树”兜底策略，每一次结构的演进，都是为了在不同应用场景下获取最优的增删查改的平衡。
+
+
+## 相关链接
+
+- [[Java基础索引_MOC]] — 泛型、迭代器等基础
+- [[并发编程索引_MOC]] — ConcurrentHashMap 等并发容器
+- [[算法_MOC]] — 数据结构与算法应用

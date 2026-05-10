@@ -1,3 +1,10 @@
+---
+module: PaiFlow项目
+tags: [PaiFlow, 工作流, DAG, LangGraph, 插件化]
+difficulty: medium
+last_reviewed: 2026-05-10
+---
+
 # PaiFlow 工作流平台
 
 > PaiFlow 是基于 DSL+DAG 的智能工作流平台，将 LLM 封装为节点，实现从"自动化流程"到"智能化流程"的升级。
@@ -37,3 +44,9 @@ PaiFlow 的核心是一个领域特定语言（DSL）的解析和执行引擎。
 设计了一套标准的插件（工具）接入规范。任何功能——调用 REST API、执行 Shell 脚本、连接数据库——都可以封装成独立插件，由后端插件管理服务动态加载和执行。
 
 插件本身可以用任何语言开发，只要暴露符合规范的接口（HTTP 或 MCP）。这允许将 Java 工具和 Python 采集脚本无缝集成到同一个平台。
+
+## 相关链接
+
+- [[LLM/Agent工程实践]] — DSL+DAG 工作流编排
+- [[LLM/Agent核心概念]] — Agent 架构与推理模式
+- [[LLM/框架选型]] — LangGraph 与框架选型

@@ -11,6 +11,9 @@ last_reviewed: 2026-05-08
 
 ### 🌟ArrayList 和 LinkedList 有什么区别？
 
+> [!tip] ArrayList vs LinkedList 的真实性能
+> 面试别只说"ArrayList 查快改慢，LinkedList 改快查慢"。实际上由��� CPU 缓存行的局部性原理，ArrayList 在绝大多数场景（包括中间插入）都快于 LinkedList。LinkedList 的唯一优势场景是在已知节点引用的情况下进行 O(1) 删除，但 Java 的 LinkedList API 不暴露节点引用。
+
 ArrayList 是基于数组实现的，LinkedList 是基于链表实现的。
 #### ArrayList 和 LinkedList 的用途有什么不同？
 多数情况下，ArrayList 更利于查找，LinkedList 更利于增删。

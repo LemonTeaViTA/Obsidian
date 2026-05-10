@@ -1,3 +1,10 @@
+---
+module: Baize项目
+tags: [Baize, Prompt, 上下文整合]
+difficulty: easy
+last_reviewed: 2026-05-10
+---
+
 # Prompt 设计
 
 ## 一、Prompt 的核心元素
@@ -59,6 +66,9 @@ Prompt 是给大模型制定的指令，包含以下常见元素：
 
 ## 四、为什么这样设计？
 
+> [!tip] 动态上下文整合的关键
+> Prompt 模板不是硬编码的字符串拼接，而是根据"是否命中知识库"动态决定注入哪些内容。无检索结果时不注入空的 `[相关知识]` 段落，避免浪费 token 和误导 LLM。
+
 1. **效果保障**：结构化 Prompt 引导模型生成高质量回答
 2. **成本可控**：精确的上下文管理避免 token 浪费
 3. **合规风险**：明确的规则约束减少幻觉和跑题
@@ -80,3 +90,9 @@ A：
 - 检索结果排序后只取 Top-K
 - 历史对话设置轮数上限（如最近 5 轮）
 - 使用 Prompt Caching（Anthropic）缓存系统指令
+
+## 相关链接
+
+- [[Baize项目/对话上下文管理]] — 上下文截取策略
+- [[Baize项目/RAG管道设计]] — 检索结果如何注入 Prompt
+- [[LLM/Prompt与Harness]] — Prompt Engineering 理论

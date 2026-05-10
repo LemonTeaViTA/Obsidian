@@ -11,6 +11,9 @@ last_reviewed: 2026-05-08
 
 ### 讲讲 HashSet 的底层实现？
 
+> [!tip] HashSet 的本质
+> HashSet 底层就是 HashMap，add(e) 等价于 map.put(e, PRESENT)，其中 PRESENT 是一个 static final 的空 Object。理解了 HashMap 就等于理解了 HashSet，面试中被追问 HashSet 去重原理时，直接引用 HashMap 的 put 逻辑即可。
+
 HashSet 是由 [[HashMap核心原理|HashMap]] 实现的，只不过值由一个固定的 Object 对象填充，而键用于操作。
 
 ```java
