@@ -149,7 +149,12 @@ aof-use-rdb-preamble yes
 
 ### Redis 如何恢复数据？
 
-当 Redis 服务重启时，优先查找 AOF 文件，如果存在就通过重放其中的命令来恢复数据；如果不存在或未启用 AOF，则尝试加载 RDB 文件，直接将二进制数据载入内存来恢复。
+当 Redis 服务重启时，优先查找 AOF 文件，如果存在就用它恢复数据；如果不存在或未启用 AOF，则加载 RDB 文件。
+
+具体的恢复方式取决于是否开启了混合持久化：
+
+- **未开启混合持久化**：AOF 文件是纯命令格式，Redis 逐条 replay 所有写命令来恢复数据。
+- **开启混合持久化**（`aof-use-rdb-preamble yes`，5.0+ 默认）：AOF 文件是"RDB 头 + AOF 尾"的混合格式，Redis 先加载 RDB 部分快速恢复大量数据，再 replay AOF 部分补全最近的变更。
 
 如果 AOF 文件损坏，可以通过 `redis-check-aof` 工具修复：
 
