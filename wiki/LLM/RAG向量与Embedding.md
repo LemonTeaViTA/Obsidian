@@ -1,8 +1,8 @@
 ---
 module: LLM
-tags: [RAG, 向量数据库, Embedding, Milvus, HNSW, 模型选型]
+tags: [RAG, 向量数据库, Embedding, Milvus, HNSW, 模型选型, BGE-M3, ColBERT]
 difficulty: hard
-last_reviewed: 2026-05-15
+last_reviewed: 2026-05-18
 ---
 
 # RAG 向量与 Embedding
@@ -179,6 +179,40 @@ ES 8.x 支持 HNSW 索引，向量检索复杂度 O(log N)。
 | **语言支持** | 中文场景需要特别关注 | BGE、Qwen 系列对中文深度优化，OpenAI 对中文"可用但建议实测" |
 | **延迟与成本** | API 按量付费 vs 本地部署 | 轻量模型（DistilBERT、MiniLM）延迟更低 |
 
+### 选型决策树
+
+```
+语种需求？
+├── 纯中文 → BGE-large-zh（512 token）或 BGE-M3（8K，更推荐）
+├── 中英混合 / 多语言 → BGE-M3 或 GTE-multilingual-base（两者 MTEB 互有胜负）
+└── 纯英文 → OpenAI text-embedding-3-large 或 E5-large
+
+↓ 确定语种后，看上下文长度
+├── chunk ≤ 512 token → 任意模型均可
+├── chunk 512-8K → BGE-M3 / Jina-embeddings-v2
+└── chunk > 8K → Qwen3-Embedding（32K）
+
+↓ 看部署资源
+├── GPU 充足 → BGE-M3（568M）或 GTE-multilingual-base
+├── CPU / 低延迟 → E5-small（33M）或 MiniLM
+└── 无需部署 → OpenAI / Cohere API
+```
+
+**BGE-M3 vs GTE-multilingual-base 对比（arXiv:2402.03216）：**
+
+| 维度 | BGE-M3（BAAI） | GTE-multilingual-base（阿里达摩院） |
+|------|---------------|----------------------------------|
+| 参数量 | 568M | 305M |
+| 上下文 | 8192 token | 8192 token |
+| 检索模式 | 稠密 + 稀疏 + ColBERT 三合一 | 稠密检索 |
+| MTEB 中文 | C-MTEB 前列 | 与 BGE-M3 互有胜负 |
+| 特色 | 一个模型支持三种检索范式 | 更轻量，推理更快 |
+
+**MTEB 阅读方法：**
+- 看 **Retrieval 子任务**分数，不看总分（总分包含分类、聚类等与 RAG 无关的任务）
+- 中文场景看 **C-MTEB** 榜单
+- 注意模型参数量：33M 的 E5-small 和 568M 的 BGE-M3 不在同一量级，不能直接比较排名
+
 ### 2026 年主流模型
 
 **中文场景：**
@@ -258,6 +292,14 @@ test_cases = [
 ### 什么时候需要微调
 
 通用 Embedding 不理解专业术语（医学术语、法律行话、技术缩写），相似度计算偏差大。当通用模型在你的数据上检索效果明显不达预期，且有一定规模的文档库（几百份以上），微调的投入产出比通常很高。
+
+**微调决策阈值：** ==在业务数据上测 Recall@5 < 0.7 ���，需要微调==。数据量要求：500-1000 条 (query, 正确文档) 对即可见效，不需要大规模标注。
+
+**实测案例（保险领域）：**
+- BGE-M3 通用模型：MRR 0.58
+- 800 条领域数据微调后：MRR 0.82（提升 24 个百分点）
+
+**Rerank 微调的难负例来源：** 向量检索召回的候选集中筛出不含答案的文档（这些文档"看起来相关"但实际不是答案，是最有价值的难负例）。
 
 **对比示例：**
 ```

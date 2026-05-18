@@ -1,8 +1,8 @@
 ---
 module: LLM
-tags: [RAG, 检索, BM25, 混合检索, Rerank, 查询理解]
+tags: [RAG, 检索, BM25, 混合检索, Rerank, 查询理解, 多轮对话, ColBERT]
 difficulty: hard
-last_reviewed: 2026-05-15
+last_reviewed: 2026-05-18
 ---
 
 # RAG 检索策略
@@ -412,6 +412,27 @@ class Reranker:
 - `maidalun1020/bce-reranker-base_v1`：中文场景优化
 - Cohere Rerank API / Jina Reranker API：云端服务，无需部署
 
+#### Embedding + Rerank 搭配原则
+
+核心原则：==尽量选同系列模型==，训练数据和语义空间一致时，粗召和精排的"语言"相通，效果最优。
+
+| 场景 | Embedding | Rerank | 说明 |
+|------|-----------|--------|------|
+| 中文通用 | BGE-M3 | BGE-Reranker-base | 同系列，语义空间一致 |
+| 多语言 | GTE-multilingual-base | GTE-multilingual-reranker | 达摩院全家桶 |
+| 资源紧张 | E5-small (33M) | MiniLM-L6-cross-encoder | 轻量组合，CPU 可跑 |
+| 长文档 | Jina-embeddings-v2 (8K) | Jina-ColBERT-v2 | 长上下文 + ColBERT 精排 |
+
+#### ColBERT：Late Interaction 架构
+
+ColBERT（arXiv:2004.12832, Khattab & Zaharia）是介于 Bi-Encoder 和 Cross-Encoder 之间的架构：
+
+- **编码阶段**：query 和 document 仍然独立编码（类似 Bi-Encoder），document 可离线预计算
+- **匹配阶段**：不是单向量点积，而是 query 的每个 token 向量与 document 的每个 token 向量做 MaxSim 运算（Late Interaction）
+- **效果**：精度接近 Cross-Encoder，速度远快于 Cross-Encoder（document 向量可预存）
+
+BGE-M3 的 ColBERT 模式即基于此架构，支持在单模型中同时输出 dense/sparse/ColBERT 三种表示。
+
 #### 是否值得加重排
 
 在企业级知识库场景，幻觉带来的业务风险远大于延迟开销。工程上可以做路由：简单 FAQ 查询跳过重排保证速度，复杂专业查询启用重排保证质量。
@@ -484,6 +505,82 @@ def rrf_fusion(result_lists, smooth_k=60):
 final_score = dense_score × 0.6 + sparse_score × 0.4
 ```
 密集权重 0.6、稀疏权重 0.4 是通用场景最优组合；关键词查询占比高的场景可提升稀疏权重至 0.5-0.7。
+
+---
+
+## 四、多轮对话检索去重
+
+### 问题本质
+
+传统 RAG 检索系统没有"记忆"：每轮对话都当作第一次检索，导致相同文档被反复召回。后果：
+- **Token 浪费**：传统方式平均每轮 15.8k tokens，选择性记忆后仅需 2.7k（差近 6 倍）
+- **注意力稀释**：重复内容越多，LLM 对新信息的关注度越低，回答质量反而下降
+- **用户体验差**：多轮对话中反复给出相同信息
+
+### 模型层方案：VimRAG 的 GGPO
+
+VimRAG（arXiv:2602.12735，阿里通义团队）提出用图结构建模多轮检索过程：
+
+**核心发现**：传统历史拼接方式随轮次增加，无效检索急剧上升；每轮总结历史也不行（丢失细节）。
+
+**GGPO（Graph-Guided Policy Optimization）**：
+- 用 DAG 结构追踪每步检索对最终答案的贡献
+- 训练时只奖励关键路径上的检索步骤，惩罚无效检索
+- 解决传统 RL 的**信号污染**问题：正确答案路径中的废步骤不再获得奖励，错误路径中的有效检索不再被惩罚
+
+### 工程层方案：Milvus 去重
+
+#### 路径一：跨轮次历史排除（`expr not in`）
+
+```python
+consumed_ids = get_consumed_ids(session_id)  # 从 Redis 获取历史已用 chunk_id
+
+results = collection.search(
+    data=[query_embedding],
+    anns_field="embedding",
+    param={"metric_type": "COSINE", "params": {"nprobe": 10}},
+    limit=10,
+    expr=f"chunk_id not in {consumed_ids}"  # 排除已用
+)
+```
+
+#### 路径二：单次检索内去重（`group_by_field`）
+
+```python
+results = collection.search(
+    data=[query_embedding],
+    anns_field="embedding",
+    limit=10,
+    group_by_field="doc_id"  # 每个文档最多返回一个 chunk
+)
+```
+
+#### 路径三：组合方案
+
+两者结合覆盖完整去重链路：`not in` 排除跨轮重复，`group_by_field` 排除单轮内同文档重复。
+
+### 生产落地细节
+
+| 决策点 | 选项 | 适用场景 |
+|--------|------|---------|
+| 去重粒度 | 记 doc_id（整篇排除） | 文档独立性强，一篇只需看一次 |
+| | 记 chunk_id（只排除用过段落） | 长文档不同段落回答不同问题 |
+| 状态存储 | Redis + session_id 隔离 + TTL | 生产环境标准方案 |
+| 滑动窗口 | 只保留最近 N 轮的 consumed_ids | 防止列表过长导致 HNSW 降级为暴力扫描 |
+
+> [!warning] HNSW 降级风险
+> Milvus 内部用 bitset 标记 `not in` 的 ID，HNSW 图遍历时跳过这些节点。当过滤列表过长时，图上可达节点过少，Milvus 会自动降级为暴力扫描，延迟急剧上升。设置滑动窗口（如最近 5 轮）是必要的。
+
+**意图识别联动**：当用户说"再给我看看刚才那个"时，需临时关闭去重逻辑。通过意图识别区分"要新信息"和"要回顾旧信息"两种模式。
+
+### 是否需要做去重
+
+不是所有场景都需要：
+- 知识库很小（< 1000 条）：重复概率低
+- 单轮为主：没有跨轮重复问题
+- 对话很少超过三轮：收益不明显
+
+当多轮对话占比高、知识库大、用户反馈"总是重复回答"时，优先上工程方案（成本低、见效快）。
 
 ---
 
