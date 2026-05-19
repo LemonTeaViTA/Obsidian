@@ -1,4 +1,20 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(bash /home/ubuntu/ADgai/dsq/Obsidian/.claude/scripts/*.sh *)",
+      "Bash(find :*)",
+      "Bash(grep :*)",
+      "Bash(git status)",
+      "Bash(git diff :*)",
+      "Bash(git log :*)",
+      "Bash(awk 'NR==77,NR==313' /home/ubuntu/ADgai/dsq/Obsidian/wiki/LLM/RAG基础与架构.md)",
+      "Read(//tmp/**)",
+      "Bash(python3)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -7,21 +23,10 @@
           {
             "type": "command",
             "command": "bash -c 'if [[ \"${tool_input.file_path}\" == *.md ]]; then bash /home/ubuntu/ADgai/dsq/Obsidian/.claude/scripts/validate-md.sh \"${tool_input.file_path}\"; fi'",
-            "timeout": 10000,
-            "exitCodeBehavior": "allow"
+            "timeout": 10000
           }
         ]
       }
-    ]
-  },
-  "permissions": {
-    "allow": [
-      "Bash(bash /home/ubuntu/ADgai/dsq/Obsidian/.claude/scripts/*.sh *)",
-      "Bash(find :*)",
-      "Bash(grep :*)",
-      "Bash(git status)",
-      "Bash(git diff :*)",
-      "Bash(git log :*)"
     ]
   }
 }
