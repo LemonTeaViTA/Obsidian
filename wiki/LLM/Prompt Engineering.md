@@ -1,11 +1,15 @@
 ---
 module: LLM
-tags: [LLM, Prompt, Harness, Few-shot, CoT]
+tags: [LLM, Prompt Engineering, Few-shot, CoT, ToT]
 difficulty: medium
-last_reviewed: 2026-05-09
+last_reviewed: 2026-05-25
 ---
 
-# Prompt 工程与 Harness Engineering
+# Prompt Engineering
+
+> Prompt Engineering：通过设计输入文本让 LLM 输出更好的结果。本文聚焦 ==Prompt 工程的核心技术==和 ==Fine-tuning vs RAG vs Prompting 的决策框架==。
+>
+> Prompt → Context → Harness 的三代演进见 [[Harness Engineering#一、从 Prompt Engineering 到 Harness Engineering：三代进化]]，本文不重复。
 
 ---
 
@@ -130,64 +134,6 @@ System Prompt 是给模型设定角色、约束和行为规范的指令，在对
 - 不要在 Prompting 能解决的情况下做 Fine-tuning（成本高、灵活性低）
 
 ---
-
-## 三、Prompt Engineering → Context Engineering → Harness Engineering 演进
-
-### 第一代：Prompt Engineering（2022-2024）
-
-**核心思路**：精心设计输入文本，让模型输出更好的结果。
-
-**局限**：
-- Prompt 是一次性的，没有状态
-- 无法处理需要多步骤、多工具的复杂任务
-- 模型犯错了没有机制纠正
-
-### 第二代：Context Engineering（2025）
-
-**核心思路**：不只是设计 Prompt，而是精细管理整个上下文窗口——什么信息放进去、什么时候放、放多少。
-
-**上下文窗口的物理结构**（从上到下）：
-
-```
-┌─────────────────────────────────────┐
-│  System Prompt                      │  ← 角色、约束、工具描述
-│  Long-term Memory（可选）            │  ← 从外部数据库检索的历史记忆
-│  RAG 检索结果（可选）                │  ← 按需注入的外部知识
-├─────────────────────────────────────┤
-│  [user]      第1轮消息              │
-│  [assistant] 第1轮回复              │  ← 历史对话（短期）
-│  ...                                │
-├─────────────────────────────────────┤
-│  [user] 当前消息                    │  ← 本次输入
-│  [tool_result] 工具调用结果（可选）  │
-└─────────────────────────────────────┘
-```
-
-**有通用标准吗**：有。OpenAI 的 Chat Format（system / user / assistant 三种 role）是事实标准，Anthropic、Google、DeepSeek 都兼容。模型通过 role 标记区分"谁说的话"。
-
-**放置位置的规律**：
-- **首因效应**：开头权重高 → System Prompt 放最前
-- **近因效应**：结尾权重高 → 当前问题放最后，RAG 结果紧贴问题之前注入
-- **Lost in the Middle**：中间的历史对话容易被忽略，超长历史要压缩
-
-**跨会话历史怎么处理**：上下文装不下所有历史，分两层：
-- 短期：直接放在对话历史里
-- 长期：存到外部数据库（向量库或 KV 存储），下次会话按相关性检索后注入，机制和 RAG 一样
-
-**关键进步**：
-- RAG：按需检索外部知识注入上下文
-- Memory：跨会话持久化重要信息
-- Tool Results：工具调用结果动态注入
-
-**局限**：仍然是被动的——上下文管理是人工设计的规则，不能自适应。
-
-### 第三代：Harness Engineering（2026）
-
-**核心思路**：把整个 Agent 的运行环境（工具、权限、循环控制、上下文压缩、验证机制）工程化，让 Agent 在一个精心设计的"笼子"里自主运行。
-
-Mitchell Hashimoto 的定义：**每次 Agent 犯错就工程化一个解决方案让它不再重犯。**
-
-> 完整内容见 [[LLM/Harness Engineering]]
 
 ## 相关链接
 

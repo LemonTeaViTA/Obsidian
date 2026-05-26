@@ -1,8 +1,8 @@
 ---
-module: LLM
-tags: [RAG, 向量数据库, Embedding, Milvus, HNSW, 模型选型, BGE-M3, ColBERT]
+module: RAG
+tags: [RAG, 向量数据库, Embedding, Milvus, HNSW, 模型选型, BGE-M3, ColBERT, LLM-Embedding, Qwen3-Embedding, NV-Embed]
 difficulty: hard
-last_reviewed: 2026-05-18
+last_reviewed: 2026-05-20
 ---
 
 # RAG 向量与 Embedding
@@ -37,6 +37,70 @@ last_reviewed: 2026-05-18
 | **准确率** | 100%（理论最优解） | < 100%（存在微小召回损失） |
 | **查询速度** | 随数据量线性增长 O(N) | 极快 O(log N) 或 O(1)，支持亿级数据 |
 | **适用场景** | 小数据集、对精度要求极高的科研 | 生产环境、RAG、推荐系统、海量检索 |
+
+#### 为什么 KNN 慢：单次查询的计算量
+
+KNN 暴力法的算法==极其简单==：遍历库里所有 N 个向量，每个都算一遍距离，最后取距离最小的 Top-K。
+
+时间复杂度 **O(N × D)**——N 是向量总数，D 是向量维度。瓶颈在==单次距离计算==：
+
+向量已归一化时，余弦相似度==退化为点积==：
+
+```
+q · v = q₁v₁ + q₂v₂ + ... + qDvD
+       = D 次乘法 + (D-1) 次加法
+```
+
+实际计算量（典型 RAG 场景，D=768）：
+
+| 库规模 N | 单次查询计算量 | CPU 单线程耗时 |
+|---------|--------------|--------------|
+| 1 万 | 7.68M 次浮点运算 | ~5ms |
+| 100 万 | 768M 次浮点运算 | ~500ms |
+| 1 亿 | 76.8G 次浮点运算 | ~50s |
+| 10 亿 | 768G 次浮点运算 | ~500s ==根本不能用== |
+
+==亿级别 KNN 单次查询起步 50s==——这是为什么向量数据库必须用 ANN。
+
+#### 为什么 ANN 快：核心洞察 + 三大思想
+
+> [!tip] RAG 不需要绝对最近，只需要"足够近"
+> 返回的 Top-5 chunk 让 LLM 生成答案——==第 5 名是真正第 5 还是第 6 几乎无所谓==。这点"无所谓"换来 100x~10000x 的速度提升。
+
+ANN 通过三种思想实现加速，==实际生产系统通常组合使用==：
+
+**思想一：减少候选集**（不看所有 N 个向量）
+
+| 算法类型 | 怎么减少 |
+|---------|---------|
+| ==图==（HNSW） | 把向量组织成邻居图，查询时像走迷宫每步跳到更近的邻居，==O(log N) 步到达== |
+| ==聚类==（IVF） | 预先 K-means 聚成 nlist 个簇，查询时只看最相关的 nprobe 个簇 |
+| ==哈希==（LSH） | 设计哈希函数让相似向量大概率落同一桶，只看 query 桶 |
+| ==树==（Annoy/KD-Tree） | 超平面切分空间二叉树，沿树下降 |
+
+**思想二：压缩向量**（让单次距离计算本身变快）
+
+| 量化方式 | 原理 | 压缩比 |
+|---------|------|-------|
+| ==SQ8== | 每维 4 字节浮点 → 1 字节整数 | 4x |
+| ==PQ== | 768 维拆 8 段，每段用 256 个原型向量中最接近的 ID 替代 | ~384x |
+| ==RaBitQ== | 每维只存 1 bit（符号位），CPU 单条 popcount 指令算距离 | 32x |
+
+**思想三：分层精排**
+
+先用粗糙快速的方式（量化向量、聚类中心）筛选候选集 → 再对候选集用原始向量做精排，==兼顾速度和精度==。ScaNN、DISKANN 都是这个思路。
+
+#### 实际加速对照
+
+| 库规模 | KNN 暴力 | HNSW | 加速比 |
+|--------|---------|------|-------|
+| 1 万 | 5ms | 0.1ms | 50x |
+| 100 万 | 500ms | 1ms | 500x |
+| 1 亿 | 50s | 5ms | 10000x |
+
+==N 越大差距越大==——KNN 是 O(N)，HNSW 是 O(log N)，库越大 ANN 优势越明显。
+
+具体算法的内部机制详见 [[#二、向量检索算法]]。
 
 ---
 
@@ -94,16 +158,90 @@ HNSW 是目前性能最强的向量检索算法，但索引构建慢、内存占
 
 | 方案 | 适用场景 | 优势 | 劣势 |
 |------|----------|------|------|
-| **ElasticSearch 8.x** | 混合检索（向量+关键词） | 天然支持 BM25+向量双路，运维成熟 | 内存占用大，向量性能非最优 |
+| **ElasticSearch 8.x** | 混合检索（向量+关键词） | 天然支持 BM25+向量双路，==元数据过滤最强==，运维成熟 | 内存占用大，向量性能非最优 |
 | **Milvus** | 纯向量，超大规模（亿级） | 专为向量设计，分布式架构，支持 GPU 加速 | 运维复杂（etcd/MinIO/Pulsar） |
-| **Qdrant** | 中小规模，混合检索 | Rust 实现，单机性能强，原生支持过滤+向量 | 分布式能力弱于 Milvus |
+| **Qdrant** | 中小规模，混合检索 | Rust 实现，单机性能强，==Hybrid 过滤是产品核心== | 分布式能力弱于 Milvus |
 | **Pinecone** | 云托管，快速上线 | 零运维，自动扩缩容 | 成本高，数据出境风险 |
 | **Weaviate** | 混合检索，GraphQL 生态 | 内置 BM25+向量，模块化架构 | 社区相对小 |
-| **pgvector** | 小规模（<100 万），已有 PG | 复用现有数据库，零额外运维 | 大规模性能差 |
+| **pgvector** | 小规模（<100 万），已有 PG | 复用现有数据库，==SQL WHERE 表达力最强== | 大规模性能差 |
 | **Chroma** | 原型验证，本地开发 | Python 原生，嵌入式，5 分钟上手 | 不适合生产环境 |
+
+> [!info] 元数据过滤是==所有==主流向量库的标配能力
+> 上表中"过滤"的差异不是"支不支持"，而是"实现方式和性能"——所有主流向量库都支持元数据存储和过滤查询（多租户、时间范围、权限控制、文档类型等），区别在于过滤与向量索引如何结合。详见下文 [[#元数据过滤与向量检索的结合]]。
 
 > [!tip] 选型决策
 > 已有 ES 集群 + 数据量 < 5000 万 → ES 8.x 最省事；纯向量 + 亿级数据 → Milvus；中小团队 + 高性能要求 → Qdrant；验证阶段 → Chroma/pgvector。大多数 RAG 项目用 ES 8.x 就够了。
+
+### 元数据过滤与向量检索的结合
+
+元数据过滤本身简单（按字段值匹配），==难点在和向量索引的结合==。HNSW 是个连通图，单纯按元数据筛掉一部分节点会破坏图的连通性，候选可能找不全。三种主流策略：
+
+#### 1. Pre-filter（预过滤）：先筛元数据 → 在子集做 ANN
+
+```
+WHERE doc_type='合同' → 命中 1万条 → 在这 1万条向量里做 ANN
+```
+
+- ✅ 候选集小，单次距离计算少
+- ❌ ==HNSW 图被破坏==：过滤掉的节点不再连通，遍历可能找不到足够多结果
+- ⚠️ ==极端情况==：过滤条件过严（如剩下 10 条），HNSW 自动降级为暴力扫描——这是 [[RAG检索策略#四、多轮对话检索去重|多轮去重 `expr not in` 列表过长]]问题的根本原因
+
+适用：过滤条件松、命中率 > 30%。
+
+#### 2. Post-filter（后过滤）：先 ANN 取 Top-K → 再过滤元数据
+
+```
+ANN 找 Top-100 → 应用 WHERE doc_type='合同' → 可能只剩 30 个
+```
+
+- ✅ HNSW 索引完整使用
+- ❌ ==可能返回 < K==：Top-100 里满足条件的可能只有 30 个
+- ⚠️ 生产实践：要==超额取==——想要 Top-10 时取 Top-100 再过滤
+
+适用：过滤条件严、命中率 < 5%。
+
+#### 3. Hybrid（混合过滤）：HNSW 遍历时==同步检查==元数据
+
+```python
+# Hybrid 的伪代码
+for node in HNSW.traverse(query):
+    if node.metadata.matches(filter):    # 满足条件 → 加入候选
+        candidates.add(node)
+    # 不满足条件也==继续访问邻居==，保持图连通性
+```
+
+- ✅ 既保留图连通性，又不浪费精力算不满足条件节点的距离
+- ✅ ==生产首选==：Milvus 2.x、Qdrant、Pinecone 主流方案
+- ❌ 实现复杂
+
+#### 各家的默认策略
+
+| 数据库 | 默认策略 | 备注 |
+|--------|---------|------|
+| Milvus 2.x | Hybrid | Filtered HNSW |
+| Qdrant | Hybrid | Filterable HNSW，产品核心特性 |
+| Pinecone | Hybrid | metadata indexing 时声明可过滤字段 |
+| Weaviate | Hybrid | GraphQL where 子句 |
+| ES 8.x | Pre-filter（默认） / Hybrid（8.13+） | 通过 `query.filter` 控制 |
+| pgvector | Pre-filter | PG 优化器根据统计信息决定 |
+| Chroma | Post-filter | 简单 where，适合小规模 |
+
+==选型时除了看算法性能，要看过滤策略对你业务的合适程度==——多租户场景命中率低，Hybrid/Post-filter 更合适；按 doc_type 粗粒度过滤场景命中率高，Pre-filter 也能用。
+
+#### 元数据过滤解锁的 RAG 能力
+
+| 业务场景 | 元数据条件 | 涉及的字段 |
+|---------|----------|----------|
+| 多租户隔离 | `user_id == "U123"` | user_id |
+| 时间范围检索 | `created_at > '2024-01-01'` | timestamp |
+| 多版本管理 | `is_latest == true` | is_latest 标志 |
+| 权限控制 | `"sales" in visible_to` | 可见角色数组 |
+| 文档类型路由 | `doc_type in ["合同", "财报"]` | doc_type |
+| 多轮去重 | `chunk_id not in [...]` | chunk_id（[[RAG检索策略#四、多轮对话检索去重]]） |
+| 多源冲突解决 | 按 `source_authority`、`updated_at` 排序 | 见 [[RAG高级技术#知识冲突处理]] |
+| 不去重保留多版本 | 见 [[文本清洗#五、不去重而靠元数据 + 检索时过滤]] | 完整版本元数据 |
+
+==这些 RAG 工程能力都依赖元数据过滤==，没有这个能力 RAG 只能"全库一视同仁"。
 
 ### Milvus 架构特点
 
@@ -163,7 +301,50 @@ ES 8.x 支持 HNSW 索引，向量检索复杂度 O(log N)。
 |------|----------|----------|----------|-----------|
 | 第一代 | Word2Vec、GloVe、FastText | 词级静态向量 | 无法处理多义词 | 不适用 |
 | 第二代 | ELMo、BERT | 上下文动态向量 | 检索时需两两拼接，速度极慢 | 不适用于实时检索 |
-| 第三代 | SBERT、SimCSE、BGE、E5 | 句子级 bi-encoder，对比学习 | 精度低于 cross-encoder | 标配，性能和精度平衡最优 |
+| 第三代 | SBERT、SimCSE、BGE、E5 | 句子级 bi-encoder，对比学习 | 精度低于 cross-encoder | 中等规模生产仍主流 |
+| ==第四代== | NV-Embed、Qwen3-Embedding、GTE-Qwen2、Stella | ==LLM-backbone==（decoder-only 改造） | 参数量大、向量维度高 | 高精度场景 / 离线建库 |
+
+### 第四代：LLM-backbone Embedding（2024-）——MTEB 排行榜主导
+
+==自 2024 年中起，MTEB 排行榜被 LLM 改造的 embedding 模型主导==，BERT 系（BGE、E5）的精度天花板被打破。代表作：NVIDIA NV-Embed（基于 Mistral-7B）、阿里 Qwen3-Embedding 系列（0.6B/4B/8B）、阿里 GTE-Qwen2-7B、Stella（Qwen2-1.5B 蒸馏）、腾讯 Conan-Embedding。
+
+#### 把 LLM 改造成 Embedding 的关键技术
+
+LLM 是 decoder-only（causal attention，只能看前文），直接拿来做 embedding 不合适，需要四步改造：
+
+| 步骤 | 做什么 | 目的 |
+|------|-------|------|
+| 1. 去 causal mask | 把 attention 改为==双向==（让每个 token 看到全句） | 句子表示需要全局信息 |
+| 2. 特殊 pooling | last-token pooling 或 ==latent attention pooling==（NV-Embed 提出） | 把 token 序列压成一个向量 |
+| 3. 对比学习微调 | InfoNCE loss + 难负例挖掘 | 学相似度判别 |
+| 4. Instruction tuning | 用任务前缀（"Represent this sentence for retrieval:"）告诉模型场景 | 一个模型支持多任务（检索/聚类/分类） |
+
+#### 为什么效果显著超越 BERT 系
+
+| 维度 | BERT 系（BGE-M3） | LLM 系（Qwen3-Embedding-8B） |
+|------|-------------------|---------------------------|
+| 参数量 | 568M | 8000M（==15 倍==） |
+| 预训练语料 | 较少 | LLM 已见过的海量多语言长文档 |
+| 语义理解能力 | 中等 | 强（继承 LLM 推理能力） |
+| 向量维度 | 1024 | 4096（LLM hidden_size） |
+
+==LLM 已有的语义理解能力==是核心优势——预训练时见过的多元语料和长上下文，让 embedding 对语义细微差异更敏感。
+
+#### 工程代价
+
+==不是"模型越大越好"==。8B 模型的成本：
+
+| 维度 | 代价 |
+|------|------|
+| 显存 | 8B FP16 ≈ 16GB，A100 半张卡才能部署 |
+| 单次编码延迟 | ~100ms（BGE-M3 ~10ms） |
+| 向量维度 | 4096 vs 1024 → ==向量库存储和检索成本翻 4 倍== |
+| 在线 query 编码 | 每次查询都要过一次 8B 模型，吞吐压力大 |
+
+所以==生产实践常见模式==：
+- **中等规模（百万级 chunk）**：BGE-M3 / Qwen3-Embedding-0.6B（< 1B），平衡精度和成本
+- **高精度需求**：离线建库用 8B 模型；在线 query 也用 8B 或先用 0.6B 召回再用 8B 重排
+- **超低延迟（CPU / 边缘）**：仍然用 E5-small / MiniLM 这种轻量模型
 
 ---
 
@@ -181,67 +362,92 @@ ES 8.x 支持 HNSW 索引，向量检索复杂度 O(log N)。
 
 ### 选型决策树
 
+==2026 年的实际格局==：MTEB 主榜被 LLM-backbone embedding（Qwen3-Embedding / NV-Embed / Stella 等）主导；但生产环境==并非"榜首即最优"==——还要看延迟、显存、向量库存储成本。
+
 ```
-语种需求？
-├── 纯中文 → BGE-large-zh（512 token）或 BGE-M3（8K，更推荐）
-├── 中英混合 / 多语言 → BGE-M3 或 GTE-multilingual-base（两者 MTEB 互有胜负）
-└── 纯英文 → OpenAI text-embedding-3-large 或 E5-large
+精度 vs 速度优先？
+├── ==精度优先==（金融/医疗/法律的高价值检索） →
+│       离线建库：Qwen3-Embedding-8B / NV-Embed-v2（7B）
+│       在线 query：可同模型，或先用 0.6B 召回再用 8B 重排
+│
+├── ==平衡==（中等规模生产，百万级 chunk） →
+│       BGE-M3（568M，三模式）/ Qwen3-Embedding-0.6B（1B 以下 LLM 系）/ Stella-1.5B
+│
+└── ==速度优先==（CPU / 边缘 / 高 QPS） →
+        E5-small（33M）/ MiniLM / Conan-Embedding-Small
 
-↓ 确定语种后，看上下文长度
-├── chunk ≤ 512 token → 任意模型均可
-├── chunk 512-8K → BGE-M3 / Jina-embeddings-v2
-└── chunk > 8K → Qwen3-Embedding（32K）
+↓ 看语种
+├── 纯中文 → Qwen3-Embedding / Conan-Embedding-v2 / BGE-large-zh
+├── 中英混合 / 多语言 → Qwen3-Embedding / BGE-M3 / KaLM-Embedding-Multilingual
+└── 纯英文 → NV-Embed-v2 / Stella-en-1.5B / OpenAI text-embedding-3-large
 
-↓ 看部署资源
-├── GPU 充足 → BGE-M3（568M）或 GTE-multilingual-base
-├── CPU / 低延迟 → E5-small（33M）或 MiniLM
-└── 无需部署 → OpenAI / Cohere API
+↓ 看上下文长度
+├── chunk ≤ 512 token → 任意
+├── chunk 512-8K → BGE-M3 / Jina-embeddings-v2 / Qwen3-Embedding
+└── chunk > 8K → Qwen3-Embedding（32K）/ Voyage-3-large
+
+↓ 看部署形式
+├── API（零运维） → OpenAI / Cohere / Voyage / Gemini-embedding
+├── GPU 自部署 → Qwen3-Embedding 系列 / BGE-M3 / NV-Embed
+└── CPU 自部署 → E5-small / MiniLM / BGE-small
 ```
-
-**BGE-M3 vs GTE-multilingual-base 对比（arXiv:2402.03216）：**
-
-| 维度 | BGE-M3（BAAI） | GTE-multilingual-base（阿里达摩院） |
-|------|---------------|----------------------------------|
-| 参数量 | 568M | 305M |
-| 上下文 | 8192 token | 8192 token |
-| 检索模式 | 稠密 + 稀疏 + ColBERT 三合一 | 稠密检索 |
-| MTEB 中文 | C-MTEB 前列 | 与 BGE-M3 互有胜负 |
-| 特色 | 一个模型支持三种检索范式 | 更轻量，推理更快 |
 
 **MTEB 阅读方法：**
 - 看 **Retrieval 子任务**分数，不看总分（总分包含分类、聚类等与 RAG 无关的任务）
 - 中文场景看 **C-MTEB** 榜单
-- 注意模型参数量：33M 的 E5-small 和 568M 的 BGE-M3 不在同一量级，不能直接比较排名
+- ==注意参数量级==：33M 的 E5-small 和 8B 的 Qwen3-Embedding 不在同一量级，不能直接比较排名
+- ==榜首未必生产首选==：8B 模型推理慢、向量维度大（4096），向量库存储和检索成本翻几倍
 
 ### 2026 年主流模型
 
-**中文场景：**
+> [!info] LLM-based embedding 已成 MTEB 主流
+> 自 2024 年中起，BGE-M3 / E5 这类 BERT-based 模型不再霸榜，取而代之的是 NV-Embed（Mistral-7B）、Qwen3-Embedding（Qwen3 系列）、Stella（Qwen2 蒸馏）、GTE-Qwen2 等 LLM-backbone 模型。但生产环境==仍大量在用 BERT 系==——延迟和成本是主要原因。详见 [[#第四代：LLM-backbone Embedding（2024-）——MTEB 排行榜主导]]。
 
-| 模型 | 参数量 | 上下文 | 特点 |
-|------|--------|--------|------|
-| BAAI/bge-large-zh | 326M | 512 | 中文老牌选手，稳定可靠 |
-| BAAI/bge-m3 | 568M | 8K | 多语言、混合检索（稠密+稀疏），中文很强 |
-| Qwen3-Embedding | 0.6B/4B/8B | 32K | 三档可选，MTEB 多语言榜表现突出 |
-| 腾讯 Conan-Embedding-V2 | 1.4B | 32K | 中英 SOTA 性能 |
-| 浪潮 Yuan-EB 2.0 | 0.3B/0.6B | - | 小参数高性能 |
+#### LLM-backbone（高精度，离线建库优先）
 
-**多模态场景：**
+| 模型 | 骨干 | 参数 | 特点 |
+|------|------|------|------|
+| **Qwen3-Embedding-8B** | Qwen3 | 8B | ==MTEB 多语言榜首选==，32K 上下文 |
+| **Qwen3-Embedding-4B / 0.6B** | Qwen3 | 4B / 0.6B | 轻量版，0.6B 在 1B 以下挡得很猛 |
+| **NV-Embed-v2**（NVIDIA） | Mistral | 7B | 2024 年登顶代表作，latent attention pooling |
+| **GTE-Qwen2-7B-instruct**（达摩院） | Qwen2 | 7B | 多语言强 |
+| **Stella-en-1.5B-v5** | Qwen2 蒸馏 | 1.5B | ==性价比之王==，1.5B 对标 7B 效果 |
+| **腾讯 Conan-Embedding-v2** | LLM-based | 1.4B | 中文榜常客 |
+| **Linq-Embed-Mistral** | Mistral | 7B | 英文榜常客 |
+| **Gemini Embedding**（Google） | Gemini | API | 长文档强 |
+| **Voyage-3-large**（Voyage AI） | LLM-based | API | 长文档与代码强 |
 
-| 模型 | 参数量 | 特点 |
-|------|--------|------|
-| Gemini Embedding 2 | - | 文本/图像/视频/音频/PDF，全能选手 |
-| Qwen3-VL-Embedding-2B | 2B | 开源多模态，跨模态任务突出 |
-| Amazon Nova Multimodal | - | 首款单模型支持文本/图像/视频/音频的统一嵌入 |
-| Jina Embeddings v4 | 3.8B | 支�� MRL 维度压缩 |
+#### BERT-backbone（中等规模生产仍主流）
 
-**英文/通用场景：**
-- OpenAI text-embedding-3-large：3072 维，支持维度截断，RAG 场景标杆
-- Cohere embed-v4
+| 模型 | 参数 | 上下文 | 特点 |
+|------|------|--------|------|
+| **BGE-M3** | 568M | 8K | ==仍是中等规模生产首选==：多语言 + dense/sparse/colbert 三模式 |
+| **BGE-large-zh** | 326M | 512 | 中文老牌，稳定可靠 |
+| **mE5-large** | 560M | 512 | 多语言 baseline |
 
-**超大参数：**
-- 腾讯 KaLM-Embedding：120 亿参数，MTEB 多语言综合得分全球第一
+#### 轻量级（CPU / 低延迟 / 高 QPS）
 
-> MTEB 排行榜只测试单语言文本检索，不包括跨模态、跨语言、长文档精确度和维度压缩后的质量损失。选型时请用自己的真实数据做评估。
+| 模型 | 参数 | 适用 |
+|------|------|------|
+| **E5-small** | 33M | CPU 推理首选 |
+| **MiniLM-L6** | 22M | 极致轻量 |
+| **BGE-small-zh** | 24M | 中文低延迟 |
+
+#### 多模态
+
+| 模型 | 参数 | 特点 |
+|------|------|------|
+| **Gemini Embedding 2** | API | 文本/图像/视频/音频/PDF 全能 |
+| **Qwen3-VL-Embedding-2B** | 2B | 开源多模态 |
+| **Jina Embeddings v4** | 3.8B | 支持 MRL 维度压缩 |
+
+#### 商业 API
+
+- **OpenAI text-embedding-3-large**：3072 维，支持维度截断
+- **Cohere embed v4**
+- **Voyage v3 系列**
+
+> ==MTEB 排行榜只测试单语言文本检索==，不包括跨模态、跨语言、长文档精确度和维度压缩后的质量损失。选型时请用自己的真实数据做评估。
 
 ### Embedding 评估方法
 
@@ -293,7 +499,7 @@ test_cases = [
 
 通用 Embedding 不理解专业术语（医学术语、法律行话、技术缩写），相似度计算偏差大。当通用模型在你的数据上检索效果明显不达预期，且有一定规模的文档库（几百份以上），微调的投入产出比通常很高。
 
-**微调决策阈值：** ==在业务数据上测 Recall@5 < 0.7 ���，需要微调==。数据量要求：500-1000 条 (query, 正确文档) 对即可见效，不需要大规模标注。
+**微调决策阈值：** ==在业务数据上测 Recall@5 < 0.7 时，需要微调==。数据量要求：500-1000 条 (query, 正确文档) 对即可见效，不需要大规模标注。
 
 **实测案例（保险领域）：**
 - BGE-M3 通用模型：MRR 0.58

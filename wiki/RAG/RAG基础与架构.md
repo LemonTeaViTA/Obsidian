@@ -1,8 +1,8 @@
 ---
-module: LLM
+module: RAG
 tags: [RAG, 文档解析, 分片, 架构, 离线管道, 命题化切割, 句子窗口检索]
 difficulty: hard
-last_reviewed: 2026-05-19
+last_reviewed: 2026-05-25
 ---
 
 # RAG 基础与架构
@@ -56,6 +56,15 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 ```
 
 关键点：Embedding 模型在两个阶段必须一致，文档和 query 要在同一语义空间里比较。
+
+> [!tip] Embedding 在两阶段==分别==做，==chunk 向量预先算好不重算==
+> 这是 RAG 最核心的工程设计：
+> - **离线阶段**：所有 chunk 通过 embedding 模型逐个编码，向量和文本一起存进向量数据库 → ==这是一次性成本==
+> - **在线阶段**：每次用户提问==只对 query 做一次 embedding 编码==，然后向量数据库用 HNSW/IVF 索引找相似度最高的 Top-K chunk
+>
+> ==chunk 向量不会在每次查询时重算==——百万级知识库每次查询都重算 100 万次 embedding 是不可能的。==向量数据库的核心价值就是"预存向量 + ANN 加速搜索"==，类似传统数据库"建索引一次、查询多次"的思路。详见 [[RAG向量与Embedding#二、向量检索算法]]。
+>
+> 文档变化时只对变化的 chunk 重算（增量索引），其他向量不动，详见 [[RAG高级技术#增量索引]]。
 
 ### 管道步骤导航
 
@@ -149,6 +158,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 > [!warning] 表格不要混入正文 chunk
 > 表格应作为独立 chunk 入库，并打上 `type: table` 元数据。否则正文向量会污染表格的精确数值匹配能力。
 
+> TableFormer / TATR 等模型架构原理详见 [[TSR]]。
+
 #### 3.3.2 图片与图表理解
 
 **问题本质：** 图片可能携带文字（发票、流程图标签）、数据（图表）、空间结构（架构图、思维导图），处理路径取决于"我们想要什么"。
@@ -179,6 +190,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 
 **MultiVectorRetriever 模式：** Caption 入向量库做检索，原图路径存 docStore，命中后将原图传给多模态 LLM 生成答案。
 
+> Caption 生成依赖的视觉语言模型架构详见 [[VLM文档解析]]。
+
 #### 3.3.3 公式识别
 
 **问题本质：** 公式在 PDF/Word/PPT/扫描件中都可能出现，传统 OCR 完全无法处理符号、上下标、积分、矩阵等数学结构。目标是输出 LaTeX 或 MathML 让 LLM 理解。
@@ -195,6 +208,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 - LaTeX：适合学术文档，LLM 训练时见过大量 LaTeX
 - 自然语言描述：适合非学术读者（"动能等于二分之一质量乘以速度的平方"）
 - 双轨输出：原始 LaTeX + 自然语言描述，前者用于精确匹配，后者用于语义检索
+
+> Pix2Tex / Nougat / im2markup 等模型架构原理详见 [[公式识别]]。
 
 #### 3.3.4 多栏版面分析
 
@@ -218,6 +233,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 
 - **Pipeline 方案**：版面检测模型 → 阅读顺序排序 → 按区域类型分别处理（表格走 TSR、图片走 OCR/VLM、文本直接提取）。代表：Docling、MinerU
 - **端到端方案**：视觉语言模型直接将页面图像转为结构化输出，跳过显式区域检测。代表：Dolphin-v2（3B 参数，21 种内容类型）、SmolDocling（IBM 超紧凑 VLM）
+
+> LayoutLMv3 / DocLayNet / RT-DETR / DETR 等模型架构原理详见 [[版面分析]]。
 
 #### 3.3.5 OCR：从像素到文本
 
@@ -252,6 +269,8 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 
 > TurboOCR 项目：https://github.com/aiptimizer/TurboOCR
 
+> DBNet / CRNN / SVTR / TrOCR 等模型架构原理详见 [[OCR]]。
+
 ---
 
 ### 3.4 各格式的独有特点
@@ -261,6 +280,9 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 #### 3.4.1 PDF：坐标到逻辑结构的还原
 
 **核心难点（区别于其他格式的本质问题）：** PDF 是"打印格式"，所有结构信息都丢失了。拿到的是文字 + 坐标 + 线条，**没有"段落"概念，没有"页"的语义概念，没有"标题层级"**。
+
+> [!info] PDF 不是图片合集
+> 数字版 PDF 内部是 PostScript 风格的绘制指令（"在坐标 (100,700) 用 12pt 字体写 'Hello'"），文字以 Unicode 存储，所以能复制能搜索。==这也是为什么 PDF 比扫描件信息多==——给了文字、字体、坐标、矢量图形，只是没有逻辑结构。但扫描版 PDF 每页就是一张图片塞进 PDF 容器，等同于图片，必须走 OCR。详见 [[PDF]]。
 
 **独有问题：**
 
@@ -286,6 +308,10 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 #### 3.4.3 Excel（xlsx）：网格化布局的独有挑战
 
 **优势：** 表格结构最清晰，单元格坐标 + 合并属性原生可读。
+
+> [!info] "原生可读"是怎么做到的？
+> Excel 看似只是网格，但每个单元格在 OOXML 内部都是带属性的 XML 元素 `<c>`：`r` 属性 = 地址（A1/B5）、`t` 属性 = 类型（数字/字符串/布尔/日期）、`s` 属性 = 样式索引、`<v>` 子元素 = 值、`<f>` = 公式。
+> 这些原生属性让 openpyxl 等解析器==直接读出==类型化的数据，不用从视觉上猜。详见 [[OOXML#四、xlsx 内部结构]]。
 
 **独有问题：**
 
@@ -426,41 +452,372 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 ---
 ## 四、文本清洗
 
-文本清洗是解析后、分块前的关键步骤，目标是消除噪声、统一格式，确保进入分块阶段的文本是干净且语义连贯的。
+文本清洗是解析后、分块前的关键步骤，目标是消除噪声、统一格式，确保进入分块阶段的文本是干净且语义连贯的。==这一步看似简单，但每个子任务背后都有具体的技术细节==。
 
-### 噪声去除
+> [!info] 完整方法论详见 [[文本清洗]]
+> 包括：页眉页脚的多特征联合识别、PDF 水印的几何与颜色特征检测、==重复内容检测的三个层级（字节级/chunk级/近似级）以及为什么近似去重对正式文档常常误伤==、不去重而靠元数据 + 检索时过滤的工程模式、版本链管理。本章节给出 RAG 视角下的核心要点。
 
-- **页眉页脚过滤**：跨页重复出现的文本（出现 ≥2 次）自动识别为页眉页脚并删除
-- **导航与广告剥离**：HTML 文档去除导航栏、侧边栏、广告区块、Cookie 提示等非正文内容
-- **水印与装饰文本**：PDF 中的水印文字、页码、版权声明等非内容性文本过滤
-- **短片段过滤**：长度过短的无效文本片段（如 < 50 字符）直接丢弃
+### 4.1 噪声去除
 
-### 编码与格式规范化
+#### 页眉页脚识别（PDF/扫描件）
 
-- **字符编码统一**：所有文本转换为 UTF-8，处理 BOM 标记、Latin-1 混入等编码问题
-- **空白符规范化**：多余空格、制表符、连续换行符压缩为单个；全角/半角空格统一
-- **标点符号统一**：中英文标点变体统一（如中文逗号 `，` 和英文逗号 `,` 根据上下文语言统一）
-- **特殊字符处理**：不可见控制字符（零宽空格、软连字符等）删除；Unicode 变体字符规范化（如全角数字转半角）
+PDF 里没有"这是页眉"的标签，只有坐标。==判断依据是跨页重复性 + 位置==。
 
-### 重复内容检测
+**方法一：跨页文本比对（最常用）**
 
-大规模文档集合中，相同或高度相似的内容会造成检索冗余和 token 浪费。
+```python
+from collections import Counter
 
-- **精确去重**：基于文本哈希（MD5/SHA256）检测完全相同的段落
-- **近似去重**：MinHash + LSH（局部敏感哈希）计算文本指纹，识别高度相似但不完全相同的段落（如不同版本的同一文档）
-- **跨文档去重**：在文档集合层面标记重复内容，保留最新或最完整的版本
+# 提取每页所有文本块（含坐标）
+page_blocks = [extract_text_with_coords(page) for page in pdf]
 
-### 语言检测与分段
+# 统计每段文本在多少页出现过
+text_frequency = Counter()
+for page in page_blocks:
+    for block in page:
+        # 规范化后再计数（去多余空格）
+        text_frequency[" ".join(block.text.split())] += 1
 
-- **语言识别**：对多语言混合文档，检测每个段落的语言，以便后续使用对应的分词器和 Embedding 模型
-- **逻辑段落识别**：基于空行、缩进、标题标记等信号识别逻辑段落边界，为后续分块提供自然切分点
-- **句子分割**：中文按句号/问号/感叹号分句，英文用 spaCy 或 NLTK 的句子分割器，为句子级分块做准备
+# 出现 ≥ N 页（通常 N=2 或 ⌈总页数 × 0.3⌉）的文本块 → 候选页眉页脚
+candidates = {text for text, count in text_frequency.items() if count >= 2}
+```
 
-### 内容增强（可选）
+**方法二：位置过滤**
 
-- **缩写展开**：将领域缩写展开为全称（如 "RAG" → "RAG（Retrieval-Augmented Generation）"），提升检索时的语义匹配度
-- **停用词策略**：RAG 场景中仅移除停用词可将 API 成本降低约 30%，同时保持语义质量。但过度的词干提取可能损害语义，需谨慎
-- **元数据提取**：为每段文本提取对应元数据——文档唯一 ID、文档类型、所属章节标题、更新时间、访问权限等级，用于后续检索过滤和来源追溯
+页眉通常在 y 坐标 < 页面高度 10%，页脚在 y > 90%。结合跨页重复，精度更高：
+
+```python
+def is_header_or_footer(block, page_height):
+    is_top = block.y_top < page_height * 0.10
+    is_bottom = block.y_bottom > page_height * 0.90
+    return is_top or is_bottom
+```
+
+**方法三：版面分析模型（最彻底）**
+
+[[版面分析]] 模型（DocLayNet 训练的 RT-DETR）直接把页眉页脚识别为独立的区域类型（`page-header`、`page-footer`），无需跨页比对。==Docling、MinerU 都用这种方式==。
+
+#### PDF 水印与装饰文本识别
+
+水印没有固定位置规律，比页眉页脚难识别。
+
+**方法一：颜色/透明度检测**
+
+PDF 里的水印通常是==半透明文字==或==浅灰色==。pdfminer/PyMuPDF 能拿到每个文字块的颜色属性：
+
+```python
+def is_watermark_by_color(block):
+    r, g, b = block.color
+    lightness = (r + g + b) / 3
+    return lightness > 0.7  # 浅色文字认为是装饰
+```
+
+**方法二：旋转角度检测**
+
+水印文字经常是斜的（45°、-45°）。PDF 里每个文字块都有变换矩阵，可以检测旋转：
+
+```python
+def is_watermark_by_rotation(block):
+    return abs(block.rotation_angle) > 10  # 旋转超过 10 度
+```
+
+**方法三：关键词规则**
+
+`机密 / 仅供内部使用 / CONFIDENTIAL / DRAFT / COPY / © Copyright` 等词出现在非正文位置 → 水印或版权声明。
+
+**方法四：版面分析模型**
+
+DocLayNet 有 `watermark` 类别，直接预测。
+
+==实际工程中通常组合方法 1+3 兜底，方法 4 作为更彻底的解法==。
+
+#### HTML 导航与广告剥离
+
+HTML 比 PDF 容易，因为 [[DOM]] 树本身有结构语义。
+
+- **基于 DOM 选择器**：用 `nav`/`aside`/`footer`/`<div class="ad">` 等标签或 class/id 直接过滤
+- **正文提取算法**：Trafilatura、Readability.js（Mozilla）通过==文本密度分析==识别正文区域
+  - 核心思想：正文段落字数密集且连续，导航/广告稀疏且分散，按文本密度排序找出主要内容块
+
+#### 短片段过滤
+
+长度过短的文本片段（< 50 字符）通常是按钮文字、菜单项、孤立的元数据，对检索无价值，直接丢弃。
+
+---
+
+### 4.2 编码与格式规范化
+
+#### 字符编码统一
+
+所有文本规范化为 ==UTF-8==，处理三类常见问题：
+
+```python
+# 1. BOM 标记（Windows 记事本生成的 UTF-8 文件常带 BOM）
+text = text.lstrip("﻿")
+
+# 2. 编码自动检测（拿到的字节流不知道编码时）
+import chardet
+detected = chardet.detect(byte_data)
+text = byte_data.decode(detected["encoding"])
+
+# 3. 替换字符（解码失败时的 �）
+text = text.replace("�", "")
+```
+
+#### 空白符规范化
+
+```python
+import re
+
+# 多余空格、制表符、连续换行 → 单个
+text = re.sub(r'[ \t]+', ' ', text)
+text = re.sub(r'\n{3,}', '\n\n', text)  # 保留段落分隔
+
+# 全角空格 → 半角
+text = text.replace('　', ' ')
+
+# 零宽空格、软连字符等不可见字符 → 删除
+text = re.sub(r'[​-\u200F- ﻿]', '', text)
+```
+
+#### 标点符号统一
+
+中英文标点的混用要根据上下文统一。==判断依据是周围字符的语种==：
+
+```python
+def normalize_punct(text: str) -> str:
+    # 中文上下文里的英文逗号 → 中文逗号
+    text = re.sub(r'(?<=[一-龥]),(?=[一-龥])', '，', text)
+    # 英文上下文里的中文逗号 → 英文逗号
+    text = re.sub(r'(?<=[a-zA-Z])，(?=[a-zA-Z])', ',', text)
+    return text
+```
+
+#### Unicode 规范化
+
+Unicode 有四种规范化形式（NFC/NFD/NFKC/NFKD）：
+
+```python
+import unicodedata
+
+# NFKC：兼容性分解 + 重组合，把全角数字转半角、把"㎏"展开为"kg"
+text = unicodedata.normalize('NFKC', text)
+```
+
+==生产环境推荐 NFKC==，能处理大多数 Unicode 变体字符问题。
+
+---
+
+### 4.3 重复内容检测
+
+==关键决策：在 chunk 前做，在文档/段落粒度做==。
+
+**为什么不在 chunk 后做：**
+同一段话被切成两个 chunk，每个 chunk 单独看都不重复，但语义重复——chunk 后去重会漏掉。
+
+**两个层次：**
+
+```
+文档级去重（先做）→ 段落级去重 → 分块 →（chunk 级去重可选，通常不做）
+```
+
+#### 精确去重：哈希
+
+完全相同的文本用哈希秒杀：
+
+```python
+import hashlib
+
+def doc_fingerprint(text: str) -> str:
+    # 先规范化（去空白、小写），再哈希
+    normalized = " ".join(text.lower().split())
+    return hashlib.md5(normalized.encode()).hexdigest()
+
+seen = set()
+for doc in documents:
+    fp = doc_fingerprint(doc.text)
+    if fp in seen:
+        skip(doc)  # 完全重复，跳过
+    seen.add(fp)
+```
+
+#### 近似去重：MinHash + LSH
+
+精确哈希解决不了"同一份合同的两个版本只改了日期"——哈希不同但语义 90% 重复。
+
+**MinHash 的核心思想**：==用 k 个哈希函数对文本的 n-gram 集合取最小值，得到一个签名向量==。两个文本的签名向量越相似，Jaccard 相似度越高。
+
+```python
+from datasketch import MinHash, MinHashLSH
+
+def text_to_minhash(text: str, num_perm=128) -> MinHash:
+    m = MinHash(num_perm=num_perm)
+    # 用 3-gram 作为集合元素（中文可用字粒度）
+    for i in range(len(text) - 2):
+        m.update(text[i:i+3].encode())
+    return m
+
+lsh = MinHashLSH(threshold=0.8, num_perm=128)  # 相似度 > 80% 认为重复
+
+for doc_id, doc in enumerate(documents):
+    m = text_to_minhash(doc.text)
+    duplicates = lsh.query(m)  # 找已有的相似文档
+    if duplicates:
+        mark_as_near_duplicate(doc_id, duplicates)
+    else:
+        lsh.insert(doc_id, m)
+```
+
+==关键优势：MinHash + LSH 的时间复杂度是 O(n)，不是 O(n²)==——百万文档级别也能跑。
+
+**LSH 的核心：分桶**
+
+LSH 把签名向量切成 b 个 band，每个 band 哈希到一个桶。==两个文档至少有一个 band 哈希到同一个桶才会被对比==——避免两两暴力比较。`threshold=0.8` 等参数通过调 b 和 r 控制。
+
+#### 跨文档去重的策略选择
+
+发现重复后保留谁：
+- **保留最新**：按 `updated_at` 元数据排序，留最新版本
+- **保留最完整**：按字符数排序，留最长版本
+- **保留权威**：按 `source_authority` 元数据排序（多源知识库适用）
+
+详见 [[RAG高级技术#知识冲突处理]]。
+
+---
+
+### 4.4 语言与句子切分
+
+> [!warning] 多语言 embedding 时代，传统"语言检测 → 选分词器 → 分句"的流程基本过时
+> 现代 RAG 不再走"先检测语言再路由到不同分词工具"的老路。Embedding 模型自带 tokenizer，不需要 jieba/pkuseg 这种预分词。本节给出 LLM 时代的简化做法。
+
+#### 语言检测：何时还需要做
+
+==RAG 入库流程不需要为了选 embedding 而做语言检测==——主流多语言 embedding（BGE-M3 / Qwen3-Embedding / E5-multilingual）训练见过 100+ 语言，中英混合段落直接编码即可，向量空间互相可比。详见 [[RAG向量与Embedding#选型决策树]]。
+
+仅剩两个场景需要：
+
+| 场景 | 用途 | 做法 |
+|------|------|------|
+| 元数据打标签 | 让用户检索时按语言过滤（"只看中文资料"） | 字符 Unicode 范围判断即可 |
+| 路由到不同 LLM | 中文走 Qwen，英文走 GPT-4 | 同上 |
+
+```python
+def detect_language(text: str) -> str:
+    has_chinese = any('一' <= c <= '鿿' for c in text)
+    has_japanese = any('぀' <= c <= 'ヿ' for c in text)
+    has_latin = any('a' <= c.lower() <= 'z' for c in text)
+    if has_japanese: return "ja"
+    if has_chinese: return "zh-en" if has_latin else "zh"
+    return "en"
+```
+
+==业务场景下用这种简单规则就够了==，不需要 fastText 这种 176 语种识别。
+
+#### 分词器：RAG 入库流程不需要
+
+| 工具 | 真实用途 | 是否 RAG 必需 |
+|------|---------|--------------|
+| jieba / pkuseg | BM25 倒排索引、关键词提取、传统 NLP 任务 | ❌ 仅混合检索的 BM25 路用得到 |
+| spaCy 分词 | 词性标注、句法分析、NER | ❌ |
+| HanLP | 综合 NLP 工具包 | ❌ |
+| Embedding 模型自带 tokenizer | BPE / SentencePiece，模型内部自理 | ✅ 自动完成 |
+
+==分块阶段输入字符级文本即可==，embedding 模型会自己 tokenize。jieba 等中文分词器只在==混合检索==中给 BM25 路用（详见 [[RAG检索策略#三、混合检索原理]]）。
+
+#### 段落识别已在文档解析阶段完成
+
+==文档解析（PDF/Word/HTML）输出的就是段落级别文本块==，版面分析已经隐式还原了段落边界。分块阶段不需要重新识别段落，直接基于已有边界做长度切分即可。
+
+如果原始文本是纯文本流（如 ASR 输出、聊天记录）需要识别段落，用简单规则：
+
+```python
+import re
+
+def split_paragraphs(text: str) -> list[str]:
+    # 双换行 = 段落边界（最强信号）
+    return [p.strip() for p in re.split(r'\n\s*\n', text) if p.strip()]
+```
+
+#### 句子级切分（按需）
+
+句子粒度的切分不是分块阶段的必需步骤，==只在特定场景才用到==：
+
+- [[RAG基础与架构#5-2-分块策略全景：按方法学分五层|句子窗口检索]]（Sentence Window Retrieval）
+- 句子级相似度计算
+- 段落跨句子的精细处理
+
+**现代做法：一个工具处理所有语言**
+
+```python
+# 方案 A：通用正则（90% 场景够用）
+import re
+sentences = re.split(r'(?<=[。！？.!?])\s*', text)
+
+# 方案 B：spaCy 多语言句切器（一个模型处理所有语言）
+import spacy
+nlp = spacy.load("xx_sent_ud_sm")
+sentences = [sent.text for sent in nlp(text).sents]
+
+# 方案 C：pysbd（专门的多语言句子分割库，22 种语言）
+import pysbd
+seg = pysbd.Segmenter(language="zh")  # 或 "en"
+sentences = seg.segment(text)
+```
+
+==都不需要"先检测语言再选工具"==，一个工具直接吃任何语言的输入。
+
+#### LangChain 的事实标准：RecursiveCharacterTextSplitter
+
+实际工程中绝大多数 RAG 系统直接用：
+
+```python
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,
+    chunk_overlap=50,
+    separators=["\n\n", "\n", "。", "！", "？", ".", "!", "?", "，", ",", " ", ""]
+)
+chunks = splitter.split_text(text)
+```
+
+==字符级递归切分，对中英混合一视同仁==。先按双换行（段落）切，切不下按句末标点，再不行按字符。==这就是 LLM 时代分块阶段的事实标准==，没有"分词 → 分句 → 拼回"的复杂流程。
+
+---
+
+### 4.5 内容增强（可选）
+
+#### 缩写展开
+
+将领域缩写展开为全称，提升检索时的语义匹配度：
+
+```python
+# 维护领域缩写表
+abbreviations = {
+    "RAG": "检索增强生成（Retrieval-Augmented Generation）",
+    "LLM": "大语言模型（Large Language Model）",
+}
+
+# 替换时只替换首次出现，后续保留缩写避免膨胀
+def expand_first_occurrence(text: str, abbr_dict: dict) -> str:
+    seen = set()
+    for abbr, full in abbr_dict.items():
+        if abbr not in seen and abbr in text:
+            text = text.replace(abbr, full, 1)  # 只替换第一次
+            seen.add(abbr)
+    return text
+```
+
+#### 停用词策略
+
+==RAG 场景中过度移除停用词反而损害语义==。建议：
+- 仅在 BM25 等关键词检索分支移除常见停用词（"的"、"了"、"the"、"a"）
+- ==向量检索分支不要移除停用词==——Embedding 模型已经在带停用词的文本上训练
+- 永远不做词干提取（"running" → "run"）——破坏语义信息
+
+#### 元数据提取
+
+为每段文本附加结构化元数据，用于检索过滤和来源追溯。详见 [[RAG基础与架构#5.4 通用工程参数]] 的元数据模板。
 
 ---
 
@@ -484,27 +841,32 @@ RAG（Retrieval-Augmented Generation，检索增强生成）通过"检索-增强
 
 ---
 
-### 5.2 分块策略全景：按方法学分五层
+### 5.2 切分边界的四种方法学
 
-按"决定 chunk 边界的方式"，分块方法可以分成五层，每一层比上一层更智能但代价也更高：
+按"决定 chunk 边界的方式"，分块方法分为四层，每一层比上一层更智能但代价也更高：
 
 ```
 L1 规则切分     → 按字符/token 数或分隔符切（最简单）
 L2 结构感知     → 利用文档原生结构（标题层级、表格、列表）
 L3 语义切分     → 模型判断主题边界
 L4 命题级切分   → LLM 分解为原子事实
-L5 检索时增强   → 不改切分，改"检索-返回"单元（与 L1-L4 正交）
 ```
+
+==L1-L4 在同一维度==——都是决定 chunk 边界画在哪。==与之正交==的还有两类策略，下文 5.3 单独讲：
+- ==chunk 内容增强==（Contextual Retrieval、Late Chunking）：不改边界，丰富每个 chunk 的语义表达
+- ==在线检索增强==（父子分块、句子窗口检索）：检索阶段动态扩展上下文，详见 [[RAG检索策略#五、检索时的上下文扩展]]
 
 #### L1 规则切分（Rule-based）
 
 **做法：** 按固定长度（chunk_size）或固定分隔符（句号/换行/双换行）切分。最常见实现：LangChain 的 `RecursiveCharacterTextSplitter`。
 
+**Overlap 是 L1 的标配：** 相邻 chunk 保留 10-20% 重叠区域，避免关键信息恰好落在边界处被截断。进阶做法是==基于句子边界的智能 overlap==——固定 overlap 可能切在句子中间，智能 overlap 在确定重叠区域后向后扫描到最近句子结尾才截断。
+
 **优势：** 实现简单、速度快、零成本、可预测。
 
 **劣势：** 不理解语义和结构，常在句子中间截断，表格被打散，列表项与其前导句分离。
 
-**适用：** 同质化短文档（如 FAQ、新闻段落）的 baseline 方案。
+**适用：** 同质化短文档（如 FAQ、新闻段落）的 baseline 方案，且==所有上层方案都建议叠加 Overlap 兜底==。
 
 #### L2 结构感知切分（Structure-aware）
 
@@ -583,124 +945,60 @@ L5 检索时增强   → 不改切分，改"检索-返回"单元（与 L1-L4 正
 
 **适用：** 高价值文档的精确事实问答（财报、合同、技术规范、医学文献）。
 
-#### L5 检索时增强（与 L1-L4 正交）
-
-**核心思路：** 不改变切分本身，而是改变"检索-返回"的单元——让"用什么粒度检索"和"返回给 LLM 什么内容"解耦。
-
-这层方法可以叠加在 L1-L4 之上使用。
-
-**1. Overlap（重叠切割）**
-
-相邻 chunk 保留 10-20% 重叠区域，避免关键信息恰好落在边界处被截断。
-
-进阶：**基于句子边界的智能 overlap**——固定 overlap 可能切在句子中间，智能 overlap 在确定重叠区域后向后扫描到最近句子结尾才截断。
-
-**2. 父子分块（Small-to-Big / Hierarchical）**
-
-创建父-子分块关系：
-- 父分块：大块（约 2000 字符），存内容和元数据
-- 子分块：小块（约 500 字符），存向量和 `parent_id` 引用
-- 检索时：用 query 匹配子分块向量 → 通过 `parent_id` 拉取父分块返回给 LLM
-
-解决"小分块匹配精确但缺乏上下文，大分块上下文充足但匹配不准"的矛盾。
-
-**3. 句子窗口检索（Sentence Window Retrieval）**
-
-存储时以单句为粒度各自向量化，检索命中某句后，==动态扩展==返回前后 N 句作为上下文窗口。
-
-```
-存储：[句1向量] [句2向量] [句3向量] ... （每句独立）
-检索：命中句3 → 返回 [句1, 句2, 句3, 句4, 句5]（窗口=2）
-```
-
-与父子分块的区别：父子分块的父块预先存储为固定大小；句子窗口在检索时动态扩展，更灵活但需要实时拼接。
-
-**4. Contextual Retrieval**
-
-Anthropic 2024 提出。向量化前用 LLM 为每个 chunk 生成 1-2 句上下文描述，把"上下文 + 原 chunk"一起向量化。详见 5.3 与 [[RAG高级技术#五、优化策略分类与组合]]。
-
-**5. Late Chunking**
-
-Jina AI 2024 提出。先用长上下文 Embedding 模型对整个文档编码，再在向量层面做切分。每个 token 的向量都带有全文上下文。详见 5.3。
-
-#### ���向对比
+#### 横向对比
 
 | 层 | 方法 | 核心思路 | 适合场景 | 代价 |
 |----|------|---------|---------|------|
-| L1 | 规则切分 | 固定长度/分隔符 | 同质化短文档、baseline | 不理解结构，易截断语义 |
+| L1 | 规则切分 | 固定长度/分隔符 + Overlap 兜底 | 同质化短文档、baseline、所有方案的兜底 | 不理解结构，易截断语义 |
 | L2 | 结构感知 | 利用标题/表格/列表的原生结构 | 有结构的文档（手册、法规、Markdown） | 需为不同文档类型定制规则 |
 | L3 | 语义切分（Embedding） | 句间相似度突变检测 | 无结构文档（聊天、转写） | 计算成本高、阈值难调 |
 | L3 | 语义切分（判别式） | 训练模型预测主题边界 | 同上，且有训练数据 | 推理快但需训练 |
 | L4 | 命题级 | LLM 分解为原子命题 | 高价值精确问答 | LLM 成本高、可能丢失关联 |
-| L5 | Overlap | 边界重叠 | 任何场景兜底 | 存储略增 |
-| L5 | 父子分块 | 小块检索、大块返回 | 有层次的文档 | 需维护父子关系 |
-| L5 | 句子窗口 | 单句检索、窗口扩展 | 句子独立性强的文档 | 存储量大 |
-| L5 | Contextual Retrieval | 向量化前注入文档上下文 | 结构化文档精确匹配 | LLM 成本（可被 Prompt Caching 摊薄） |
-| L5 | Late Chunking | 编码后再切分 | 长文档保留全文语境 | 需长上下文 Embedding 模型 |
+
+> [!info] L1-L4 是==决定 chunk 边界==的四种方法学
+> ==与 L1-L4 正交==的"chunk 内容增强"策略（Contextual Retrieval、Late Chunking）见下文 5.3 节——这些不是更高一层的切分方式，而是==可以叠加在 L1-L4 任何一层之上==的内容/编码增强。
+>
+> ==与 L1-L4 正交==的"在线检索增强"策略（父子分块、句子窗口检索）属于检索阶段而非切分阶段，详见 [[RAG检索策略#五、检索时的上下文扩展]]。
 
 ---
 
-### 5.3 当前 SOTA 方法（2024-2026）
+### 5.3 chunk 内容增强（与切分边界正交）
 
-这一节单独整理近两年最值得关注的新方法。它们的共同点：==让分块的依据从"位置/规则"转向"模型理解"==。
+**核心定位**：本节方法==不决定 chunk 边界画在哪==——边界由 L1-L4 决定。本节方法决定==每个 chunk 在向量化时如何编码==，让向量携带更多信息。
+
+==与 L1-L4 是正交关系==：用 L1 规则切分照样可以叠加 Contextual Retrieval；用 L4 命题切分也能叠加 Late Chunking。
+
+**两个主流方法（概念）：**
 
 #### Contextual Retrieval（Anthropic 2024）
 
-**问题：** 单独的 chunk 失去了原文档的语境。比如"收入增长 40%"——LLM 看不到这是哪家公司哪个季度的数据。
+向量化前用 LLM 看整篇文档，==为每个 chunk 生成 50-100 token 的上下文描述==，把"上下文 + 原 chunk"一起向量化：
 
-**做法：** 向量化前用 LLM 看整篇文档，为每个 chunk 生成 50-100 token 的上下文描述（如"该 chunk 来自 ACME 公司 2023 Q3 财报，讨论北美区营收"），把"上下文 + 原 chunk"一起向量化。
+```
+原 chunk: "营收同比增长 40%"
+   ↓ LLM 看整篇文档生成上下文
+增强后:   "[本段来自 ACME 公司 2023 Q4 财报，讨论北美区业务] 营收同比增长 40%"
+   ↓ 向量化
+带文档级上下文的向量
+```
 
-**关键技术：** 用 Prompt Caching 把整篇文档作为缓存的 system prompt，处理 N 个 chunk 只完整读文档一次，成本可大幅降低。
+==关键技术==：用 Prompt Caching 把整篇文档作为缓存的 system prompt，处理 N 个 chunk 只完整读文档 1 次，成本可降 80-90%。
 
-**优势：** 实施简单（只在离线阶段加一步），效果明显，与混合检索（向量 + BM25）叠加效果最佳。
-
-**劣势：** 离线索引时间增加；文档很短时收益不明显。
+适用：结构化长文档（财报、合同、技术规范）+ 精确匹配场景。
 
 #### Late Chunking（Jina AI 2024）
 
-**问题：** 传统流程是"先切再编码"，每个 chunk 编码时看不到其他 chunk 的内容，导致 chunk 内的代词、缩写、隐含主语丢失语境。
+==反过来——"先编码再切"==。用长上下文 Embedding 模型先对整个文档做 token 级编码，每个 token 的向量已包含全文语境，再在向量层面按 chunk 边界做 mean pooling。
 
-**做法：** 反过来——"先编码再切"。用长上下文 Embedding 模型（如 Jina-embeddings-v2，支持 8K token）对整个文档先做 token 级编码，每个 token 的向量都已经包含全文语境，然后在向量层面按 chunk 边界做 mean pooling 得到每个 chunk 的最终向量。
+```
+传统："这家公司的营收增长 40%" 单独编码 → 不知道是哪家公司
+Late Chunking：在"ACME 财报"全文中编码 → "这家公司"的向量已经知道指代 ACME
+```
 
-**优势：** 不需要额外的 LLM 调用，零额外成本；解决跨 chunk 的指代问题。
+适用：代词/指代密集的文档（法律、政策、学术），且 Embedding 模型支持长上下文（BGE-M3 8K、Qwen3-Embedding 32K）。
 
-**劣势：** 受限于 Embedding 模型的上下文窗口；多文档批量处理时内存占用显著高于传统方案。
-
-#### 判别式分块（金山办公 2026）
-
-**论文：** 《Toward General Semantic Chunking: A Discriminative Framework for Ultra-Long Documents》（arXiv:2602.23370）
-
-**问题：** 生成式语义分块（让 LLM 输出切分点）速度慢、不稳定；基于 Embedding 相似度的语义切分阈值难调。
-
-**做法：** 把主题分割转化为==二分类问题==——"相邻句子之间是否存在主题边界"。架构五阶段：
-1. 句子级细粒度建模：拆分文档为句子序列
-2. token 级语义编码：Qwen3-0.6B 为骨干，对全文做 token 编码
-3. 块级语义聚合：注意力池化得到每个句子的语义表示
-4. 跨块上下文建模：轻量 Transformer 建模句子间依赖
-5. 边界判别预测：MLP 分类头输出边界概率
-
-**超长文档处理：** 重叠滑动窗口策略——超过模型上下文的文档拆分为窗口，相邻窗口保留 10% 重叠区域，重叠��的边界概率取多窗口预测均值。支持任意长度文档。
-
-**启发式后处理：**
-- 按预设阈值做初始分块，生成高置信度的语义块
-- 超长块递归选取块内边界概率最高位置二次拆分
-- 超短块对比左右边界语义连续性，合并到更连贯的一侧
-
-**VFSC 超长块检索适配：** 分块后的超长块超出 Embedding 上下文窗口，截断会丢语义。方案：用一个融合向量 + 一个标量因子，严格还原超长块所有子段的平均余弦相似度，存储复杂度从 O(N) 降至 O(1)。
-
-**优势：** 推理速度比生成式分块显著快；端到端训练，不需要调阈值；零语义损失的超长块检索方案。
-
-#### 命题化切割（Dense X Retrieval, EMNLP 2024）
-
-**论文：** Chen et al., arXiv:2312.06648
-
-**问题：** 段落或句子级 chunk 经常包含多件事，检索时只想要其中一件，但向量是混合语义。
-
-**做法：** 用 LLM 把文档分解为命题——每个命题是自包含的原子事实陈述。HuggingFace 上有官方 propositioner 模型 `chentong00/propositionizer-wiki-flan-t5-large` 可直接调用。
-
-**优势：** 检索粒度最细，命题之间互不干扰；论文实验中召回质量超过段落和句子级 chunk。
-
-**劣势：** LLM 调用成本高；命题之间的篇章关联（因果、对比、时序）会丢失，需要在检索后通过 ID 关联回原段落（类似父子分块的思路）补全语境。
+> [!tip] 算法细节、论文出处、实测效果详见 [[分块策略前沿]]
+> 包含四种前沿方法的完整解读：Contextual Retrieval / Late Chunking / 判别式分块（金山办公 2026）/ 命题化切割（Dense X Retrieval, EMNLP 2024）。本节只给概念，工程实施请看前沿文档。
 
 ---
 
@@ -756,39 +1054,39 @@ class ChunkMetadata:
 - `parent_chunk_id` → 父子分块的关联键
 - `source_authority` / `updated_at` → 多源冲突解决（权威优先、时效优先）
 
-业务场���下可以追加领域字段（如"是否关键条款"、"产品线分类"等），但通用模板应保持精简。
+业务场景下可以追加领域字段（如"是否关键条款"、"产品线分类"等），但通用模板应保持精简。
 
 ---
 
 ### 5.5 选型决策树
 
-按文档特征选方案：
+按文档特征选方案（==只列离线分块策略，配套的在线检索策略——父子分块、句子窗口检索——见 [[RAG检索策略#五、检索时的上下文扩展]]==）：
 
 ```
 文档是否有清晰结构（标题层级/Markdown/HTML）？
-├── 有 → L2 结构感知 + L5 父子分块（手册、法规、API 文档、Wiki）
-│       └── 高价值精确问答场景叠加 L4 命题化 或 L5 Contextual Retrieval
+├── 有 → L2 结构感知（手册、法规、API 文档、Wiki）
+│       └── 高价值精确问答场景叠加 L4 命题化 或 ==Contextual Retrieval（5.3）==
 │
 └── 无 → 文档长度？
     ├── 中短（< 8K token） → L3 语义切分（判别式优先于 Embedding 相似度）
-    │                       或 L5 Late Chunking（如有长上下文 Embedding 模型）
+    │                       或 ==Late Chunking（5.3）==（如有长上下文 Embedding 模型）
     └── 超长 → 金山判别式分块 + VFSC 超长块检索
 
-通用兜底：所有方案都建议叠加 L5 Overlap（100 token + 智能边界）
+通用兜底：所有方案都建议叠加 L1 Overlap（100 token + 智能边界）
 ```
 
 **典型组合方案：**
 
-| 场景 | 推荐组合 |
+| 场景 | 离线分块（本章）+ 在线检索增强（详见 [[RAG检索策略]]） |
 |------|---------|
-| 大规模通用知识库 | L2 结构感知 + L5 Overlap + 重排兜底 |
-| 企业内部文档（Wiki/规范/手册） | L2 结构感知 + L5 父子分块 |
-| 法律/金融/医疗精确问答 | L2 结构感知 + L5 Contextual Retrieval（用 BM25 混合检索） |
+| 大规模通用知识库 | L2 结构感知 + L1 Overlap + 重排兜底 |
+| 企业内部文档（Wiki/规范/手册） | L2 结构感知 + 检索时叠加==父子分块== |
+| 法律/金融/医疗精确问答 | L2 结构感知 + Contextual Retrieval + BM25 混合检索 |
 | 财报/合同的事实抽取 | L4 命题化 + 关联回原段落 |
-| 会议纪要 / 客服对话 / 口语转写 | L3 判别式语义切分 + L5 句子窗口 |
-| 跨指代多的长文档 | L5 Late Chunking |
+| 会议纪要 / 客服对话 / 口语转写 | L3 判别式语义切分 + 检索时叠加==句子窗口== |
+| 跨指代多的长文档 | Late Chunking |
 
-所有方案都不是孤立的，工程上常常组合使用。最常见的组合是 ==L2 + L5 Overlap + L5 父子或 Contextual Retrieval==——结构感知保证 chunk 边界与逻辑边界对齐，Overlap 兜底边界截断，L5 增强检索阶段的上下文。
+所有方案都不是孤立的，工程上常常组合使用。最常见的组合是 ==L2 结构感知 + L1 Overlap + 检索时父子分块或 Contextual Retrieval==——结构感知保证 chunk 边界与逻辑边界对齐，Overlap 兜底边界截断，配套的检索增强提供上下文。
 
 
 ---

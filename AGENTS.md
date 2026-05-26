@@ -13,13 +13,17 @@ wiki/                  # 正式知识内容
 ├── Spring/
 ├── MySQL/
 ├── Redis/
-├── RAG/
-├── LLM/
+├── 计算机网络/
+├── 操作系统/
+├── 数据格式/          # XML/HTML/JSON 等基础知识
+├── 文档解析/          # OCR/TSR/版面分析/公式识别/VLM 等 Document AI 技术
+├── RAG/               # RAG 系统：基础架构、检索策略、向量与 Embedding、高级技术、多轮对话
+├── LLM/               # Agent / LLM 基础 / Prompt / 框架（RAG 已独立到 wiki/RAG/）
 ├── Baize项目/         # 个人项目（RAG 知识库系统，ES + Kafka + MinIO）
+├── PaiFlow/
 ├── 算法/
-├── 项目/
-├── 汇总文档/
-├── 面试题目.md        # 所有面试题的 checklist 索引（约 325 道）
+├── 汇总文档/          # 各模块的复习汇总（不含计算机网络/操作系统，已独立成目录）
+├── 面试题目.md        # 所有面试题的 checklist 索引
 └── Git.md
 
 raws/                  # 原始文档（待整理）

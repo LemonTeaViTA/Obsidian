@@ -1,5 +1,5 @@
 ---
-module: LLM
+module: RAG
 tags: [RAG, Agentic RAG, GraphRAG, 自反思RAG, 知识图谱, 多模态RAG, ColPali, RAG-Gym]
 difficulty: hard
 last_reviewed: 2026-05-18
@@ -147,7 +147,7 @@ ReSearch（Reasoning-then-Search）的核心是"先推理再检索"：
 
 ---
 
-## 四、知识图谱增强检��
+## 四、知识图谱增强检索
 
 ### 为什么需要知识图谱
 
