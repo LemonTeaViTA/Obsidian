@@ -9,7 +9,7 @@ last_reviewed: 2026-05-25
 
 > 主流 Agent 框架的对比与选型，从国际大厂（LangChain/LangGraph/CrewAI/AutoGen/LlamaIndex）到国产框架（Hermes/OpenClaw/Spring AI）的完整画像。
 >
-> Agent 通用概念（ReAct/Function Calling/Memory）见 [[Agent核心概念]]；通用 Harness 框架见 [[Harness Engineering]]。
+> Agent 通用概念（ReAct/Function Calling/Memory）见 [[Agent 核心概念]]；通用 Harness 框架见 [[Harness Engineering]]。
 
 ---
 
@@ -195,7 +195,7 @@ public class CustomerSupportService {
 
 #### Memory 系统
 
-OpenClaw 用 ==SQLite + FTS5 + sqlite-vec==（向量检索）实现 Memory（详见 [[Agent核心概念#五、Memory 系统]]）。
+OpenClaw 用 ==SQLite + FTS5 + sqlite-vec==（向量检索）实现 Memory（详见 [[Agent 核心概念#五、Memory 系统]]）。
 
 ### 4.2 Hermes（自进化）
 
@@ -286,7 +286,7 @@ OpenClaw 用 ==SQLite + FTS5 + sqlite-vec==（向量检索）实现 Memory（详
 
 1. **必学**：==Spring AI==（Java 集成的事实标准）
 2. **了解**：LangGraph 的状态图思想（复杂 Agent 通用范式，跨语言）
-3. **关注**：MCP 协议（[[Agent核心概念#四、MCP 协议]]）—— Spring AI 已支持
+3. **关注**：MCP 协议（[[Agent 核心概念#四、MCP 协议]]）—— Spring AI 已支持
 4. **加分**：能讲清 LangChain → LangGraph 的演进、Spring AI 的 RAG 实现、Multi-Agent 编排
 
 ==面试常见误区==：直接背 LangChain 的 API 没用，==重要的是讲清楚 Agent 框架解决了什么工程难题==（循环控制、工具调用、Memory、可观测性）——本质和 [[Harness Engineering]] 是一回事。
@@ -295,8 +295,8 @@ OpenClaw 用 ==SQLite + FTS5 + sqlite-vec==（向量检索）实现 Memory（详
 
 ## 相关链接
 
-- [[Agent核心概念]] — Agent 通用概念（ReAct / Function Calling / Memory）
-- [[Agent工程实践]] — Agent 工程编排（DSL+DAG / Multi-Agent / 可观测性）
-- [[Agent Skills体系]] — Skills 渐进式披露原理
+- [[Agent 核心概念]] — Agent 通用概念（ReAct / Function Calling / Memory）
+- [[Agent 工程实践]] — Agent 工程编排（DSL+DAG / Multi-Agent / 可观测性）
+- [[Agent Skills 体系]] — Skills 渐进式披露原理
 - [[Harness Engineering]] — 框架背后的通用 Harness 思想
-- [[AI编程工具]] — Claude Code / Cursor 等的"Agent 即产品"形态
+- [[AI 编程工具]] — Claude Code / Cursor 等的"Agent 即产品"形态

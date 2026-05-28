@@ -9,7 +9,7 @@ last_reviewed: 2026-05-25
 
 > 与 [[ReAct 与 Harness 实现]] 配对的"另一种推理框架"实现文档——==80 行 Python 看清 Plan-and-Execute 的完整流程==。
 >
-> 推理模式概念见 [[Agent核心概念#2.1 三种推理框架]]；与 ReAct 的功能对比见 [[Agent核心概念#2.3 三种框架对比]]；Claude Code 的 Plan Mode 是 ReAct + Plan-and-Execute 混合（详见 §五）。
+> 推理模式概念见 [[Agent 核心概念#2.1 三种推理框架]]；与 ReAct 的功能对比见 [[Agent 核心概念#2.3 三种框架对比]]；Claude Code 的 Plan Mode 是 ReAct + Plan-and-Execute 混合（详见 §五）。
 
 ---
 
@@ -389,6 +389,153 @@ def make_plan_with_history(user_task: str, history: list) -> list:
 
 ==LangGraph 的 Plan-and-Execute 实现==就内置 Replan 节点——状态图里加一条边"if execute_failed → planner",自动循环。
 
+### 4.4 Replan 上下文裁剪策略:两层 context 分离
+
+==Replan 最容易爆炸的地方==:某个 Step 拉了 5000 行文章 / 大 SQL 查询结果 / 完整文件——==如果原样塞进 Replan prompt,几次 replan 就炸了 context==。
+
+#### 核心认知:两层 context 分离
+
+```
+┌───────────────────────────────────────────┐
+│ Replan Prompt (==Planner LLM 看到的==)    │
+│ → 只看 metadata / 摘要                    │
+│ → "Step 1 拉到了 5000 字文章,主题 X"     │
+│ → ==2-5k tokens== (无论中间产物多大)      │
+└───────────────────────────────────────────┘
+
+┌───────────────────────────────────────────┐
+│ Execution State (==Executor LLM 看到的==) │
+│ → 完整 artifact 都存着                    │
+│ → step_1.output = <5000 字全文>           │
+│ → 通过引用 {{step_1.output}} 注入         │
+└───────────────────────────────────────────┘
+```
+
+==关键==:
+- ==Planner 不看原始内容==——只看元信息,足以重新规划下游
+- ==Executor 看原始内容==——执行时从 state 加载,通过 `{{step_X.output}}` 引用注入
+- ==两个 context 完全独立==——Planner 始终没看过 5000 字原文
+
+#### 输出大小三档处理
+
+| 输出大小 | 例子 | Replan 时怎么传 |
+|---------|------|---------------|
+| ==小（< 200 tokens）== | HTTP 状态码 / 错误消息 / 简单 JSON / 3 条 DB 记录 | ==直接 inline 全文== |
+| ==中（200-2000 tokens）== | 短文章 / 函数代码 / 一段日志 | ==inline 摘要 + 关键属性== |
+| ==大（> 2000 tokens）== | 5000 行文章 / 完整文件 / 大量 SQL 结果 | ==只传 metadata==,内容存 state |
+
+#### Metadata 怎么来:两种生成方法
+
+**方法一:确定性提取**(轻量,优先用)
+
+==Step 跑完 Harness 自动从输出里提取==——零成本,纯代码:
+
+```python
+def make_metadata(step, output) -> dict:
+    return {
+        "type": detect_type(output),         # text / json / binary / code
+        "size_tokens": estimate_tokens(output),
+        "preview": output[:200] + "...",     # 前 200 字符
+        "key_attrs": extract_attrs(output),  # 类型相关:文章看标题/字数;代码看函数名/语言
+    }
+
+# 例子: 拉到一篇 5000 字文章
+metadata = {
+    "type": "text/html",
+    "size_tokens": 6500,
+    "preview": "AI 安全前沿:本文从 alignment 视角讨论...",
+    "key_attrs": {
+        "title": "AI 安全前沿",
+        "word_count": 5000,
+        "code_blocks": 12,
+        "lang": "zh-CN"
+    }
+}
+```
+
+**方法二:LLM 摘要**(成本高,只对大输出用)
+
+==输出 > 2000 tokens 时==,让==便宜小模型==(Haiku / Flash / GLM-Flash)生成一句话摘要:
+
+```python
+async def add_summary_if_large(metadata: dict, output: str) -> dict:
+    if metadata["size_tokens"] > 2000:
+        # ★ 用便宜模型,不用主 LLM
+        metadata["summary"] = await haiku.invoke(
+            f"用一句话总结这段内容(<50 字): {output[:5000]}"
+        )
+    return metadata
+```
+
+==成本经济学==:Haiku 调用 ~$0.001——==1 次便宜调用换后续 N 次 Replan prompt 省几千 token==,完全划算。
+
+#### 完整 metadata 生成流程
+
+```python
+async def execute_step_with_metadata(step, state):
+    output = await execute(step, state)         # 1. 执行 step
+
+    # 2. 自动生成 metadata
+    metadata = make_metadata(step, output)
+    metadata = await add_summary_if_large(metadata, output)
+
+    # 3. 双层存储
+    state.artifacts[step.id] = output           # ★ 完整内容,Executor 用
+    state.metadata[step.id] = metadata          # ★ 元信息,Planner 用
+
+    return {"status": "success", "step_id": step.id}
+```
+
+==存储位置==(看实现):内存(单进程 Agent)/ Redis(多进程)/ 文件(长任务持久化)。==关键==:===artifact 和 metadata 分开存===,Replan 只读 metadata,Executor 读 artifact。
+
+#### 完整 Replan prompt 示例
+
+==场景==:Step 1 拉文章 → Step 2 总结 → Step 3 写 DB(失败)
+
+```
+原始任务: 抓取这篇文章并存入 DB
+
+==上次的计划==:
+Step 1: fetch_url("...") → ✓ 完成
+        artifact: HTML 文章, 5000 字, 主题 "AI 安全", 含 12 个代码块
+        摘要: "本文从 alignment 视角讨论 AI 安全前沿..."
+        (full content stored in state as step_1.output)
+
+Step 2: summarize(step_1.output) → ✓ 完成
+        artifact: 300 字摘要, 提取了 5 个关键点
+        (full content stored as step_2.output)
+
+Step 3: insert_db(step_2.output) → ✗ 失败
+        ERROR: TableNotFound 'articles_v2'
+
+==请基于已有 artifacts 重新规划剩余步骤==
+```
+
+==Planner LLM 看不到==那 5000 字原文,只看 metadata。==新 Plan 引用 `{{step_2.output}}`==——Executor 跑到那一步时,==从 state 加载 step_2 的 300 字摘要==塞进新工具调用。
+
+#### Token 量级对比
+
+| 策略 | 一次 Replan 的 prompt 大小 |
+|------|------------------------|
+| ==精简策略==(本节方案) | ==2-5k tokens== |
+| 全量历史(每 Step 完整 trace) | ==20-50k tokens==,几次 replan 就炸 |
+| 只传错误,丢失成功 Step 信息 | <2k 但==Planner 不知道做过什么,容易重做== |
+
+==生产推荐==:本节的精简策略——==每个成功 Step 只留 metadata + 引用 ID==,失败 Step 留完整错误。这与 [[长上下文工程]] 的 context budget 思路一致。
+
+#### 关键原则
+
+| 原则 | 说明 |
+|------|------|
+| ==Planner 看元信息== | metadata + 摘要,不看原始 artifact |
+| ==Executor 看完整内容== | 通过 `{{step_X.output}}` 引用从 state 加载 |
+| ==小输出原样传== | < 200 tokens 直接 inline,不值得做 metadata |
+| ==大输出强制 metadata== | > 2000 tokens 必须用 metadata,否则 prompt 爆炸 |
+| ==metadata 自动生成== | 确定性提取 + 大输出用便宜 LLM 摘要 |
+| ==artifact 和 metadata 分开存== | 双层 state,各取所需 |
+
+==面试时讲清==:"==Replan 不爆炸的关键是两层 context 分离==——Planner 只看 metadata 重新规划,Executor 通过引用从 state 加载完整 artifact。==大输出走 metadata + 便宜 LLM 摘要==,1 次 Haiku 调用换后续多次 Replan 省几千 token。"
+
 ---
 
 ## 五、与 ReAct 的混合(生产级架构)
@@ -440,7 +587,7 @@ def hybrid_agent(user_task: str):
 - ==底层 ReAct==给每步的灵活性,允许探索
 - ==两层都可以失败重试==,鲁棒性更强
 
-==这就是 [[Agent核心概念#2.2 三种核心能力]] 末尾说的"==混合使用三种能力=="==。
+==这就是 [[Agent 核心概念#2.2 三种核心能力]] 末尾说的"==混合使用三种能力=="==。
 
 ---
 
@@ -478,7 +625,7 @@ app = graph.compile()
 - ==Plan ≤ 10 步,线性,稳定== → 手写 list 就够
 - ==Plan 复杂、有分支、需要 Replan== → 升级到 LangGraph
 
-详见 [[Agent框架#2.2 LangGraph]]。
+详见 [[Agent 框架#2.2 LangGraph]]。
 
 ---
 
@@ -660,8 +807,8 @@ Executor:
 ## 相关链接
 
 - [[ReAct 与 Harness 实现]] — 配对的另一种推理框架完整实现(60 行 Python)
-- [[Agent核心概念#二、推理模式与 Harness 控制流]] — 三种推理框架的概念对比
-- [[Agent框架#2.2 LangGraph]] — Plan-and-Execute 的工程化版本
+- [[Agent 核心概念#二、推理模式与 Harness 控制流]] — 三种推理框架的概念对比
+- [[Agent 框架#2.2 LangGraph]] — Plan-and-Execute 的工程化版本
 - [[Harness Engineering#控制流模式（六大组件之外的"第七维"）]] — 控制流是 Harness 的第七维
-- [[Agent工程实践#二、Multi-Agent 架构]] — 多 Agent 协作中的任务分发
-- [[AI编程工具#7.1 Commands（命令）]] — Claude Code 的 /plan 命令
+- [[Agent 工程实践#二、Multi-Agent 架构]] — 多 Agent 协作中的任务分发
+- [[AI 编程工具#7.1 Commands（命令）]] — Claude Code 的 /plan 命令

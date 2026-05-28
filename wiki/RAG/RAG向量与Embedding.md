@@ -620,4 +620,4 @@ train_loss = losses.MultipleNegativesRankingLoss(model)
 - [[RAG基础与架构]] — 离线管道：文档解析、文本清洗、分块策略
 - [[RAG检索策略]] — 在线阶段：查询理解、四层检索优化、混合检索、重排
 - [[RAG高级技术]] — Agentic RAG、GraphRAG、自反思 RAG
-- [[LLM基础与训练]] — Transformer 架构与 Self-Attention 原理
+- [[LLM 基础与训练]] — Transformer 架构与 Self-Attention 原理

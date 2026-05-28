@@ -90,7 +90,7 @@ response = llm.invoke(query, tools=tools)
 - 加新意图==只需加新 tool 描述，无需训练==
 - 用户换说法 LLM 自己理解（语义匹配 tool description）
 
-Claude / GPT-4 / Qwen 都原生支持 Function Calling，==这是当前生产 RAG 系统的事实标准==。详见 [[Agent核心概念#四、MCP 协议]]（MCP 是 Function Calling 的标准化协议）。
+Claude / GPT-4 / Qwen 都原生支持 Function Calling，==这是当前生产 RAG 系统的事实标准==。详见 [[Agent 核心概念#四、MCP 协议]]（MCP 是 Function Calling 的标准化协议）。
 
 > [!tip] 不是所有 RAG 都需要全部工具
 > 简单 RAG 只需 `search_knowledge`；多模态 RAG 加 `web_search`；交互式助手加 `ask_clarification`；复杂推理加 `self_reflect`。==按业务实际需要扩工具，不是越多越好==——工具太多会增加 LLM 决策负担和 token 成本，[[Harness Engineering#六、企业级实战经验|Stripe 经验是每个 Agent 只给精心筛选的子集]]。
@@ -737,7 +737,7 @@ results = collection.search(
 
 这种"检索-返回"分离的策略有两个主流实现：父子分块和句子窗口检索。
 
-> 注意：这两种方法的 chunk 结构是离线建立的（参见 [[RAG基础与架构#5.2 分块策略全景：按方法学分五层]]），但==核心逻辑在检索阶段==——本节聚焦在线检索时如何使用这些结构。
+> 注意：这两种方法的 chunk 结构是离线建立的（参见 [[分块策略#二、切分边界的四种方法学]]），但==核心逻辑在检索阶段==——本节聚焦在线检索时如何使用这些结构。
 
 ---
 
@@ -885,7 +885,7 @@ def sentence_window_retrieve(query, vector_store, doc_store, top_k=5, window=2):
 
 本节的"检索时上下文扩展"建立在==离线 chunk 结构==之上：
 
-| 离线（[[RAG基础与架构#5.2 分块策略全景：按方法学分五层]]） | 在线（本节） |
+| 离线（[[分块策略#二、切分边界的四种方法学]]） | 在线（本节） |
 |--------------------------------------------------------|------------|
 | L2 结构感知切分（识别章节层级） | 5.1 父子分块（取父块返回） |
 | L1 规则切分到句子级 | 5.2 句子窗口检索（动态扩展） |
@@ -900,5 +900,5 @@ def sentence_window_retrieve(query, vector_store, doc_store, top_k=5, window=2):
 - [[RAG基础与架构]] — 离线管道：文档解析、文本清洗、分块策略
 - [[RAG向量与Embedding]] — 向量数据库选型与 Embedding 模型
 - [[RAG高级技术]] — Agentic RAG、GraphRAG、自反思 RAG
-- [[LLM基础与训练]] — Transformer 与 Embedding 原理基础
-- [[Agent核心概念]] — Agent 架构中的 RAG 定位
+- [[LLM 基础与训练]] — Transformer 与 Embedding 原理基础
+- [[Agent 核心概念]] — Agent 架构中的 RAG 定位

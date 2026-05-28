@@ -53,7 +53,7 @@ Agent 推理：
 
 单智能体 Agentic RAG 面对需要综合十几份文档的问题时会崩：全局检索的跨文档噪声不断带偏检索方向，top-K 必然漏掉关键证据。
 
-**SPD-RAG（Sub-Agent Per Document RAG）** 的核心洞察：多文档问答的瓶��不是 top-K 多大或上下文多长，而是每份文档是否被充分、独立、深度挖掘。
+**SPD-RAG（Sub-Agent Per Document RAG）** 的核心洞察：多文档问答的瓶颈不是 top-K 多大或上下文多长，而是每份文档是否被充分、独立、深度挖掘。
 
 ### 三层架构
 
@@ -101,7 +101,7 @@ Self-RAG（华盛顿大学 + IBM）通过训练 LLM 生成特殊的 Reflection T
 |------|------|------|
 | 第一阶段 | Router Agent | 根据查询类型路由到不同知识源 |
 | 第二阶段 | Multi-Agent | 每个主题域专属 Agent + Meta-Agent 综合 |
-| 第三阶段 | Self-RAG | 自动���估相关性和支撑性，低置信度重新检索 |
+| 第三阶段 | Self-RAG | 自动评估相关性和支撑性，低置信度重新检索 |
 
 关键收获：分阶段演进（不要一步到位）、Haiku 做路由 + Sonnet 做生成（节省 60% 成本）、基于真实用户查询日志优化。
 
@@ -143,7 +143,7 @@ ReSearch（Reasoning-then-Search）的核心是"先推理再检索"：
 3. **DPO 微调 Actor**：1000 条标注数据即可见效，教会模型区分"好的检索动作"和"差的检索动作"
 
 > [!tip] 评估集构建
-> 公开 benchmark（HotpotQA）和���际业务场景可能完全不同。必须建立 100+ 条贴合业务的测试集，覆盖：高频问题、长尾问题、易混淆问题、多跳推理问题。
+> 公开 benchmark（HotpotQA）和实际业务场景可能完全不同。必须建立 100+ 条贴合业务的测试集，覆盖：高频问题、长尾问题、易混淆问题、多跳推理问题。
 
 ---
 
@@ -203,7 +203,7 @@ Graphusion（WWW 2025）提出三步走方案：
 - 解决问题：固定大小分块会在语义中间切断，丢失上下文
 - 实现方式：按语义边界分割，保持相关内容在一起
 - 工具：Docling HybridChunker（https://github.com/DS4SD/docling）
-- 详细技术见 [[RAG基础与架构#五、分块策略（Chunking）]]
+- 详细技术见 [[分块策略]]
 
 **2. 上下文检索（Contextual Retrieval）**
 - 解决问题：分块缺乏文档级上下文（如"收入增长 40%"不知道是哪个公司、哪个季度）
@@ -433,4 +433,4 @@ LangChain 的 `MultiVectorRetriever` 实现此模式：摘要（Caption）入向
 - [[RAG基础与架构]] — 离线管道：文档解析、文本清洗、分块策略、Prompt 拼接
 - [[RAG检索策略]] — 在线阶段：查询理解、四层检索优化、混合检索、重排
 - [[RAG向量与Embedding]] — 向量数据库选型、Embedding 模型演进与选型、微调
-- [[Agent核心概念]] — Agent 架构中 RAG 的定位（Memory vs RAG）
+- [[Agent 核心概念]] — Agent 架构中 RAG 的定位（Memory vs RAG）

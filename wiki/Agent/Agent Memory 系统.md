@@ -9,7 +9,7 @@ last_reviewed: 2026-05-25
 
 > Agent 的记忆系统——==让 Agent 能跨会话记住事==。本文聚焦 Agent 视角的 Memory:三层架构、短期/长期的存储工程、==短期→长期转换机制==、Agent 如何使用 Memory、生产实现。
 >
-> 多轮对话的对话存储与上下文窗口管理见 [[多轮对话]]；与 RAG 的对比简化在 §六 引用 [[RAG基础与架构]];Skills 与 Memory 的边界见 [[Agent Skills体系]]。
+> 多轮对话的对话存储与上下文窗口管理见 [[多轮对话]]；与 RAG 的对比简化在 §六 引用 [[RAG基础与架构]];Skills 与 Memory 的边界见 [[Agent Skills 体系]]。
 
 ---
 
@@ -464,9 +464,9 @@ LLM 调 save_memory("项目约定:所有 PR 必须带测试")
 
 ## 相关链接
 
-- [[Agent核心概念]] — Agent 整体架构(Memory 是其中一个核心模块)
+- [[Agent 核心概念]] — Agent 整体架构(Memory 是其中一个核心模块)
 - [[多轮对话]] — 对话存储 schema、上下文窗口管理、五种重要性判断方案
-- [[Agent Skills体系]] — Skills 是显式的能力包,Memory 是隐式的事实沉淀
+- [[Agent Skills 体系]] — Skills 是显式的能力包,Memory 是隐式的事实沉淀
 - [[RAG基础与架构]] — RAG 详解(与 Memory 的对比已在 §六)
 - [[Function Calling]] — `memory_search` / `save_memory` 是工具调用的具体应用
 - [[ReAct 与 Harness 实现]] — Memory 工具如何被 Agent 在 ReAct 循环中使用

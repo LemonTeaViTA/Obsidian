@@ -495,4 +495,4 @@ Embedding：Qwen2.5-Coder-Embedding-1.5B（本地）
 - [[RAG向量与Embedding#六、Embedding 微调]] — Code Embedding 微调方法
 - [[RAG检索策略]] — 多路召回 + 重排（在代码场景的特化）
 - [[Harness Engineering#GitNexus：代码库知识图谱引擎]] — 调用图与代码 RAG 的工程实例
-- [[AI编程工具]] — Cursor / Claude Code 等的产品定位
+- [[AI 编程工具]] — Cursor / Claude Code 等的产品定位

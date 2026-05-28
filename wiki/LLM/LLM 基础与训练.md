@@ -69,7 +69,7 @@ $$q'_m = R_m \cdot q_m, \quad k'_n = R_n \cdot k_n$$
 | 方案 | 注入方式 | 编码类型 | 长度外推 |
 |------|---------|---------|---------|
 | Sinusoidal | 加到 embedding | 绝对位置 | 差 |
-| 可学习绝对位置编码 | 加到 embedding | 绝对位置 | 差（���练长度硬上限） |
+| 可学习绝对位置编码 | 加到 embedding | 绝对位置 | 差（训练长度硬上限） |
 | **RoPE** | 作用于 Q/K 旋转 | 相对位置 | 好，是现代 LLM 标配 |
 
 ### Layer Normalization
@@ -125,7 +125,7 @@ FFN 承担非线性变换和知识存储，模型约 **2/3 的参数**集中在 
 
 ### 1. 预训练（Pre-training）
 
-海量文本（万亿 token 级别）自监督学习，目标是预测下一个 token（Next Token Prediction）。消耗算力最大，占整体训���成本 95% 以上。
+海量文本（万亿 token 级别）自监督学习，目标是预测下一个 token（Next Token Prediction）。消耗算力最大，占整体训练成本 95% 以上。
 
 **Chinchilla 法则**：最优训练 token 数 ≈ 20 × 参数量。如 70B 模型应训练约 1.4T tokens，参数量和数据量同等重要，单纯堆参数而数据不足是浪费。
 
@@ -501,5 +501,5 @@ output      = sum(weights[i] * Expert_i(x))    # 加权求和
 
 - [[Prompt与Harness]] — Prompt 工程与 Harness 进阶
 - [[RAG基础与架构]] — RAG 是 LLM 落地的核心技术
-- [[Agent核心概念]] — Agent 是 LLM 的应用形态
+- [[Agent 核心概念]] — Agent 是 LLM 的应用形态
 - [[JVM JIT与字节码]] — JIT 编译优化与 LLM 推理优化的思想相通
