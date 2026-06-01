@@ -61,7 +61,56 @@
 - [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) — Obsidian 写作风格规范
 - [QUALITY_CHECKLIST.md](QUALITY_CHECKLIST.md) — 文档质量检查清单
 - [RAW_WORKFLOW_GUIDE.md](RAW_WORKFLOW_GUIDE.md) — `raws/` 处理流程
+- [wiki-管理方法论.md](wiki-管理方法论.md) — Wiki 组织方法论（Diátaxis / SSoT / 健康指标）
+- [思考记录.md](思考记录.md) — 决策记录（ADR 风格，记"为什么"）
 - [优化记录.md](优化记录.md) — 全局变更日志，每次重构都记一笔
+
+### 文档分工关系
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  AGENTS.md  ← 给 Agent 看的"做事规则"(操作触发规则)     │
+│       │                                                  │
+│       │ 引用                                             │
+│       ↓                                                  │
+│  ┌────────────────────────────────────────┐             │
+│  │ wiki-管理方法论.md                     │             │
+│  │ ↳ 知识库管理的"宪法"(Diátaxis/SSoT/健康)│             │
+│  └────────────────────────────────────────┘             │
+│       │                                                  │
+│       │ 具体规则展开                                     │
+│       ↓                                                  │
+│  ┌──────────────────┐  ┌──────────────────┐            │
+│  │ OBSIDIAN_STYLE   │  │ QUALITY_CHECKLIST│            │
+│  │ ↳ 写作格式规范   │  │ ↳ 质量检查清单   │            │
+│  │   (高亮/callout) │  │   (引用 STYLE)   │            │
+│  └──────────────────┘  └──────────────────┘            │
+│                                                          │
+│  ┌──────────────────────────────────────────┐           │
+│  │ RAW_WORKFLOW_GUIDE.md  ← raws/ 高层流程  │           │
+│  │ ↳ 细节在 raws/WORKSPACE.md(SSoT)         │           │
+│  └──────────────────────────────────────────┘           │
+│                                                          │
+│  ┌──────────────────┐  ┌──────────────────┐            │
+│  │ 思考记录.md      │  │ 优化记录.md      │            │
+│  │ ↳ 决策"为什么"   │  │ ↳ 流水账"做了啥" │            │
+│  │   (ADR 格式)     │  │   (按月归档)     │            │
+│  └──────────────────┘  └──────────────────┘            │
+└─────────────────────────────────────────────────────────┘
+```
+
+==读哪一个==：
+
+| 我想... | 看 |
+|--------|------|
+| 知道 wiki 是什么 | [README.md](README.md)（本文档） |
+| 给 Agent 写指令 | [AGENTS.md](AGENTS.md) |
+| 学怎么管理 wiki | [wiki-管理方法论.md](wiki-管理方法论.md) |
+| 写 wiki 内容 | [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) |
+| 检查文档质量 | [QUALITY_CHECKLIST.md](QUALITY_CHECKLIST.md) |
+| 整理 raws | [RAW_WORKFLOW_GUIDE.md](RAW_WORKFLOW_GUIDE.md) → [raws/WORKSPACE.md](raws/WORKSPACE.md) |
+| 看历史决策 | [思考记录.md](思考记录.md) |
+| 看变更日志 | [优化记录.md](优化记录.md) |
 
 ---
 

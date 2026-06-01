@@ -93,11 +93,18 @@ MCP 基于 ==JSON-RPC 2.0== 通信，分三层角色：
 
 ### 通信方式：三种 transport
 
-| Transport | 适用 | 特点 |
+| Transport | 适用 | MCP 占比 |
 |-----------|------|------|
-| ==stdio==（标准输入输出） | 本地 Server 进程 | 最简单，Host 启动 Server 子进程 + pipe 通信 |
-| ==Streamable HTTP==（2025 新规范） | 远程 Server | ==单 endpoint== POST + chunked 流式响应；==取代 2024 年的 SSE 双 endpoint 方案== |
-| ==WebSocket== | 远程双向通信 | 双向实时，复杂度高，主流 SDK 支持有限 |
+| ==stdio==（标准输入输出） | ==本地 Server 进程==——Host 启动子进程 + pipe 通信 | ==80%+== |
+| ==Streamable HTTP==（2025 新规范） | ==远程 Server==——单 endpoint POST + chunked 流式响应 | ~15% |
+| ==WebSocket== | 远程双向实时通信 | <5%（防火墙问题） |
+
+> [!info] ==stdio / Streamable HTTP / WebSocket 是什么？三者怎么选？==
+> 这三个不是 MCP 特有概念——是==操作系统 IPC + 计算机网络协议==的基础知识。==MCP / LSP / gRPC 都用它们做底层传输==。
+>
+> 完整解释（==类比、消息边界、关键特征、对比表==）见 ==[[计算机网络#五Agent-时代的传输方式stdio--streamable-http--websocket]]==。
+>
+> ==简单说==：==stdio == 本机父子进程的"传话筒"==；==Streamable HTTP == 浏览器协议的"流式版"==；==WebSocket == 真正的"双向电话"==。
 
 ==生产中 stdio 占 80%+==——大部分 MCP Server 是本地工具（filesystem / git / postgres）。==远程 server 走 Streamable HTTP==——典型场景：托管在云端的 SaaS 工具（chrome-devtools 远程实例 / 团队共享的内网 API server）。
 

@@ -1,8 +1,8 @@
 ---
-module: LLM
-tags: [LLM, Agent, Memory, 短期记忆, 长期记忆, MEMORY.md, Compaction]
+module: Agent
+tags: [Agent, Memory, 短期记忆, 长期记忆, MEMORY.md, Compaction]
 difficulty: hard
-last_reviewed: 2026-05-25
+last_reviewed: 2026-05-29
 ---
 
 # Agent Memory 系统
@@ -10,6 +10,89 @@ last_reviewed: 2026-05-25
 > Agent 的记忆系统——==让 Agent 能跨会话记住事==。本文聚焦 Agent 视角的 Memory:三层架构、短期/长期的存储工程、==短期→长期转换机制==、Agent 如何使用 Memory、生产实现。
 >
 > 多轮对话的对话存储与上下文窗口管理见 [[多轮对话]]；与 RAG 的对比简化在 §六 引用 [[RAG基础与架构]];Skills 与 Memory 的边界见 [[Agent Skills 体系]]。
+
+> [!tip] ==Memory 系统全貌速览（一分钟读完）==
+>
+> ==整套 Memory 系统的工作机制==——读完这个 callout，==后面所有章节都是细节展开==。
+>
+> ==1. 三层模型 L1 / L2 / L3==
+>
+> | 层 | 实际定义 | 生命周期 | 类比 |
+> |---|--------|--------|------|
+> | ==L1== | ==单次 LLM 调用内 KV Cache==（一轮推理） | ==几秒==（这次调用结束就丢） | CPU 寄存器 |
+> | ==L2== | ==当前会话累积的对话历史==（N 轮拼接） | ==会话内==（关 CLI 就丢） | 内存 |
+> | ==L3== | ==跨会话持久化==的关键事实 | ==永久== | 硬盘 |
+>
+> ==一次对话 = 一次 L2 会话 = N 次 L1 推理==。
+>
+> ==2. L2 压缩（接近 context 上限或 token 增量等触发，4 种方式）==
+>
+> | 方式 | 干什么 |
+> |------|------|
+> | ==滑动窗口== | 只保留最近 N 轮 |
+> | ==摘要压缩== | LLM 把旧对话压缩成==散文段落== |
+> | ==向量检索增强== | 历史存向量库，每轮按 query 检索相关片段注入 |
+> | ==关键事实提取== | LLM 提取==结构化条目==（区别于摘要：输出格式 / 用途不同） |
+>
+> ==生产组合==：最近 5 轮原文 + 中间摘要 + 早期关键事实。
+>
+> ==3. L2 → L3 转换（5 种方式，不一定靠 LLM）==
+>
+> | 方式 | 项目 |
+> |------|------|
+> | ==后台 forked agent extract== | Claude Code |
+> | ==Agent 主动调 memory tool== | Hermes |
+> | ==系统 nudge 提醒==（每 N 轮） | Hermes |
+> | ==评分提升==（不靠 LLM，靠数据投票） | OpenClaw |
+> | ==只做日志==（用户手写 AGENTS.md） | Codex |
+>
+> ==4. Memory 注入位置（2 种主流）==
+>
+> | 方式 | 项目 | 特点 |
+> |------|------|------|
+> | ==Frozen Snapshot 进 system prompt== | Hermes | session 启动读 → 整个 session 不变 → ==prompt cache 100% 命中== |
+> | ==按需检索按 query 选 top-K 进当前轮== | Claude Code | 文件多不爆 system prompt，但每轮 cache miss |
+>
+> ==5. 完整 Prompt 结构==
+>
+> ```
+> [system prompt(优先级最高,可能含 memory frozen snapshot)]
+> [memory(若按需注入,只在需要时进当前轮)]
+> [历史对话(可能压缩过——摘要/滑窗/向量检索)]
+> [最新 user 消息]
+> ```
+>
+> ==6. 设计哲学（信任假设）==
+>
+> | 哲学 | 项目 | 信任 LLM 自动 extract 吗？ |
+> |------|------|--------|
+> | ==乐观主义== | Claude Code | 信——后台 forked agent 自动 |
+> | ==保守主义== | Codex | 不信——只做日志 + 用户手写 |
+> | ==工程主义== | Hermes | 单一不够——4 重保险 |
+> | ==经验主义== | OpenClaw | 用数据投票——评分驱动 |
+>
+> ==7. 关键认知==
+>
+> - ==Memory ≠ RAG==（个性化沉淀 vs 外部知识库；几千条 vs 百万级）
+> - ==摘要压缩 ≠ 关键事实提取==（散文 vs 结构化条目；当前会话 vs 跨会话）
+> - ==L2→L3 不一定靠 LLM==（OpenClaw 评分提升纯数据驱动）
+> - ==Frozen Snapshot 是 Hermes 工程亮点==（解决"写 memory 破坏 prompt cache"矛盾）
+> - ==朴素分块（OpenClaw）≠ 语义分块（生产 RAG）==——简单+通用 vs 准+贵
+
+> [!warning] ==重要：本文混合了两条实现路线，阅读时注意区分==
+>
+> Memory 系统在生产中有==两种主流实现==，差异巨大。本文 §三-§四 默认描述==重型路线==（OpenClaw / Hermes / PaiCli 风格），但==Claude Code（基于 v2.1.88 还原源码验证）走的是轻型路线==。
+>
+> | 维度 | 轻型路线（Claude Code）| 重型路线（OpenClaw / Hermes / PaiCli）|
+> |------|-----------|-----------|
+> | L3 存储 | ==仅 Markdown 文件==（`memdir/*.md`）| Markdown + SQLite |
+> | L3 索引 | ==无索引== | FTS5 全文 + sqlite-vec 向量 |
+> | L3 检索 | ==LLM 当 Retriever==——扫描 memory header（name+description）→ Sonnet 选 top-5 | 混合检索（BM25 + 向量 + RRF 融合） |
+> | L2 压缩触发 | ==基于 token 阈值==（`effectiveContextWindow - 13_000` buffer）| 按轮数 / 按 token / 按时间 |
+> | 压缩输出预算 | ==20K tokens== 摘要预留 | 不固定 |
+> | 适合场景 | 单项目 / 用户 CLAUDE.md < 10K | 跨项目 / 海量历史 / 企业级 |
+>
+> ==选哪条路线==取决于规模。==选错代价==：轻型用在企业级会查不动，重型用在个人场景是过度工程。==Claude Code 的轻型路线说明==：长上下文模型（200K+）+ 文件简洁的场景下，"==让 LLM 当 Retriever=="比预建索引更简单可靠。
 
 ---
 
@@ -21,7 +104,7 @@ Agent 的记忆系统分==三层==,每层解决不同问题:
 |------|------|---------|---------|---------|------|
 | ==L1== | 工作记忆(Working Memory) | 单次推理步骤内 | LLM 的 KV Cache + 当前 Prompt | ==内存==,不持久化 | CPU 寄存器 |
 | ==L2== | 短期记忆(Short-term Memory) | 当前会话 | 上下文窗口 + 会话日志 | ==JSONL 会话日志文件== | 内存 |
-| ==L3== | 长期记忆(Long-term Memory) | 跨会话持久化 | 向量检索 + FTS 全文索引 | ==Markdown + SQLite== | 硬盘 |
+| ==L3== | 长期记忆(Long-term Memory) | 跨会话持久化 | ==Markdown==（轻型）/ Markdown + SQLite（重型） | 文件系统 | 硬盘 |
 
 ==关键认知==:这三层==不是独立的存储==,而是==同一份信息在不同生命周期的呈现==。每发生一次对话:
 - 输入 LLM 时是 ==L1==(被压成 KV Cache 用一次)
@@ -29,6 +112,14 @@ Agent 的记忆系统分==三层==,每层解决不同问题:
 - 提炼关键事实写入 MEMORY.md 后是 ==L3==(下次会话还能用)
 
 ==三层之间的转换==是 Memory 系统的核心设计——尤其 ==L2 → L3==,详见 §四。
+
+> [!info] Claude Code 的"无索引 L3"
+> Claude Code 的 L3 没有 SQLite/向量索引——内存目录（`memdir/`）下放一堆 `.md` 文件，每个文件开头有 ==frontmatter header==（name + description）。需要回忆时：
+> 1. ==`scanMemoryFiles`== 扫描所有 memory 文件的 header（不读全文，只读元信息）
+> 2. ==`findRelevantMemories`== 把 header 列表 + 用户 query 给 ==Sonnet== 当选择器，让它返回最多 5 个相关文件名
+> 3. 然后才读那 5 个文件全文进 prompt
+>
+> ==这就是"LLM as Retriever"模式==——文件数量本身少（一般几十个），LLM 一次调用就能精准筛选，==比预建索引简单可靠==。详见 §七 生产实现对比。
 
 ---
 
@@ -101,6 +192,9 @@ Agent 的记忆系统分==三层==,每层解决不同问题:
 ## 三、L3 长期记忆详解
 
 ### 3.1 关键架构原则:Markdown 是本体
+
+> [!note] 本节描述==重型路线==（OpenClaw / Hermes / PaiCli）
+> Claude Code 的轻型路线==只用 Markdown==，没有 SQLite 加速层。下面 §3.3-§3.5 的索引建立 / 混合检索内容==仅适用于重型路线==。Claude Code 的实际机制见 §三-A。
 
 ==L3 的核心设计==:
 
@@ -189,6 +283,11 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(
 
 ==查询时==:==Markdown 不参与==,直接从 SQLite 读 chunks,通过 FTS5 + 向量混合检索找到相关 chunks 返回。
 
+> [!info] ==FTS5 / SQLite / chunk 策略的实现细节==
+> ==SQL schema 原文==、==`chunkMarkdown` 切分逻辑==、==BM25+向量混合检索 SQL==、==chunk 粒度澄清==（一个文件 N 个 chunk，不是每行一个）、==与完整 RAG 的对比==——见 [[Memory 实现对比#5.5 SQLite + FTS5 实现详解（轻量化 RAG）]]。
+>
+> ==关键认知==：OpenClaw 的 Memory 检索==就是个轻量化 RAG==——把 RAG 的核心思想（chunk + 索引 + 混合检索）压进单个 SQLite 文件，零依赖、零运维。
+
 ### 3.4 索引建立四步
 
 ==Markdown → SQLite 索引==的流程:
@@ -219,6 +318,15 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(
 ==1 和 2 的区别==:1 是用户主动,2 是 Agent 判断"这条值得记"主动调工具。生产中两个都要有,各自适合不同场景。
 
 ==3 是最隐式的==,详见 §四。
+
+---
+
+## 三-A、四项目实际怎么做？
+
+> [!info] ==详细对比已独立成文==
+> 各项目的 L3 实现差异巨大（==Claude Code 无索引==，==Hermes Frozen Snapshot==，==OpenClaw 评分提升==，==Codex 用户掌控==），完整源码级对比见 ==[[Memory 实现对比#二、Claude Code 的"轻型路线"]]==。
+>
+> 本文不重复实现细节——==想看具体怎么做==请去对比文档。
 
 ---
 
@@ -353,6 +461,19 @@ def compact_session_to_memory(session_jsonl_path: str, memory_md_path: str):
 
 ---
 
+## 四-A、四项目 L2→L3 实测对比
+
+> [!info] ==对比已独立成文==
+> 上面 §四 是==通用方法论==。==四个主流项目==的 L2→L3 实现差异巨大：
+> - ==Claude Code==：后台 Forked Agent 自动 extract（==乐观信任==）
+> - ==Codex CLI==：==没有自动转换==（保守，仅日志）
+> - ==Hermes==：4 重保险（Plugin + nudge + Curator + 8 个 backend）
+> - ==OpenClaw==：评分提升 + 仿生 Dreaming
+>
+> 完整源码级对比见 ==[[Memory 实现对比#四、Hermes 的 4 重保险]]==。
+
+---
+
 ## 五、Memory 怎么被 Agent 使用
 
 ==核心原则:按需检索而非全量注入==——MEMORY.md 不是每回合全量塞进上下文,而是==通过工具按需读取==。==这是 Memory 能"越记越多但不撑爆上下文"的根本==。
@@ -443,27 +564,43 @@ LLM 调 save_memory("项目约定:所有 PR 必须带测试")
 
 ---
 
-## 七、生产实现对比
+## 七、四种风格 + 选型原则
 
-| 产品 | L2 短期 | L3 长期 | 转换机制 |
-|------|--------|--------|---------|
-| ==Claude Code== | JSONL 会话日志 | `~/.claude/CLAUDE.md` + memory/*.md | session-memory Hook + Compaction |
-| ==Cursor== | 内置 SQLite | `.cursorrules` 文件(规则)+ Notepads(记忆) | 用户手动维护为主 |
-| ==OpenClaw== | SQLite conversations 表 | MEMORY.md + SQLite + sqlite-vec | Compaction 自动 |
-| ==Hermes== | SQLite + 三层架构 | MEMORY.md + FTS5 + LLM 摘要 | 多触发条件 |
+> [!info] ==详细对比已独立成文==
+> 完整的 4 项目（Claude Code / Codex CLI / Hermes / OpenClaw）源码级对比、9 维度对照表、选型决策树见 ==[[Memory 实现对比]]==。本节只讲==设计哲学和选型原则==。
 
-==共同点==:
-- 都用==文件 + 嵌入式数据库==的本地方案,不依赖远程服务
-- 都遵循"==Markdown 是本体=="原则
-- 都支持==用户手动审查/修改==记忆
+### 7.1 四种 Memory 风格
+
+| 风格 | 代表项目 | 信任假设 | 适合场景 |
+|------|--------|--------|--------|
+| ==轻型路线==（文件 + LLM as Retriever） | Claude Code | ==乐观信任 LLM== 自动 extract | 个人 / 单项目 / 几十个 memory |
+| ==用户掌控==（自动只到日志） | Codex CLI | ==保守==——不信任自动 extract | 企业 / 强可控性 / 用户可信 |
+| ==4 重保险==（plugin + nudge + curator） | Hermes | ==工程主义==——单一机制不够 | 复杂场景 / 多 backend 需求 |
+| ==评分驱动 + 仿生== | OpenClaw | ==经验主义==——用数据投票 | 大量长期使用 / 个性化要求高 |
+
+### 7.2 共同点
+
+不管选哪条路线，==生产级 Agent 的 Memory 都遵守==：
+- ==文件 + 嵌入式数据库==的本地方案,不依赖远程服务
+- "==Markdown 是本体=="原则——索引层是加速器，能从 Markdown 重建
+- 支持==用户手动审查/修改==记忆（不锁定在不透明的数据库里）
 
 ==Anthropic 的 Memory 设计哲学==:
 > ==记忆是用户的资产,不是产品的锁定==——这是为什么 Claude Code 的记忆都在用户文件系统,而不是云端数据库。
+
+### 7.3 三个误区
+
+==误区 1==："所有产品都用向量检索做 Memory"——==错==。Claude Code 不用向量，用 ==LLM as Retriever==。
+
+==误区 2==："SQLite 加速层是必需的"——==看规模==。几十个 .md 文件级别完全不需要，扫描 header 比建索引还快。
+
+==误区 3==："Memory = RAG"——==不一样==。Memory 是用户私有的偏好/决策/上下文沉淀（几百到几千条），RAG 是外部知识库（百万到亿级）。详见 §六。
 
 ---
 
 ## 相关链接
 
+- ==[[Memory 实现对比]]== — ★ 四项目源码级 Memory 实现详细对比
 - [[Agent 核心概念]] — Agent 整体架构(Memory 是其中一个核心模块)
 - [[多轮对话]] — 对话存储 schema、上下文窗口管理、五种重要性判断方案
 - [[Agent Skills 体系]] — Skills 是显式的能力包,Memory 是隐式的事实沉淀

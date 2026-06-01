@@ -2,10 +2,24 @@
 module: LLM
 tags: [LLM, Harness, Generator-Evaluator, 工程实践]
 difficulty: hard
-last_reviewed: 2026-05-09
+last_reviewed: 2026-05-29
 ---
 
 # Harness Engineering
+
+> [!info] ==本文偏方法论 + 概念框架==
+>
+> Harness Engineering 是==给 LLM 搭运行环境的工程方法论==——本文讲==思想和原则==（三代进化、四大原则、六大组件）。
+>
+> ==具体怎么落地==见 [[Agent索引_MOC]] 下的各篇文档：
+> - 工具集成 → [[MCP 协议]] / [[Function Calling]] / [[Coding Agent 工具集]]
+> - 上下文工程 → [[长上下文工程]] / [[Agent Memory 系统]]
+> - 状态持久化 → [[Agent 部署与服务化]]（Durable Task Queue）
+> - 子代理编排 → [[Multi-Agent 架构]]
+> - 验证与安全 → [[Agent 安全模型]] / [[Agent 可靠性设计]]
+> - 可观测性 → [[Agent 可观测性]]
+>
+> ==Agent 工程实质上就是 Harness Engineering 的具体化==——本文是"方法论入口"，Agent/ 目录的文档是"工程落地"。
 
 ## 一、从 Prompt Engineering 到 Harness Engineering：三代进化
 

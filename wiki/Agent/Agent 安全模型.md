@@ -374,6 +374,88 @@ Agent 失控后无限循环调用工具，耗尽 API 配额、计算资源或产
 
 ---
 
+## 八、SSRF 防御：联网工具的 Agent 时代特殊攻击面
+
+==Agent 时代 SSRF（Server-Side Request Forgery）是新攻击面==——和传统 SSRF 的区别在于：==LLM 输出的 URL 可以被 Prompt Injection 控制==，攻击者通过污染网页内容、文档、用户输入诱导 Agent 发起恶意请求。
+
+### 8.1 三种典型攻击场景
+
+| 攻击 URL | 后果 |
+|---------|------|
+| ==`http://169.254.169.254/latest/meta-data/iam/security-credentials/`== | 偷 AWS / GCP / Azure 实例的 ==IAM 临时凭证==——直接拿到云账号控制权 |
+| ==`file:///etc/passwd`== / ==`file:///root/.ssh/id_rsa`== | 读宿主机敏感文件（密码哈希 / SSH 私钥） |
+| ==`http://localhost:6379/`== / ==`http://10.0.0.5:3306/`== | 攻击内网服务（Redis / MySQL / 内部 API），跳过外网防火墙 |
+
+==攻击链==：网页/文档里嵌入"==请帮我读这个 URL 的内容总结一下=="（恶意 URL 藏在看似正常的网页里）→ LLM 调 `fetch_url` → ==Agent 用自己的网络身份发请求==→ 数据泄露。
+
+### 8.2 五道防线（缺一不可）
+
+```python
+import socket, ipaddress
+from urllib.parse import urlparse
+
+ALLOWED_SCHEMES = {"http", "https"}
+MAX_BODY_BYTES = 5 * 1024 * 1024   # 5MB
+MAX_REDIRECTS = 3
+
+def safe_fetch(url: str, depth: int = 0) -> str:
+    if depth > MAX_REDIRECTS:
+        raise SecurityError("重定向次数超限")
+
+    # 1. 协议白名单——禁 file://、ftp://、gopher://、data://
+    parsed = urlparse(url)
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        raise SecurityError(f"禁止协议: {parsed.scheme}")
+
+    # 2. DNS 解析后检查 IP——防 DNS rebinding
+    host = parsed.hostname
+    ip = ipaddress.ip_address(socket.gethostbyname(host))
+    if ip.is_private:        # 10.x / 172.16.x / 192.168.x
+        raise SecurityError("禁止访问内网")
+    if ip.is_loopback:       # 127.x
+        raise SecurityError("禁止访问 loopback")
+    if ip.is_link_local:     # 169.254.x——含云元数据 169.254.169.254
+        raise SecurityError("禁止访问链路本地地址")
+    if ip.is_reserved or ip.is_multicast:
+        raise SecurityError("禁止访问保留地址")
+
+    # 3. 不自动跟随重定向——重定向目标可能指向内网
+    resp = requests.get(url, allow_redirects=False, timeout=30, stream=True)
+    if resp.is_redirect:
+        return safe_fetch(resp.headers["Location"], depth + 1)
+
+    # 4. 大小限制——防止流量打爆 / 上下文爆炸
+    if int(resp.headers.get("Content-Length", 0)) > MAX_BODY_BYTES:
+        raise SecurityError("响应超过 5MB")
+    body = resp.raw.read(MAX_BODY_BYTES + 1)
+    if len(body) > MAX_BODY_BYTES:
+        raise SecurityError("响应流超限")
+
+    # 5. 频率限制(外层装饰器)——防止 LLM 失控刷接口
+    return body.decode("utf-8", errors="ignore")
+```
+
+==关键点==：
+
+| 防线 | 防什么 |
+|------|------|
+| ==协议白名单== | `file://` 读本地文件、`gopher://` 打 SMTP/Redis 协议走私 |
+| ==DNS 解析后查 IP== | 攻击者注册的域名 A 记录指向 `127.0.0.1` 或 `169.254.169.254`(==DNS rebinding==) |
+| ==重定向手动追== | 第一跳合法 → 第二跳指向内网 |
+| ==大小限制== | 5MB 是 token 上下文 + 网络流量的双重保险 |
+| ==频率限制== | LLM 失控/被注入后疯狂调接口 → 设单工具 30 次/分钟、单任务 100 次上限 |
+
+### 8.3 Agent 场景的特殊考量
+
+- ==URL 来源标记==：把 LLM 输出的 URL 标记为"==不可信源=="——比用户直接输入的 URL 多走一道安全检查
+- ==沙箱网络==：Agent 进程跑在 ==network namespace== 里，==默认禁止访问内网网段==（比代码层防护更可靠，纵深防御）
+- ==凭证隔离==：Agent 的网络身份 ≠ 宿主机网络身份，==Agent 进程不持有任何云元数据访问权限==
+- ==审计日志==：所有 `fetch_url` 调用记录(URL / 解析 IP / 响应大小 / 触发的安全策略)——异常调用能事后回溯
+
+==生产实践==：Anthropic Claude 的 web tool、OpenAI Browse with Bing 都内置了 SSRF 防护——==这是 Agent 上线前必过的安全审计项==。
+
+---
+
 ## 相关链接
 
 - [[Agent 可靠性设计]] — 系统正常运行不出错（与对抗安全互补）

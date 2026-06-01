@@ -1,8 +1,8 @@
 ---
-module: LLM
-tags: [LLM, Agent, Coding Agent, LSP, Language Server, JSON-RPC, 代码诊断, Post-Edit Verification]
+module: Agent
+tags: [Agent, Coding Agent, LSP, Language Server, JSON-RPC, 代码诊断, Post-Edit Verification]
 difficulty: hard
-last_reviewed: 2026-05-28
+last_reviewed: 2026-05-31
 ---
 
 # LSP 与代码诊断
@@ -12,6 +12,100 @@ last_reviewed: 2026-05-28
 > Coding Agent 与 IDE 用同一套 LSP,但==处理诊断的方式完全不同==——IDE 显示给人看,Coding Agent ==把诊断回注 LLM 让它自己修==,这是 Agent 与 IDE 的本质区别。
 >
 > 与 [[MCP 协议]] / [[Function Calling]] 是同源协议家族(都是 JSON-RPC),与 [[Reflection 实现#3.3 外部验证器]] 是落地关系——本文是诊断回注的具体实现。
+
+> [!tip] ==LSP / MCP / LLM 三层关系速览（一分钟读完）==
+>
+> ==这部分是 LSP 最容易混淆的认知==——读完这个 callout，==后面所有章节都是细节展开==。
+>
+> ==1. LSP 和 MCP 表面非常像==
+>
+> | 维度 | 共同点 |
+> |------|------|
+> | 协议基础 | ==都是 JSON-RPC 2.0== |
+> | 默认 transport | ==都默认 stdio== |
+> | 模式 | "暴露方法" + initialize 握手 + 长连接 |
+>
+> ==MCP（2024）明显借鉴 LSP（2016）的设计==——==时间差 8 年==。
+>
+> ==2. 但解决不同问题==
+>
+> | 维度 | LSP（2016 Microsoft） | MCP（2024 Anthropic） |
+> |------|---------------------|------|
+> | ==设计目标== | ==编辑器 ↔ 语言服务== | ==AI 应用 ↔ 工具== |
+> | ==消费者== | 编辑器 / IDE（人类用户的代理） | LLM（AI） |
+> | ==推送机制== | ==Server 主动推 `publishDiagnostics`==（核心） | 弱（只有 list_changed notification） |
+> | ==文档抽象== | ==完整生命周期==（didOpen / didChange / didSave） | 无文档抽象 |
+> | ==方法体系== | ==70+ 标准方法==（textDocument/* 为核心） | 几个核心 method（tools/* + resources/*） |
+>
+> ==MCP 是 LSP 思想在 AI 时代的演化==——==同一个协议模式（USB-style），换了消费者==。
+>
+> ==3. ★ LSP 不直接给 LLM 用——经过 Host 中间层==
+>
+> ==关键认知==：==LSP 协议太复杂==（70+ 方法 + 推送 + 文档生命周期），==LLM 用不动==。==实际链路==：
+>
+> ```
+> ┌────────────────────────────────────┐
+> │  Layer 3: LLM(Claude / GPT)         │
+> │  看到的: "find_definition(x)" Tool   │  ← Function Calling 协议
+> └────────────────────────────────────┘
+>                 ↑↓ tool_calls
+> ┌────────────────────────────────────┐
+> │  Layer 2: Host(Coding Agent)        │
+> │  - 接 LLM 的 tool_calls              │
+> │  - 翻译成 LSP / MCP 调用             │
+> │  - 收 publishDiagnostics 推送         │
+> │  - 把诊断回注下一轮 LLM              │
+> └────────────────────────────────────┘
+>                 ↑↓
+> ┌────────────────┐  ┌────────────────┐
+> │ Layer 1a:      │  │ Layer 1b:      │
+> │ MCP Server     │  │ LSP Server     │
+> │ (github)       │  │ (rust-analyzer)│
+> └────────────────┘  └────────────────┘
+> ```
+>
+> ==Host 把 LSP 的核心能力包装成 Tool 暴露给 LLM==——==LLM 永远不直接看到 LSP 协议==。
+>
+> ==4. 两种集成方式==
+>
+> | 方式 | 谁用 |
+> |------|------|
+> | ==Host 内置 LSP Client== | Cursor / VS Code Continue（==Host 本来就是 IDE==） |
+> | ==通过 MCP 桥接==（langserver-mcp 等） | CLI Agent（==Host 不内置 LSP，走 MCP 协议桥==） |
+>
+> ==5. LSP 给 LLM 解决了什么核心问题==
+>
+> ==确定性工具替代 LLM 自检==——这就是 [[Reflection 实现#3.3 外部验证器]] 的具体落地：
+>
+> | 维度 | LLM 自检 | LSP 诊断 |
+> |------|--------|---------|
+> | 准确性 | ==概率性==（可能漏 / 误判 / 幻觉） | ==确定性==（基于完整类型系统） |
+> | 成本 | LLM 调用费 | ==几乎免费==（本地解析） |
+> | 速度 | 秒级 | ==毫秒级== |
+> | 适合 | 逻辑 / 设计错误 | ==语法 / 类型错误== |
+>
+> ==Coding Agent 标配==：post-edit 触发 LSP → 诊断回注 LLM → LLM 自主修复。
+>
+> ==6. 完整工作流==
+>
+> ```
+> 1. LLM 调 write_file Tool 改代码
+>    ↓
+> 2. Host 收到 tool_call → 写文件 → 异步触发 LSP
+>    ↓
+> 3. LSP 协议层:
+>    - Host 发 textDocument/didChange → Server
+>    - Server 后台分析
+>    - Server 主动推 publishDiagnostics → Host
+>    ↓
+> 4. Host 缓存诊断到 pending 队列
+>    ↓
+> 5. 下一轮 LLM 请求前,Host 把诊断格式化注入 system prompt
+>    ↓
+> 6. LLM 看到 "[error] foo.ts:42:18 - Cannot find name 'X'"
+>    ↓
+> 7. LLM 自己决定 read + edit 修复
+> ```
 
 ---
 
@@ -71,6 +165,11 @@ VS Code / IntelliJ / Vim / Neovim / Emacs / Sublime / Helix ...
    ↓ JSON-RPC over stdio
 Language Server(独立进程,如 rust-analyzer)
 ```
+
+> [!info] ==stdio / Streamable HTTP / WebSocket 是什么？==
+> 这三种是==操作系统 IPC + 计算机网络协议==的基础知识，==MCP / LSP / gRPC 都用它们做底层传输==。完整解释（含类比、消息边界、对比表）见 ==[[计算机网络#五Agent-时代的传输方式stdio--streamable-http--websocket]]==。
+>
+> ==简单说==：==stdio == 本机父子进程的"传话筒"==——LSP/MCP 都默认走这个；==Streamable HTTP == 跨网络流式==；==WebSocket == 双向实时==。
 
 ### 2.2 核心方法
 
