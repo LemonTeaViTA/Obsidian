@@ -1,5 +1,5 @@
 ---
-module: LLM
+module: Agent
 tags: [LLM, Agent, Skills, 渐进式披露]
 difficulty: medium
 last_reviewed: 2026-05-28
@@ -178,7 +178,7 @@ Skills 的核心价值三个词：**沉淀**（个人经验→团队资产）、
 
 1. **沙箱执行**：脚本只在沙箱环境中运行，限制网络访问、文件访问和系统调用，防止恶意脚本破坏系统
 2. **输入验证**：所有用户输入经过严格验证，检查危险字符（`;`、`&&`、`||`、反引号、`$(` 等），防止命令注入
-3. **资源限制**：执行时间上限 30 秒、内存上限 512MB、文件大小上限 100MB、网络请求上限 10 次，防止资源耗尽攻击
+3. **资源限制**：执行时间、内存、文件大小、网络请求次数都设上限，防止资源耗尽攻击。==具体数值取决于实现==——以某 Coding Agent 的沙箱默认配置为参考：执行时间 30 秒、内存 512MB、文件大小 100MB、网络请求 10 次（==均为该实现的默认值,非行业标准,生产按需调整==）
 
 ### 与 HITL 的协同：Skill 不引入新审批维度
 
@@ -248,10 +248,13 @@ Host 拦截:execute_command 是高危工具,走 HITL 规则
 
 | 工具 | 内置 | 个人级 | 项目级 |
 |------|------|-------|-------|
-| Claude Code | claude-code 包内 | `~/.claude/skills/` | `.claude/skills/` |
+| Claude Code | （无固定内置层，以用户/项目级为主） | `~/.claude/skills/` | `.claude/skills/` |
 | Codex | codex 包内 | `~/.codex/skills/` | `.codex/skills/` |
 | TRAE | TRAE 包内 | `~/.trae/skills/` | `.trae/skills/` |
 | PaiCli | jar 内 | `~/.paicli/skills/` | `.paicli/skills/` |
+
+> [!note] "内置层"不是每个产品都有
+> 上表的内置层是==部分产品==的做法（PaiCli 把出厂 skill 打进 jar）。==Claude Code 官方文档并没有"包内内置 skill 层"==——它的 skill 主要在用户级（`~/.claude/skills/`）和项目级（`.claude/skills/`）。所谓"出厂示例"更多是 Anthropic 提供的样例供用户复制,而非运行时加载的内置层。
 
 ==关键原则:同名 skill 整体覆盖,不是字段级合并==
 
@@ -275,7 +278,10 @@ Host 拦截:execute_command 是高危工具,走 HITL 规则
 
 ## 十三、企业级管理（SkillHub）
 
-企业级方案：部署 SkillHub（自托管的 Skill 注册中心），提供：
+> [!info] ==以下是设想中的企业级方案,非某具体产品的既有实现==
+> 截至 2026-06，主流 Coding Agent 的 Skills 仍以用户级 / 项目级文件为主，==没有官方的中心化 Skill 注册中心==。下面描述的是企业自托管场景下==合理的能力设想==,供架构参考。
+
+企业级场景可以部署 SkillHub（自托管的 Skill 注册中心），典型能力：
 - **全文搜索**：按命名空间、下载量、评分、更新时间过滤
 - **权限控制**：组织/团队/全局作用域的命名空间，每个命名空间有所有者/管理员/成员角色
 - **CLI 集成**：通过命令行进行 Skills 的发布、安装和管理

@@ -1,6 +1,8 @@
 ---
 module: Agent
 tags: [WORKSPACE, 实现对比, 写作规范]
+difficulty: hard
+last_reviewed: 2026-06-01
 ---
 
 # 主流 Coding Agent 实现对比 — 工作区规范

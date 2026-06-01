@@ -392,28 +392,7 @@ LLM (tool_calls) → MCP Client (Host)
 
 ==生产推荐异步==——延迟 1-2 轮的代价远小于同步等待 5s 的体验损失。
 
-### 5.4 与 [[Reflection 实现#3.3 外部验证器]] 的关系
-
-==诊断回注是外部验证器的具体落地形式==:
-
-```
-Reflection §3.3: 用确定性工具验证(test / lint / 编译)
-                              ↓ 具体到代码诊断场景
-Post-Edit 诊断回注:
-  - "测试" 对应 → LSP 编译错误 / 类型错误
-  - "lint" 对应 → LSP warning / unused variable / style
-  - 验证结果回注 LLM 上下文 → 让 LLM 自主修
-```
-
-==关系总结==:
-- [[Reflection 实现#3.3 外部验证器]] 讲==思想==(用确定性工具替代 LLM 自评)
-- 本节讲==落地==(LSP 诊断怎么收集 / 怎么格式化 / 怎么注入)
-
----
-
-## 六、诊断格式化与容量管理
-
-### 6.1 标准格式
+### 5.4 标准格式
 
 ==LLM 训练数据里见过的诊断格式==——直接用编译器/lint 风格最有效:
 
@@ -432,7 +411,7 @@ Post-Edit 诊断回注:
 
 ==避免==:JSON 格式(LLM 处理 JSON 不如纯文本快)、过度结构化(`severity: 1` 不如 `[error]` 直观)。
 
-### 6.2 容量管理:为什么要上限
+### 5.5 容量管理:为什么要上限
 
 ==大型项目首次扫描可能产生 1000+ 诊断==——全注入会:
 - ==吃光 prompt budget==——20 条诊断 ~500 token,1000 条就 25k token
@@ -467,7 +446,7 @@ def format_pending_diagnostics(diagnostics: list, max_count: int = DEFAULT_MAX_D
     return "\n".join(lines)
 ```
 
-### 6.3 优先级排序的考量
+### 5.6 优先级排序的考量
 
 | 维度 | 排序逻辑 | 理由 |
 |------|---------|------|
@@ -476,7 +455,7 @@ def format_pending_diagnostics(diagnostics: list, max_count: int = DEFAULT_MAX_D
 | ==行号== | 小行号优先 | 通常文件头的错误更结构性 |
 | ==重复抑制== | 同一行多个诊断只保留最严重的 | 一处错误可能触发多个连锁警告 |
 
-### 6.4 下游清理
+### 5.7 下游清理
 
 ==注入下一轮后,pending 队列要清==——避免反复注入旧诊断让 LLM 误以为没修好:
 
@@ -490,11 +469,46 @@ def inject_diagnostics_to_next_turn():
 
 ==清空时机==:输出格式化后立即清——下次编辑触发新一轮诊断,新诊断进队列。
 
+### 5.8 与外部验证器 / Generator-Evaluator 的关系
+
+==诊断回注是 [[Reflection 实现#3.3 外部验证器（最可靠）]] 思想的具体落地形式==——Reflection 讲==思想==（用确定性工具替代 LLM 自评），本节讲==落地==（LSP 诊断怎么收集 / 格式化 / 注入）。
+
+```
+Reflection §3.3: 用确定性工具验证(test / lint / 编译)
+                              ↓ 具体到代码诊断场景
+Post-Edit 诊断回注:
+  - "测试" 对应 → LSP 编译错误 / 类型错误(publishDiagnostics 的 error 类)
+  - "lint" 对应 → LSP warning / unused variable / style(warning / info 类)
+  - 验证结果回注 LLM 上下文 → 让 LLM 自主修
+```
+
+==Generator-Evaluator 架构的具象==——这就是 [[Harness Engineering]] 提到的 Generator-Evaluator 模式，LSP 是天然的 Evaluator（给出确定性结果，没有 LLM 概率性误判）：
+
+```
+Generator(LLM)
+  ↓ 生成代码 (write_file)
+Evaluator(LSP)
+  ↓ 后台诊断 (publishDiagnostics)
+反馈 Loop
+  ↓ 下一轮注入 LLM
+Generator 自主修复
+```
+
+### 5.9 与 LLM-as-Judge 的对比
+
+| 方式 | 例子 | 准确性 | 成本 | 速度 |
+|------|------|------|------|------|
+| ==LSP 诊断== | rust-analyzer 报错 | ==极高==(确定性) | 低 | 快(1-2s) |
+| ==LLM-as-Judge== | 让另一个 LLM 评估代码 | 中(概率性) | 高(多一次 LLM 调用) | 慢(LLM 调用) |
+| ==自我反思== | 同一个 LLM 自评 | 低(盲点) | 低 | 中 |
+
+==生产建议==:==有 LSP 用 LSP==——确定性 + 便宜 + 快;==没有 LSP 才上 LLM-as-Judge==(如评估文档质量 / 代码风格主观项)。
+
 ---
 
-## 七、渐进式实现策略
+## 六、渐进式实现策略
 
-### 7.1 MVP:轻量解析器先上
+### 6.1 MVP:轻量解析器先上
 
 ==生产 Coding Agent 普遍模式==:不要一开始就接 LSP——先用轻量方案覆盖最常见诊断:
 
@@ -535,7 +549,7 @@ public List<Diagnostic> diagnoseJava(String filePath, String content) {
 
 ==但 MVP 已经足够==——大部分 LLM 编辑后的错误都是==基础语法错==,真正需要 full LSP 的场景占少数。
 
-### 7.2 升级到完整 LSP
+### 6.2 升级到完整 LSP
 
 ==当 MVP 覆盖不够时==,接入对应 LSP server:
 
@@ -558,7 +572,7 @@ write_file 后:
 - ==协议适配==——70+ 方法,不同 server 对扩展协议支持不同
 - ==状态管理==——server 进程生命周期(参考 [[MCP 协议#35-server-生命周期与异步启动]])
 
-### 7.3 渐进式策略的工程价值
+### 6.3 渐进式策略的工程价值
 
 ==不要一开始就接所有 LSP==——
 1. ==MVP 快速上线==——证明诊断回注模式有价值
@@ -569,51 +583,9 @@ write_file 后:
 
 ---
 
-## 八、与 Reflection / Generator-Evaluator 的关系
-
-### 8.1 诊断回注 = 外部验证器的具体落地
-
-==[[Reflection 实现]] §3.3 外部验证器==讲了思想:
-
-```python
-def evaluate_with_tools(task: str, code: str) -> dict:
-    test_result = run_tests(code)
-    lint_result = run_lint(code)
-    return {"passed": ..., "issues": ...}
-```
-
-==本文讲了具体实现==:
-- "运行 tests" → LSP `publishDiagnostics` 中的 ==error 类==(类型错误 / 编译错误)
-- "运行 lint" → LSP `publishDiagnostics` 中的 ==warning / info 类==
-- "issues 回 LLM" → 下一轮请求前注入 pending 诊断
-
-### 8.2 Generator-Evaluator 模式的具象
-
-```
-Generator(LLM)
-  ↓ 生成代码 (write_file)
-Evaluator(LSP)
-  ↓ 后台诊断 (publishDiagnostics)
-反馈 Loop
-  ↓ 下一轮注入 LLM
-Generator 自主修复
-```
-
-==这就是 [[Harness Engineering]] 提到的 Generator-Evaluator 架构==——LSP 是天然的 Evaluator,因为它==给出确定性结果==(没有 LLM 概率性误判)。
-
-### 8.3 与 LLM-as-Judge 的对比
-
-| 方式 | 例子 | 准确性 | 成本 | 速度 |
-|------|------|------|------|------|
-| ==LSP 诊断== | rust-analyzer 报错 | ==极高==(确定性) | 低 | 快(1-2s) |
-| ==LLM-as-Judge== | 让另一个 LLM 评估代码 | 中(概率性) | 高(多一次 LLM 调用) | 慢(LLM 调用) |
-| ==自我反思== | 同一个 LLM 自评 | 低(盲点) | 低 | 中 |
-
-==生产建议==:==有 LSP 用 LSP==——确定性 + 便宜 + 快;==没有 LSP 才上 LLM-as-Judge==(如评估文档质量 / 代码风格主观项)。
-
 ---
 
-## 九、关键认知与面试要点
+## 七、关键认知与面试要点
 
 ### 认知 1:LSP 与 MCP 是 JSON-RPC 双胞胎
 

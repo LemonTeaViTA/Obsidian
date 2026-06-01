@@ -7,9 +7,9 @@ last_reviewed: 2026-05-28
 
 # Agent 工程实践
 
-> ==本文是 Agent 工程实践的导航枢纽==——原有的大杂烩已拆分为 5 个独立文档，每个主题有清晰的边界。
+> ==本文 = Agent 工程实践的导航枢纽 + 未拆分的 CLI / 框架 / 趋势内容==——Multi-Agent / 可靠性 / 安全 / 可观测 / 部署 五个主题已拆为独立文档（见下方导航表）；CLI 设计、LangChain/LangGraph、2025-2026 趋势这三块仍留在本文。
 >
-> 如果你想找具体内容，直接跳到对应文档；如果你想了解 CLI 设计或 LangChain/LangGraph，本文有完整内容。
+> 想找已拆分主题，跳对应文档；想看 CLI 设计或 LangChain/LangGraph，本文有完整内容。
 
 ---
 
@@ -128,7 +128,7 @@ LangGraph 的两个独特能力：
 
 ### Context Engineering 取代 Prompt Engineering
 
-**范式转变**：Shopify CEO Toby Lutke 提出"Context Engineering"概念——Prompt Engineering 只关注一条指令怎么写，Context Engineering 关注的是**在 LLM 调用时，如何组装最优的完整输入**，包括系统指令、工具描述、检索结果、对话历史、Memory、元数据等所有上下文。
+**范式转变**：Shopify CEO Tobi Lütke 在 X 上带火、Andrej Karpathy 推广了"Context Engineering"概念——Prompt Engineering 只关注一条指令怎么写，Context Engineering 关注的是**在 LLM 调用时，如何组装最优的完整输入**，包括系统指令、工具描述、检索结果、对话历史、Memory、元数据等所有上下文。
 
 **为什么重要**：Agent 的每次 LLM 调用，Prompt 文本本身可能只占 5%，剩下 95% 是动态组装的上下文。真正决定 Agent 质量的不是那 5% 的措辞，而是上下文的选择、排列和压缩策略。
 

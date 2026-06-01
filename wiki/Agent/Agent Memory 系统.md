@@ -23,46 +23,9 @@ last_reviewed: 2026-05-29
 > | ==L2== | ==当前会话累积的对话历史==（N 轮拼接） | ==会话内==（关 CLI 就丢） | 内存 |
 > | ==L3== | ==跨会话持久化==的关键事实 | ==永久== | 硬盘 |
 >
-> ==一次对话 = 一次 L2 会话 = N 次 L1 推理==。
+> ==一次对话 = 一次 L2 会话 = N 次 L1 推理==。L2 压缩(§二)、L2→L3 转换(§四)、Memory 注入与使用(§五)是三条主线。
 >
-> ==2. L2 压缩（接近 context 上限或 token 增量等触发，4 种方式）==
->
-> | 方式 | 干什么 |
-> |------|------|
-> | ==滑动窗口== | 只保留最近 N 轮 |
-> | ==摘要压缩== | LLM 把旧对话压缩成==散文段落== |
-> | ==向量检索增强== | 历史存向量库，每轮按 query 检索相关片段注入 |
-> | ==关键事实提取== | LLM 提取==结构化条目==（区别于摘要：输出格式 / 用途不同） |
->
-> ==生产组合==：最近 5 轮原文 + 中间摘要 + 早期关键事实。
->
-> ==3. L2 → L3 转换（5 种方式，不一定靠 LLM）==
->
-> | 方式 | 项目 |
-> |------|------|
-> | ==后台 forked agent extract== | Claude Code |
-> | ==Agent 主动调 memory tool== | Hermes |
-> | ==系统 nudge 提醒==（每 N 轮） | Hermes |
-> | ==评分提升==（不靠 LLM，靠数据投票） | OpenClaw |
-> | ==只做日志==（用户手写 AGENTS.md） | Codex |
->
-> ==4. Memory 注入位置（2 种主流）==
->
-> | 方式 | 项目 | 特点 |
-> |------|------|------|
-> | ==Frozen Snapshot 进 system prompt== | Hermes | session 启动读 → 整个 session 不变 → ==prompt cache 100% 命中== |
-> | ==按需检索按 query 选 top-K 进当前轮== | Claude Code | 文件多不爆 system prompt，但每轮 cache miss |
->
-> ==5. 完整 Prompt 结构==
->
-> ```
-> [system prompt(优先级最高,可能含 memory frozen snapshot)]
-> [memory(若按需注入,只在需要时进当前轮)]
-> [历史对话(可能压缩过——摘要/滑窗/向量检索)]
-> [最新 user 消息]
-> ```
->
-> ==6. 设计哲学（信任假设）==
+> ==2. 设计哲学（信任假设）==
 >
 > | 哲学 | 项目 | 信任 LLM 自动 extract 吗？ |
 > |------|------|--------|
@@ -71,7 +34,7 @@ last_reviewed: 2026-05-29
 > | ==工程主义== | Hermes | 单一不够——4 重保险 |
 > | ==经验主义== | OpenClaw | 用数据投票——评分驱动 |
 >
-> ==7. 关键认知==
+> ==3. 关键认知==
 >
 > - ==Memory ≠ RAG==（个性化沉淀 vs 外部知识库；几千条 vs 百万级）
 > - ==摘要压缩 ≠ 关键事实提取==（散文 vs 结构化条目；当前会话 vs 跨会话）
@@ -319,18 +282,14 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(
 
 ==3 是最隐式的==,详见 §四。
 
----
-
-## 三-A、四项目实际怎么做？
-
-> [!info] ==详细对比已独立成文==
-> 各项目的 L3 实现差异巨大（==Claude Code 无索引==，==Hermes Frozen Snapshot==，==OpenClaw 评分提升==，==Codex 用户掌控==），完整源码级对比见 ==[[Memory 实现对比#二、Claude Code 的"轻型路线"]]==。
->
-> 本文不重复实现细节——==想看具体怎么做==请去对比文档。
+> [!info] ==四项目的 L3 实现差异巨大,详细对比已独立成文==
+> 各项目的 L3 实现差异巨大（==Claude Code 无索引==，==Hermes Frozen Snapshot==，==OpenClaw 评分提升==，==Codex 用户掌控==），完整源码级对比见 ==[[Memory 实现对比#二、Claude Code 的"轻型路线"]]==。本文不重复实现细节。
 
 ---
 
-## 四、★ 短期 → 长期转换机制
+## 四、短期 → 长期转换机制
+
+> [!note] 本节是 L2→L3 的==通用方法论==;四个主流项目（Claude Code 后台 forked agent / Codex 仅日志 / Hermes 4 重保险 / OpenClaw 评分提升 + 仿生 Dreaming）的实测差异见 ==[[Memory 实现对比#四、Hermes 的 4 重保险]]==。
 
 ==L2 短期记忆==是==当前会话的完整流水账==,==L3 长期记忆==是==跨会话沉淀的关键事实==——==两者的鸿沟需要"转换"来跨越==。这是 Memory 系统最关键也是最容易做错的环节。
 
@@ -458,19 +417,6 @@ def compact_session_to_memory(session_jsonl_path: str, memory_md_path: str):
 
     # 6. 原始 JSONL ==保留不删==
 ```
-
----
-
-## 四-A、四项目 L2→L3 实测对比
-
-> [!info] ==对比已独立成文==
-> 上面 §四 是==通用方法论==。==四个主流项目==的 L2→L3 实现差异巨大：
-> - ==Claude Code==：后台 Forked Agent 自动 extract（==乐观信任==）
-> - ==Codex CLI==：==没有自动转换==（保守，仅日志）
-> - ==Hermes==：4 重保险（Plugin + nudge + Curator + 8 个 backend）
-> - ==OpenClaw==：评分提升 + 仿生 Dreaming
->
-> 完整源码级对比见 ==[[Memory 实现对比#四、Hermes 的 4 重保险]]==。
 
 ---
 

@@ -1,8 +1,8 @@
 ---
-module: LLM
-tags: [LLM, Agent, Coding Agent, TUI, CLI, JLine, lanterna, 产品形态]
+module: Agent
+tags: [Agent, Coding Agent, TUI, CLI, JLine, lanterna, 产品形态]
 difficulty: medium
-last_reviewed: 2026-05-28
+last_reviewed: 2026-06-01
 ---
 
 # Coding Agent TUI 设计
@@ -14,6 +14,13 @@ last_reviewed: 2026-05-28
 > - 本文讲==给用户用的交互式 TUI==(Claude Code / Qoder REPL)——长会话、流式输出、人类可读 UI
 >
 > 两者正交,生产 Coding Agent 经常==同时是被调 CLI 和交互 TUI==(`paicli "fix bug"` 单次 vs `paicli` 进 REPL)。
+
+> [!tip] 速览（一分钟读完）
+> - ==产品形态光谱==：非交互 CLI / inline 流式 TUI（主流）/ 全屏 TUI / IDE 插件 / 桌面应用——本文聚焦中间三类"终端形态"。
+> - ==核心架构是 Renderer 抽象==：inline / lanterna / plain 三种 Renderer 共享同一套 Agent 核心（推理 / Tool / Memory / MCP / Skill / HITL），只是 UI 呈现不同。
+> - ==inline 流式是事实标准==——主流终端 + 流式体验；lanterna 适合演示/复杂调试；plain 给 CI 和单测兜底。
+> - ==HITL 决策逻辑在核心层，UI 呈现在 Renderer 层==——同一个决策，inline 单字符、lanterna 模态、plain 回车。
+> - ==永远不要假设支持高级特性==——降级（NO_COLOR / 非 TTY / CI / dumb terminal → plain）是 TUI 工程的核心。
 
 ---
 
@@ -457,9 +464,9 @@ async def agent_run(task: str, cancel_token: CancelToken):
 | ==`<APP>_NO_STATUSBAR=true`== | 禁用底部状态栏 | 不支持 ANSI 光标控制的终端 |
 | ==`<APP>_RENDERER=plain`== | 强制 plain 模式 | CI / 重定向到文件 |
 | ==`<APP>_RENDERER=lanterna`== | 强制全屏 | 演示场景 |
-| ==`TERM=dumb`== | 标准 POSIX 信号——能力最弱终端 | 各种受限环境 |
+| ==`TERM=dumb`== | terminfo 终端类型为 dumb——能力最弱终端，无光标定位/颜色 | 各种受限环境 |
 
-==`NO_COLOR` 是行业标准==(noco lor.org)——==所有 CLI 工具都应该支持==。
+==`NO_COLOR` 是行业标准==(no-color.org)——==所有 CLI 工具都应该支持==。
 
 ### 7.2 自动检测降级
 

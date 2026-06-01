@@ -16,7 +16,7 @@ last_reviewed: 2026-05-20
 **输入**：表格图像（来自 PDF 截图、扫描件、PPT 中的表格图等）
 **输出**：单元格的行列坐标 + 内容 + 合并关系（通常以 HTML `<table>` 或 Markdown 表格形式）
 
-```
+```text
 输入:  ┌─────┬─────┬─────┐
        │ 姓名 │ 部门 │ 工资 │
        ├─────┼─────┼─────┤
@@ -46,7 +46,7 @@ last_reviewed: 2026-05-20
 
 ## 二、TSR 的任务可以拆成三个子任务
 
-```
+```text
 表格图像
    ↓
 ① 单元格检测：找出每个单元格的边界框（坐标）
@@ -72,7 +72,7 @@ last_reviewed: 2026-05-20
 
 **架构：Encoder-Decoder Transformer**
 
-```
+```text
 表格图像
    ↓
 CNN Backbone（ResNet-18）  ← 提取视觉特征
@@ -101,7 +101,7 @@ Transformer Encoder         ← 编码空间关系
 
 把 TSR 当作==目标检测==问题：DETR 是 Facebook 的端到端目标检测架构，TATR 把 DETR 的"检测物体"改为"检测表格元素"——把表格的"行"、"列"、"单元格"、"表头"都当作不同类别的目标来检测。
 
-```
+```text
 表格图像 → CNN Backbone → DETR Encoder-Decoder → 目标列表
                                                   [行: bbox]
                                                   [列: bbox]
@@ -116,7 +116,7 @@ Transformer Encoder         ← 编码空间关系
 
 最新趋势：==用多模态大模型一次性输出表格的 Markdown/HTML==，跳过单元格检测和行列推理的显式中间步骤。
 
-```
+```text
 表格图像 → 视觉编码器 → 语言模型 Decoder → "| 姓名 | 部门 | 工资 |\n|---|---|---|\n..."
 ```
 

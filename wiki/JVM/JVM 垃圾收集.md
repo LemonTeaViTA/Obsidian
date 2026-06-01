@@ -7,6 +7,14 @@ last_reviewed: 2026-05-07
 
 # JVM 垃圾收集
 
+> [!info] 速览：本篇脉络
+> 围绕"垃圾怎么找、怎么清、用什么清"展开：
+> 1. **垃圾回收基础** — 可达性分析、GC Roots 四类、引用计数法的循环引用问题、finalize()
+> 2. **垃圾收集算法** — 标记清除 / 标记复制 / 标记整理 / 分代收集
+> 3. **GC 类型与触发条件** — Minor / Major / Mixed / Full GC、空间分配担保
+> 4. **并发 GC 通用机制** — 三色标记与漏标、写屏障、卡表/RSet、Safepoint（CMS/G1/ZGC 共用底座）
+> 5. **垃圾收集器** — Serial → Parallel → CMS → G1 → ZGC/Shenandoah，以及选型建议
+
 ## 垃圾回收基础
 
 ### 🌟讲讲 JVM 的垃圾回收机制
@@ -137,6 +145,9 @@ class ConstantPoolReference {
 
 如果对象在 finalize() 中成功拯救自己——只要重新与引用链上的任何一个对象建立关联即可，比如把自己（this 关键字）赋值给某个类变量或者对象的成员变量，那在第二次标记时它就"逃过一劫"；但是如果没有抓住这个机会，那么对象就真的要被回收了。
 
+> [!warning] finalize() 早已不推荐使用
+> `finalize()` 自 **JDK 9 起被 `@Deprecated`**，并在 **JDK 18（JEP 421）标记为 deprecated for removal**（未来会移除）。它执行时机不确定、可能根本不执行、还会拖慢 GC，从来都不是可靠的资源释放手段。实际项目中释放资源应使用 `try-with-resources` / `AutoCloseable`，需要在对象回收时做清理则用 `java.lang.ref.Cleaner` 或 `PhantomReference`。这道题面试主要考"两次标记"的机制，而非鼓励使用。
+
 ## 垃圾收集算法
 
 ### 🌟垃圾收集算法了解吗？
@@ -187,7 +198,7 @@ class ConstantPoolReference {
 
 Minor GC 也称为 Young GC，是指发生在年轻代的垃圾收集。年轻代包含 Eden 区以及两个 Survivor 区。
 
-Major GC 也称为 Old GC，主要指的是发生在老年代的垃圾收集，是 CMS 的特有行为。
+Major GC 也称为 Old GC，指的是发生在老年代的垃圾收集。这个术语在规范里定义并不严格，不同语境下含义略有出入；在 CMS 语境下常特指其针对老年代的并发回收。
 
 Mixed GC 是 G1 垃圾收集器特有的一种 GC 类型，它在一次 GC 中同时清理年轻代和部分老年代。
 
@@ -517,21 +528,20 @@ G1 收集器的运行过程大致可划分为这几个步骤：
 
 CMS 适用于对延迟敏感的应用场景，主要目标是减少停顿时间，但容易产生内存碎片。G1 则提供了更好的停顿时间预测和内存压缩能力，适用于大内存和多核处理器环境。
 
-#### 你们线上用的什么垃圾收集器？
+#### 你们线上用的什么垃圾收集器？（用的什么回收算法？）
 
 我们生产环境中采用了设计比较优秀的 G1 垃圾收集器，因为它不仅能满足低停顿的要求，而且解决了 CMS 的浮动垃圾问题、内存碎片问题。G1 非常适合大内存、多核处理器的环境。
 
-可以通过以下命令查看当前 JVM 的垃圾收集器：
+从算法角度看，G1 采用的是**分区式的标记-整理**：把堆划分为多个 Region，按回收价值（垃圾比例）按需回收，能同时兼顾吞吐量和暂停时间目标。
+
+可以通过以下命令查看当前 JVM 实际使用的垃圾收集器：
 
 ```bash
 java -XX:+PrintCommandLineFlags -version
 ```
 
-`UseParallelGC = Parallel Scavenge + Parallel Old`，表示新生代用 Parallel Scavenge 收集器，老年代使用 Parallel Old 收集器。
-
-#### 工作中项目使用的什么垃圾回收算法？
-
-我们生产环境中采用了设计比较优秀的 G1 垃圾收集器，G1 采用的是分区式标记-整理算法，将堆划分为多个区域，按需回收，适用于大内存和多核环境，能够同时考虑吞吐量和暂停时间。
+> [!note] 看到 `UseParallelGC` 是什么意思？
+> 如果上面命令输出里出现 `-XX:+UseParallelGC`，表示用的是 Parallel 组合：**新生代 Parallel Scavenge + 老年代 Parallel Old**。这是 JDK 8 的默认收集器（JDK 9 起默认改为 G1）。
 
 #### 垃圾收集器应该如何选择？
 

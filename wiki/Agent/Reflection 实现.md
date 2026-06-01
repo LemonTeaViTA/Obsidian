@@ -1,5 +1,5 @@
 ---
-module: LLM
+module: Agent
 tags: [LLM, Agent, Reflection, Critic Model, Self-Reflection, 质量保障]
 difficulty: medium
 last_reviewed: 2026-05-27
@@ -159,6 +159,8 @@ def evaluate_with_tools(task: str, code: str) -> dict:
 ```
 
 ==优点==：==最可靠==——测试通过就是通过，没有 LLM 的概率性误判。
+
+==注意==：==外部验证器不等于绝对真理==——==flaky 测试==（依赖时序/网络/随机种子）、==不稳定环境==（外部服务抖动）会让"通过/失败"本身带噪声。生产中对验证结果异常时,要区分"代码错"还是"环境/测试不稳定",必要时重跑确认。
 
 ==缺点==：需要预先写好测试用例；只能验证"对不对"，不能评估"好不好"（代码风格、可读性）。
 

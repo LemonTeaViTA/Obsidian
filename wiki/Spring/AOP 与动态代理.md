@@ -146,7 +146,7 @@ public class ProxyFactory {
                     System.out.println("请问有什么可以帮到您？");
                     Object returnValue = method.invoke(target, args);
                     System.out.println("问题已经解决啦！");
-                    return null;
+                    return returnValue;
                 }
             });
     }
@@ -194,7 +194,7 @@ public class ProxyFactory implements MethodInterceptor {
         System.out.println("请问有什么可以帮到您？");
         Object returnValue = method.invoke(target, args);
         System.out.println("问题已经解决啦！");
-        return null;
+        return returnValue;
     }
 }
 
@@ -210,9 +210,10 @@ public class Client {
 
 ### AspectJ 是什么？
 
-AspectJ 是一个 AOP 框架，它可以做很多 Spring AOP 干不了的事情，比如说编译时、编译后和类加载时织入切面。并且提供了很多复杂的切点表达式和通知类型。
+AspectJ 是一个独立、完整的 AOP 框架，它可以做很多 Spring AOP 干不了的事情，比如说编译时、编译后和类加载时织入切面。并且提供了很多复杂的切点表达式和通知类型。
 
-Spring AOP 只支持方法级别的拦截，而且只能拦截 Spring 容器管理的 Bean。但是 AspectJ 可以拦截任何 Java 对象的方法调用、字段访问、构造方法执行、异常处理等等。
+> [!note] Spring AOP vs AspectJ
+> 二者的能力与机制差异（方法级运行时代理 vs 字节码全方位织入）见上文 [[#说说 Spring AOP 和 AspectJ 区别？]]，此处不再重复。Spring 中使用的 `@Aspect`、`@Pointcut` 等注解其实都源自 AspectJ。
 
 ## 相关链接
 

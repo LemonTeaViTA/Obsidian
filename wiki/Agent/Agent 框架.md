@@ -1,5 +1,5 @@
 ---
-module: LLM
+module: Agent
 tags: [LLM, Agent, 框架, LangGraph, CrewAI, AutoGen, Hermes, OpenClaw]
 difficulty: medium
 last_reviewed: 2026-05-25
@@ -204,7 +204,7 @@ OpenClaw 用 ==SQLite + FTS5 + sqlite-vec==（向量检索）实现 Memory（详
 #### 核心特点
 
 **自进化机制**：任务完成后自动评估"是否值得沉淀为 Skill"——
-1. 任务复杂度超阈值（步骤多、多工具组合）
+1. 任务复杂度超阈值（步骤多、多工具组合）——==具体阈值以项目实现为准,框架可配==
 2. 执行路径与已有 Skill 相似度低（新路径）
 3. 任务成功完成
 

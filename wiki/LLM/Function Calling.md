@@ -2,14 +2,14 @@
 module: LLM
 tags: [LLM, Agent, Function Calling, Tool Use, OpenAI, Anthropic]
 difficulty: hard
-last_reviewed: 2026-05-25
+last_reviewed: 2026-06-01
 ---
 
 # Function Calling 协议
 
 > Function Calling 是==模型的原生能力==——通过专门训练，让 LLM 能输出符合 JSON Schema 的结构化工具调用指令，而不是在自然语言里"猜"工具。
 >
-> 本文聚焦协议细节：请求/响应结构、四种消息角色、多轮拼接、并行调用、厂商差异、可靠性与权限控制。
+> 本文聚焦协议细节：请求/响应结构、四种消息角色、多轮拼接、并行调用、厂商差异、可靠性与权限控制。多模态（图片进出模型、Browser/Computer Use 截图协议）单独见 [[Function Calling 多模态]]。
 >
 > 协议在分层架构中的位置见 [[Agent 核心概念#二、推理模式与 Harness 控制流]]；具体的 ReAct 实现示例见 [[ReAct 与 Harness 实现]]。
 
@@ -168,174 +168,8 @@ LLM 返回：
 
 ==注意==：`tool` 角色消息==必须带 `tool_call_id`==，关联到上一轮 LLM 调用的某个 `tool_calls[i].id`——这样 LLM 知道这条结果对应哪次调用。多个并行工具调用就是多个 `tool` 消息。
 
-### Image Tool Result：多模态返回
-
-==tool 消息的 content 不止是字符串==——支持 ==image 类型==，把工具产生的截图 / 图表 / 图片直接作为下一轮 LLM 的视觉输入。==这是 Browser/Computer Use 落地的关键协议细节==——Agent 调 `take_snapshot` 拿到的是图片，==必须能塞回模型才形成闭环==。
-
-#### 三家厂商的 image content 格式
-
-==Anthropic Claude==（content blocks 数组）：
-
-```python
-{
-    "role": "tool",
-    "tool_call_id": "call_abc",
-    "content": [
-        {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/png",
-                "data": "iVBORw0KGgoAAA..."  # base64 编码的截图
-            }
-        },
-        # 可以同时带文本描述
-        {"type": "text", "text": "页面已加载，截图如上"}
-    ]
-}
-```
-
-==OpenAI==（multimodal content）：
-
-```python
-{
-    "role": "tool",
-    "tool_call_id": "call_abc",
-    "content": [
-        {
-            "type": "image_url",
-            "image_url": {"url": "data:image/png;base64,iVBORw0KGgoAAA..."}
-        },
-        {"type": "text", "text": "页面已加载"}
-    ]
-}
-```
-
-==Qwen-VL / GLM-4V / Kimi-Vision==：兼容 OpenAI 格式（`image_url` + `data:image/png;base64,`）。
-
-#### 关键设计：text fallback 必须保留
-
-==生产 Agent 不能只发 image==——三个理由：
-
-| 场景 | 为什么需要 text fallback |
-|------|----------------------|
-| ==模型不支持图片== | Router 路到纯文本模型（如 DeepSeek-V3.1 base / 早期 Qwen3-Coder）时，image content 直接报错 |
-| ==审计日志== | image base64 几 MB，==日志存不下也读不动==——必须有人类可读摘要 |
-| ==成本敏感== | 图片输入 token 计费高（一张 1024×1024 截图 ~1500 tokens），==短任务退化为纯文本省钱== |
-| ==上下文压缩== | 历史轮次的截图==不可能全保留==，压缩时丢图保文本 |
-
-==生产实现==：工具返回值==同时带 image 和 text==——Host 根据当前模型能力决定塞哪个：
-
-```python
-def normalize_tool_result(raw: dict, client: LlmClient) -> dict:
-    parts = []
-    if "image" in raw and client.supports_vision():
-        parts.append({"type": "image", "source": {...}})
-    # ★ text 永远保留(作为 fallback / 摘要 / 日志)
-    parts.append({"type": "text", "text": raw.get("text") or describe(raw["image"])})
-    return {"role": "tool", "tool_call_id": raw["call_id"], "content": parts}
-```
-
-==典型 Browser MCP 工具返回==：
-
-```json
-{
-  "image": "<base64 截图>",
-  "text": "页面 https://example.com 已加载,标题 'Example Domain',包含 1 个 <h1>、2 个 <p> 元素",
-  "snapshot": "<DOM 结构 outline,简化版>"
-}
-```
-
-==模型支持图==→ 塞 image；==模型不支持== / ==审计场景== → 塞 text + snapshot。
-
-#### Token 计费陷阱
-
-==图片输入比文本贵==——一张高分辨率截图 = 几千 tokens：
-
-| 模型 | 1024×1024 图片 token 估算 |
-|------|-------------------------|
-| Claude Sonnet 4.5 | ~1,600 tokens |
-| GPT-5 | ~1,000 tokens（"high" detail） |
-| Qwen-VL | ~1,200 tokens |
-
-==Browser MCP 一轮交互可能 5-10 张截图==——==token 消耗几万级==。生产建议：
-- ==优先用 DOM snapshot==（文本，几百 token）替代截图
-- 截图==仅在需要视觉理解==时用（验证渲染效果、读图表）
-- 历史轮次的截图==压缩时优先丢弃==
-
-详见 [[长上下文工程#5 MCP Resources 在 Long Context 下的索引注入]] 的多模态 token 预算思路。
-
-### 用户输入图片（Image as User Input）
-
-==上面讲的是工具返回图片（tool result）==——还有另一种场景：==用户直接输入图片==（粘贴截图 / `@image:` 引用本地文件）。两者协议不同：
-
-| 维度 | 工具返回图片 | 用户输入图片 |
-|------|-----------|-----------|
-| 消息角色 | `tool` | `user` |
-| 触发方式 | 工具执行后自动 | 用户主动粘贴 / 引用 |
-| 典型场景 | 浏览器截图 / 图表 | 用户截图问题 / 设计稿 |
-
-==用户输入图片的 content 格式==（Anthropic）：
-
-```python
-{
-    "role": "user",
-    "content": [
-        {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": "image/png",
-                "data": "iVBORw0KGgoAAA..."
-            }
-        },
-        {"type": "text", "text": "这个报错是什么意思？"}
-    ]
-}
-```
-
-==图片预处理（发送前必做）==：
-
-| 处理 | 原因 |
-|------|------|
-| ==压缩 / 缩放== | 原图可能几 MB，压到 1024px 以内省 token |
-| ==alpha 通道铺白底== | 带透明通道的 PNG 发给部分模型会报错 |
-| ==注入元信息== | 来源路径 / 原始尺寸 / 坐标映射（截图分析时 LLM 需要知道坐标对应哪里） |
-
-==本轮图片优先原则==：如果用户本轮输入了图片，==要求 LLM 优先分析本轮图片==，不能用历史对话里的旧截图替代。
-
-### 历史 Image Payload 裁剪
-
-==图片 token 贵（1024×1024 ≈ 1500 tokens）==，历史轮次的图片如果全保留，几轮之后 context 就被旧截图占满。
-
-==生产做法==：==新 turn 开始前，省略历史消息里的 image payload，只保留文本元信息==：
-
-```python
-def prune_image_history(messages: list) -> list:
-    pruned = []
-    for msg in messages[:-1]:  # 最新一轮保留完整图片
-        if isinstance(msg["content"], list):
-            new_parts = []
-            for part in msg["content"]:
-                if part["type"] == "image":
-                    # 图片替换为文本元信息
-                    new_parts.append({
-                        "type": "text",
-                        "text": f"[图片已省略: {part.get('_meta', {}).get('source', 'unknown')}, "
-                                f"{part.get('_meta', {}).get('size', '')}]"
-                    })
-                else:
-                    new_parts.append(part)
-            pruned.append({**msg, "content": new_parts})
-        else:
-            pruned.append(msg)
-    pruned.append(messages[-1])  # 最新一轮原样保留
-    return pruned
-```
-
-==关键==：==只裁剪历史，不裁剪当前轮==——LLM 需要看到用户刚发的图片，但不需要看 5 轮前的截图。
-
-==同理==：`reasoning_content`（模型的思考过程）也只写日志 / 展示，==不回传进下一轮请求历史==——避免思考过程占用大量 context。
+> [!info] 多模态：tool 消息也能返回图片
+> `tool` 消息的 content 不止是字符串——还支持 image 类型（截图 / 图表回传给模型），加上"用户直接输入图片""历史图片裁剪"三大场景，是 Browser / Computer Use 落地的关键协议细节。这部分内容已独立成篇，见 [[Function Calling 多模态]]。
 
 ---
 
@@ -410,7 +244,7 @@ OpenAI 这么设计是历史包袱——多家厂商也跟随了，==所以 `jso
 
 ---
 
-## 五、多轮工具调用：消息序列怎么拼
+## 五、多轮工具调用与并行调用
 
 每轮请求都是==无状态的全量发送==——LLM 不记得上轮，你必须把所有历史塞进 messages 数组。
 
@@ -463,9 +297,7 @@ messages = [
 
 ==每个 `tool_calls[i]` 都要对应一条 `tool` 消息==——并行调了 3 个工具就要塞 3 条 tool 消息，少一条 LLM 报错"unmatched tool_call_id"。
 
----
-
-## 六、并行调用
+### 并行调用
 
 现代 Function Calling 支持==一次返回多个 tool_calls==：
 
@@ -480,7 +312,7 @@ messages = [
 }
 ```
 
-### 你的代码可以并发执行
+#### 你的代码可以并发执行
 
 ```python
 import asyncio
@@ -504,7 +336,7 @@ for call_id, result in results:
 
 ==N 个独立工具==并行执行 = N 倍加速，比串行快很多。
 
-### 关闭并行
+#### 关闭并行
 
 OpenAI 默认开启并行调用。某些场景需要严格串行（比如工具间有依赖），可以传：
 
@@ -519,11 +351,11 @@ response = openai.chat.completions.create(
 
 ---
 
-## 七、厂商差异
+## 六、厂商差异
 
 OpenAI 是事实标准，但 Anthropic / Qwen / DeepSeek 各家协议略有差别。
 
-### 7.1 OpenAI（事实标准）
+### 6.1 OpenAI（事实标准）
 
 ```python
 tools = [{
@@ -541,7 +373,7 @@ response = openai.chat.completions.create(
 # 响应：response.choices[0].message.tool_calls
 ```
 
-### 7.2 Anthropic（Claude）
+### 6.2 Anthropic（Claude）
 
 ```python
 tools = [{
@@ -560,7 +392,7 @@ for block in response.content:
         tool_args = block.input    # ==已经是 dict，不是字符串==——比 OpenAI 省一步
 ```
 
-### 7.3 Qwen / DeepSeek / Moonshot（兼容 OpenAI）
+### 6.3 Qwen / DeepSeek / Moonshot（兼容 OpenAI）
 
 国产模型基本都==兼容 OpenAI 的 schema==，可以直接用 `openai` SDK，只改 `base_url`：
 
@@ -573,7 +405,7 @@ client = OpenAI(
 # ↑ 之后用法和 OpenAI 完全一致
 ```
 
-### 7.4 跨厂商的统一抽象
+### 6.4 跨厂商的统一抽象
 
 如果要支持多家模型，==别自己写适配层==——用 [LiteLLM](https://github.com/BerriAI/litellm) 统一封装，200+ 模型同一套 API。Hermes 框架就是基于 LiteLLM。
 
@@ -589,11 +421,11 @@ response = completion(
 
 ---
 
-## 八、协议层的可靠性
+## 七、协议层的可靠性
 
 ==Function Calling 不等于 100% 可靠==——即使 GPT-4 级别的模型，参数正确率也不是 100%。本节聚焦==协议层==的可靠性问题（schema、解析、API 错误）；==执行层==（工具超时、下游打挂）和==决策层==（失败后 Agent 怎么办）属于 Agent 工程范畴，详见 [[Agent 工程实践#八-B、Agent 可靠性设计（实战设计题）]]。
 
-### 8.1 参数 schema 校验
+### 7.1 参数 schema 校验
 
 LLM 可能传错参数：必填字段缺失、类型错误、枚举值不存在、值越界。==协议本身不保证 LLM 的输出严格满足 schema==——必须在你的代码里显式校验。
 
@@ -614,13 +446,13 @@ except (json.JSONDecodeError, ValidationError) as e:
 
 ==生产环境的硬规则==：参数校验失败 → 回注让 LLM 重试，最多 3 次；超过 3 次说明 schema 有问题，触发告警。
 
-### 8.2 JSON 解析失败
+### 7.2 JSON 解析失败
 
 ==方式 B（Function Calling）的 `arguments` 字段仍是 JSON 字符串==——虽然模型经过专门训练，==但生产中偶尔仍会输出不合法 JSON==（多余引号、转义错误、截断）。处理方式同上：捕获 `JSONDecodeError`，把错误回注让 LLM 重试。
 
 ==方式 A（传统 prompt）的 JSON 解析失败率显著更高==——这就是为什么生产事实标准是方式 B。
 
-### 8.3 tool_call_id 不匹配
+### 7.3 tool_call_id 不匹配
 
 多轮拼接时如果 ==`tool` 消息的 `tool_call_id`==没对齐到上一轮 `tool_calls[i].id`，OpenAI 会直接返回 400 错误：
 
@@ -635,14 +467,15 @@ Error: tool_call_id "call_xxx" does not match any tool call in the conversation.
 
 ==生产代码必须在拼 messages 时校验==：每个 `tool_calls[i].id` 必须有且仅有一条对应的 `tool` 消息。
 
-### 8.4 模型选错工具：description 写得不到位
+### 7.4 模型选错工具：description 写得不到位
 
-==这是协议外的可靠性问题==——LLM 选错工具的根本原因往往是 description 写得不清楚（详见 §二.2 description 写得好 vs 差对比）。==description 写好比加重试更治本==——很多"不可靠"其实是工具描述不到位。
+==这是协议外的可靠性问题==——LLM 选错工具的根本原因往往是 description 写得不清楚（详见 §二 description 写得好 vs 差对比）。==description 写好比加重试更治本==——很多"不可靠"其实是工具描述不到位。
 
 ---
 
 ## 相关链接
 
+- [[Function Calling 多模态]] — 图片进出模型：tool result / 用户输入 / 历史裁剪（Browser·Computer Use）
 - [[Agent 核心概念]] — Agent 整体架构
 - [[ReAct 与 Harness 实现]] — 60 行 ReAct 代码 + 工具识别两种方式
 - [[Harness Engineering]] — Function Calling 在 Harness 分层中的位置

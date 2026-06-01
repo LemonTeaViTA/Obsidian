@@ -21,15 +21,24 @@ last_reviewed: 2026-05-07
 
 #### 类加载器有哪些？
 
-主要有四种：
+主要有四种（以下 ①②③ 是面试高频的 **JDK 8 三层模型**）：
 
-①、启动类加载器，负责加载 JVM 的核心类库，如 rt.jar 和其他核心库位于 `JAVA_HOME/jre/lib` 目录下的类。
+①、启动类加载器（Bootstrap ClassLoader），负责加载 JVM 的核心类库，如 rt.jar 和其他核心库位于 `JAVA_HOME/jre/lib` 目录下的类。
 
-②、扩展类加载器，负责加载 `JAVA_HOME/jre/lib/ext` 目录下，或者由系统属性 `java.ext.dirs` 指定位置的类库，由 `sun.misc.Launcher$ExtClassLoader` 实现。
+②、扩展类加载器（Extension ClassLoader），负责加载 `JAVA_HOME/jre/lib/ext` 目录下，或者由系统属性 `java.ext.dirs` 指定位置的类库，由 `sun.misc.Launcher$ExtClassLoader` 实现。
 
-③、应用程序类加载器，负责加载 classpath 的类库，由 `sun.misc.Launcher$AppClassLoader` 实现。我们编写的任何类都是由应用程序类加载器加载的，除非显式使用自定义类加载器。
+③、应用程序类加载器（Application ClassLoader），负责加载 classpath 的类库，由 `sun.misc.Launcher$AppClassLoader` 实现。我们编写的任何类都是由应用程序类加载器加载的，除非显式使用自定义类加载器。
 
 ④、用户自定义类加载器，通常用于加载网络上的类、执行热部署（动态加载和替换应用程序的组件），或者为了安全考虑，从不同的源加载类。通过继承 `java.lang.ClassLoader` 类来实现。
+
+> [!warning] JDK 9+ 模块化后这套模型变了
+> 上面是 JDK 8 的经典模型，面试仍高频，但要知道 JDK 9 引入模块系统（JPMS）后的变化：
+> - 不再有 `rt.jar` 和 `jre/lib/ext` 目录，核心类被拆成模块由 `jrt` 文件系统提供。
+> - **扩展类加载器被平台类加载器（PlatformClassLoader）取代**，加载平台模块。
+> - `sun.misc.Launcher` 已不存在；应用类加载器、平台类加载器的实现移到 `jdk.internal.loader.ClassLoaders` 内部类。
+> - 应用类加载器不再是 `URLClassLoader` 的子类。
+>
+> 即三层关系变为：**Bootstrap → Platform（原 Extension）→ Application**。
 
 #### 能说一下类的生命周期吗？
 
@@ -195,27 +204,9 @@ class HotSwapClassLoader extends ClassLoader {
 }
 ```
 
-## 解释执行与编译执行
-
-### 说说解释执行和编译执行的区别
-
-先说解释和编译的区别：
-
-- 解释：将源代码逐行转换为机器码。
-- 编译：将源代码一次性转换为机器码。
-
-再来说说解释执行和编译执行的区别：
-
-- 解释执行：程序运行时，将源代码逐行转换为机器码，然后执行。
-- 编译执行：程序运行前，将源代码一次性转换为机器码，然后执行。
-
-Java 一般被称为"解释型语言"，因为 Java 代码在执行前，需要先将源代码编译成字节码，然后在运行时，再由 JVM 的解释器"逐行"将字节码转换为机器码，然后执行。这也是 Java 被诟病"慢"的主要原因。
-
-但 JIT 的出现打破了这种刻板印象，JVM 会将热点代码（即运行频率高的代码）编译后放入 CodeCache，当下次执行再遇到这段代码时，会从 CodeCache 中直接读取机器码，然后执行。因此，Java 的执行效率得到了大幅提升。
-
 ## 相关链接
 
-- [[JVM 概述]] — JVM 整体架构
+- [[JVM 概述]] — JVM 整体架构、解释执行与编译执行的区别
 - [[JVM 内存管理]] — 方法区存储类的元数据
 - [[JVM JIT与字节码]] — invoke 指令族详解与 Lambda 实现
 - [[AOP 与动态代理]] — CGLIB 在运行时动态生成类，涉及类加载

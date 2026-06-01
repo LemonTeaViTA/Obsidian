@@ -20,9 +20,9 @@ last_reviewed: 2026-05-20
 
 只存纯文本，角色信息就丢了。==标记语言（Markup Language）的核心思想：用**标签**把内容的角色信息和内容捆在一起。==
 
-```
-<h1>第一章 引言</h1>      ← 标签 h1 表示"这是一级标题"
-<p>这是一段正文。</p>      ← 标签 p 表示"这是段落"
+```html
+<h1>第一章 引言</h1>      <!-- 标签 h1 表示"这是一级标题" -->
+<p>这是一段正文。</p>      <!-- 标签 p 表示"这是段落" -->
 ```
 
 **共同祖先：SGML**（Standard Generalized Markup Language，1986）。
@@ -90,7 +90,7 @@ XML 文档天然是==树形结构==（嵌套的标签自然成树）。
 
 上面的订单 XML 对应的树：
 
-```
+```text
 order (id="A-2026-001")              ← 根节点
 ├── customer
 │   ├── name → "张三"
@@ -139,7 +139,7 @@ XML 经常被拿来和 HTML、JSON 比较。理解三者的差异有助于明白
 - **JSON**：适合==轻量数据传输==，前后端 API 主流
 
 > [!info] 同一个订单的三种表达
-> 同一个订单数据，XML 约 300 字节、HTML 不适合存数据、JSON 约 150 字节。但 XML 能附加更多元信息（属性、命名空间、注释），适合需要长期归档的复杂结构。
+> 同一份订单数据，XML 大约是等价 JSON 的 1.5–2 倍体积（开闭标签翻倍所致），HTML 不适合存数据。但 XML 能附加更多元信息（属性、命名空间、注释），适合需要长期归档的复杂结构。
 
 ---
 
@@ -164,26 +164,12 @@ XML 经常被拿来和 HTML、JSON 比较。理解三者的差异有助于明白
 
 ### 为什么 docx/xlsx/pptx 是"XML 原生"
 
-==Word/Excel/PowerPoint 的 .docx/.xlsx/.pptx 文件，本质是 ZIP 压缩包，里面装的是一堆 XML 文件==——把 `xxx.docx` 改名为 `xxx.zip` 就能直接解压看到。
+==Word/Excel/PowerPoint 的 .docx/.xlsx/.pptx 文件，本质是 ZIP 压缩包，里面装的是一堆带原生语义的 XML 文件==。这套格式叫 **OOXML（Office Open XML）**，是 ECMA-376 / ISO 29500 国际标准——把 `xxx.docx` 改名为 `xxx.zip` 就能直接解压看到内部的 XML。
 
-这套文件格式叫 **OOXML（Office Open XML）**，是 ECMA-376 / ISO 29500 国际标准。三种文件共享一套容器规范：
-- 解压后都有 `[Content_Types].xml`、`_rels/` 这些公共结构
-- 主体内容分别在 `word/`、`xl/`、`ppt/` 目录下
-- 主文档（如 `word/document.xml`、`xl/worksheets/sheet1.xml`）里用带原生语义的 XML 标签和属性表达内容
-
-举个最直观的例子，docx 里的标题就是这样写的：
-
-```xml
-<w:p>
-  <w:pPr><w:pStyle w:val="Heading1"/></w:pPr>   <!-- 这段用 Heading1 样式 -->
-  <w:r><w:t>第一章 引言</w:t></w:r>
-</w:p>
-```
-
-`w:pStyle="Heading1"` 直接告诉解析器"这是一级标题"，不用看字号字重猜。
+正因为结构信息（标题层级、单元格类型、形状坐标）都像上面的 `<w:pStyle w:val="Heading1"/>` 一样用 XML 标签和属性显式标注，OOXML 才能被 python-docx / openpyxl 等开源库轻松解析。
 
 > [!info] 三种格式的 XML 内部结构详见 [[OOXML]]
-> 包括：docx 的段落/表格/样式元素、xlsx 单元格 `<c>` 的 r/t/s 原生属性和共享字符串机制、pptx 的形状和母版三层继承——这些都是"为什么 OOXML 容易解析"的根本原因。
+> 包括：ZIP 容器与 OPC 关系寻址、docx 的段落/表格/样式元素、xlsx 单元格 `<c>` 的 r/t/s 原生属性和共享字符串机制、pptx 的形状和母版三层继承——这些都是"为什么 OOXML 容易解析"的根本原因。
 
 ### 对比：PDF 没有原生语义
 

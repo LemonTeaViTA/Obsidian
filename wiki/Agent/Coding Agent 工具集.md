@@ -160,7 +160,7 @@ last_reviewed: 2026-05-31
 
 ==web_search 的工程难点==：搜索结果质量差异巨大——SEO 垃圾网页太多。==Tavily / Brave Search 是 AI 时代==专门优化的搜索 API（去除广告/低质内容）。
 
-==安全难点==：联网工具是 Agent 最大的攻击面之一——LLM 输出的 URL 可被 Prompt Injection 控制，必须做 ==SSRF 防御==（协议白名单 / 内网屏蔽 / 重定向手动追 / 大小+频率限制）。详见 [[#4.8 联网工具的 SSRF 防御]]。
+==安全难点==：联网工具是 Agent 最大的攻击面之一——LLM 输出的 URL 可被 Prompt Injection 控制，必须做 ==SSRF 防御==（协议白名单 / 内网屏蔽 / 重定向手动追 / 大小+频率限制）。详见本文 §4.7 末尾的安全 callout，及 [[Agent 安全模型#八SSRF-防御联网工具的-agent-时代特殊攻击面]]。
 
 ==fetch_url 的局限==：基于 curl + HTML 解析的轻量方案==处理不了三类页面==——
 - ==SPA 单页应用==（React/Vue/Next.js）——HTML 是空壳，内容靠 JS 动态注入

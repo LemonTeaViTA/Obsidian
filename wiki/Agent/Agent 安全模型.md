@@ -77,15 +77,15 @@ HITL（人工审批，弹窗）
 
 ```python
 COMMAND_BLACKLIST = [
-    r"sudo\s+rm\s+-rf\s+/",      # rm -rf 全盘
-    r"mkfs\.",                    # 格式化磁盘
-    r"dd\s+of=/dev/",            # 写裸设备
-    r":\(\)\{.*\}",              # fork bomb
-    r"curl\s+.*\|\s*sh",         # curl|sh 管道执行
-    r"find\s+/\s+",              # find / 全盘扫描
-    r"chmod\s+777\s+/",          # 全盘 777
-    r"shutdown|reboot|halt",     # 关机重启
-    r"sudo\s+",                  # 任何 sudo
+    r"\bsudo\s+rm\s+-rf\s+/",      # rm -rf 全盘
+    r"\bmkfs\.",                    # 格式化磁盘
+    r"\bdd\s+.*of=/dev/",          # 写裸设备
+    r":\(\)\s*\{.*\}",             # fork bomb
+    r"\bcurl\b.*\|\s*sh\b",        # curl|sh 管道执行
+    r"\bfind\s+/\s+",              # find / 全盘扫描
+    r"\bchmod\s+777\s+/",          # 全盘 777
+    r"\b(shutdown|reboot|halt)\b", # 关机重启(词边界,不误伤 reboot_notes.md)
+    r"\bsudo\b",                   # 任何 sudo
 ]
 
 def command_guard(cmd: str) -> GuardResult:
@@ -99,6 +99,9 @@ def command_guard(cmd: str) -> GuardResult:
     return GuardResult(action="allow_to_hitl")  # 通过后才进 HITL
 ```
 
+> [!warning] 黑名单只是快速拒绝，不是主防线
+> 正则用 `\b` 词边界锚定命令头部，避免误伤含子串的正常命令/路径（如文件名 `reboot_notes.md`、`halting-problem.txt`）。但即便如此，==正则黑名单仍是"示例意图"级别==——生产应结合 shell 解析（拆出真正的 argv）而非裸文本匹配，且 CommandGuard 的定位是「HITL 之前的快速拒绝」，真正的兜底是后面的 HITL 人工审批。
+
 ==CommandGuard 的价值==：
 - ==减少 HITL 弹窗骚扰==——明显危险的命令不需要问用户，直接拒绝
 - ==防止 LLM 被 Prompt Injection 诱导==执行危险命令
@@ -110,23 +113,26 @@ def command_guard(cmd: str) -> GuardResult:
 
 ```python
 def path_guard(path: str, project_root: str) -> GuardResult:
-    # 1. 解析绝对路径(处理 .. 穿越)
+    # 1. 解析绝对路径——realpath 会同时解析 .. 穿越和符号链接,
+    #    resolved 指向最终真实目标(symlink 逃逸在这一步已被解析掉)
     resolved = os.path.realpath(os.path.abspath(path))
+    root = os.path.realpath(project_root)
 
-    # 2. 检查是否在项目根内
-    if not resolved.startswith(os.path.realpath(project_root)):
+    # 2. 检查是否在项目根内——必须用 commonpath / 加分隔符,
+    #    不能裸 startswith(前缀串漏洞):
+    #    root=/home/u/proj 时,/home/u/proj-evil/secret 会被 startswith 误放行
+    try:
+        if os.path.commonpath([resolved, root]) != root:
+            return GuardResult(action="deny", reason=f"路径越界: {path}")
+    except ValueError:  # 跨盘符 / 一个相对一个绝对 → 直接拒
         return GuardResult(action="deny", reason=f"路径越界: {path}")
-
-    # 3. 检查符号链接逃逸(链接指向项目外)
-    if os.path.islink(path):
-        link_target = os.path.realpath(path)
-        if not link_target.startswith(os.path.realpath(project_root)):
-            return GuardResult(action="deny", reason=f"符号链接逃逸: {path} → {link_target}")
 
     return GuardResult(action="allow_to_hitl")
 ```
 
-==三种拦截==：绝对路径外逃（`/etc/passwd`）/ `..` 穿越（`../../.ssh/id_rsa`）/ 符号链接逃逸（项目内的 symlink 指向项目外）。
+==为什么不用 `startswith`==：`resolved.startswith(root)` 是字符串前缀判断，会把 `proj-evil` 误判成在 `proj` 内（同前缀兄弟目录）。正确做法是 `os.path.commonpath([resolved, root]) == root`（或拼 `root + os.sep` 再比）——按==路径分量==而非==字符==判断包含关系。
+
+==为什么不再单独查 symlink==：`os.path.realpath` 已经完整解析了符号链接，`resolved` 就是最终真实目标——symlink 逃逸（项目内 symlink 指向项目外）在第 1 步就被解析成项目外的真实路径，commonpath 检查直接拦下，无需再写一段 `os.path.islink` 分支（那是冗余）。
 
 ### 2.3 HITL：人工审批的最后一道防线
 
@@ -398,6 +404,25 @@ ALLOWED_SCHEMES = {"http", "https"}
 MAX_BODY_BYTES = 5 * 1024 * 1024   # 5MB
 MAX_REDIRECTS = 3
 
+def _resolve_and_validate(host: str) -> list[str]:
+    """解析 host 的全部地址(IPv4+IPv6),逐个校验,返回通过的 IP 列表。"""
+    # getaddrinfo 返回所有 A / AAAA 记录——gethostbyname 只取首个 IPv4,会漏 IPv6/多 A
+    infos = socket.getaddrinfo(host, None)
+    ips = {info[4][0] for info in infos}
+    if not ips:
+        raise SecurityError(f"无法解析: {host}")
+    for ip_str in ips:
+        ip = ipaddress.ip_address(ip_str)
+        if ip.is_private:        # 10.x / 172.16.x / 192.168.x / fd00::/8
+            raise SecurityError("禁止访问内网")
+        if ip.is_loopback:       # 127.x / ::1
+            raise SecurityError("禁止访问 loopback")
+        if ip.is_link_local:     # 169.254.x / fe80:: ——含云元数据 169.254.169.254
+            raise SecurityError("禁止访问链路本地地址")
+        if ip.is_reserved or ip.is_multicast:
+            raise SecurityError("禁止访问保留地址")
+    return list(ips)
+
 def safe_fetch(url: str, depth: int = 0) -> str:
     if depth > MAX_REDIRECTS:
         raise SecurityError("重定向次数超限")
@@ -407,40 +432,42 @@ def safe_fetch(url: str, depth: int = 0) -> str:
     if parsed.scheme not in ALLOWED_SCHEMES:
         raise SecurityError(f"禁止协议: {parsed.scheme}")
 
-    # 2. DNS 解析后检查 IP——防 DNS rebinding
-    host = parsed.hostname
-    ip = ipaddress.ip_address(socket.gethostbyname(host))
-    if ip.is_private:        # 10.x / 172.16.x / 192.168.x
-        raise SecurityError("禁止访问内网")
-    if ip.is_loopback:       # 127.x
-        raise SecurityError("禁止访问 loopback")
-    if ip.is_link_local:     # 169.254.x——含云元数据 169.254.169.254
-        raise SecurityError("禁止访问链路本地地址")
-    if ip.is_reserved or ip.is_multicast:
-        raise SecurityError("禁止访问保留地址")
+    # 2. 解析全部地址并校验(IPv4+IPv6),拿到通过校验的 IP
+    safe_ips = _resolve_and_validate(parsed.hostname)
 
-    # 3. 不自动跟随重定向——重定向目标可能指向内网
-    resp = requests.get(url, allow_redirects=False, timeout=30, stream=True)
+    # 3. ★ pin IP——直接对已校验的 IP 发请求,Host 头携带域名。
+    #    否则 requests.get(url) 会"重新做一次 DNS 解析",
+    #    攻击者可在两次解析之间把 A 记录切到 169.254.169.254(DNS rebinding / TOCTOU)
+    pinned_ip = safe_ips[0]
+    pinned_url = url.replace(parsed.hostname, pinned_ip, 1)
+    headers = {"Host": parsed.hostname}
+
+    # 4. 不自动跟随重定向——重定向目标可能指向内网,要对新 URL 重新走全部校验
+    resp = requests.get(pinned_url, headers=headers, allow_redirects=False,
+                        timeout=30, stream=True, verify=True)
     if resp.is_redirect:
         return safe_fetch(resp.headers["Location"], depth + 1)
 
-    # 4. 大小限制——防止流量打爆 / 上下文爆炸
+    # 5. 大小限制——防止流量打爆 / 上下文爆炸
     if int(resp.headers.get("Content-Length", 0)) > MAX_BODY_BYTES:
         raise SecurityError("响应超过 5MB")
     body = resp.raw.read(MAX_BODY_BYTES + 1)
     if len(body) > MAX_BODY_BYTES:
         raise SecurityError("响应流超限")
 
-    # 5. 频率限制(外层装饰器)——防止 LLM 失控刷接口
+    # 6. 频率限制(外层装饰器)——防止 LLM 失控刷接口
     return body.decode("utf-8", errors="ignore")
 ```
+
+> [!warning] 校验后必须 pin IP，否则防不住 DNS rebinding
+> 常见错误写法是「`gethostbyname` 校验 IP → 再 `requests.get(域名)`」——`requests` 会==重新做一次 DNS 解析==，攻击者可在两次解析之间把 A 记录从公网 IP 切到 `169.254.169.254`（经典 TOCTOU / DNS rebinding），校验形同虚设。真正防住要==锁定已校验的 IP 直接连接==、用 `Host` 头携带域名（或自定义 resolver / `HTTPAdapter` 固定连接 IP）。另外 `gethostbyname` 只返回单个 IPv4——要用 `getaddrinfo` 取全部地址（含 IPv6 / 多 A 记录）逐个校验。
 
 ==关键点==：
 
 | 防线 | 防什么 |
 |------|------|
 | ==协议白名单== | `file://` 读本地文件、`gopher://` 打 SMTP/Redis 协议走私 |
-| ==DNS 解析后查 IP== | 攻击者注册的域名 A 记录指向 `127.0.0.1` 或 `169.254.169.254`(==DNS rebinding==) |
+| ==解析全部 IP 后 pin== | 校验所有 A/AAAA 记录并锁定 IP 连接——否则攻击者域名 A 记录指向 `127.0.0.1`/`169.254.169.254`，或在两次解析间切换（==DNS rebinding==） |
 | ==重定向手动追== | 第一跳合法 → 第二跳指向内网 |
 | ==大小限制== | 5MB 是 token 上下文 + 网络流量的双重保险 |
 | ==频率限制== | LLM 失控/被注入后疯狂调接口 → 设单工具 30 次/分钟、单任务 100 次上限 |

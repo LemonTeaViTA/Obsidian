@@ -55,9 +55,9 @@ def chunk_code_naive(code, chunk_size=500):
 
 ## 二、代码分块策略
 
-### 2.1 AST-aware 切分（==基础==）
+### 2.1 AST-aware 切分（基础）
 
-用语法解析器（==tree-sitter==）解析代码，按函数/类/方法切分：
+AST-aware 切分是 Code RAG 的==基础==。用语法解析器（==tree-sitter==）解析代码，按函数/类/方法切分：
 
 ```python
 # tree-sitter 是当前事实标准
@@ -83,9 +83,9 @@ def extract_chunks(node):
 
 ==tree-sitter 支持 ~40 种语言==——Java/Python/Go/JavaScript/Rust 等都有。
 
-### 2.2 多粒度索引（==Cursor 模式==）
+### 2.2 多粒度索引（Cursor 模式）
 
-==同一份代码同时建多个粒度的索引==：
+==Cursor 模式==的做法是==同一份代码同时建多个粒度的索引==：
 
 ```
 file:        整个文件向量
@@ -157,10 +157,14 @@ chunk_metadata = {
 |------|------|------|
 | **CodeBERT** | 125M | 老牌，2020，6 种语言 |
 | **GraphCodeBERT** | 125M | CodeBERT + 数据流图 |
-| **Qwen2.5-Coder-Embedding** | 1.5B / 7B | ==2025 强势新生==，多语言强 |
-| **Jina Code Embeddings** | 0.5B / 1.5B | Jina 出品，长上下文（8K） |
-| **Voyage-code-3** | API | 商业方案，效果最强 |
-| **CodeGemma-Embedding** | 2B | Google 出品 |
+| **Voyage-code-3** | API | 商业方案，代码检索效果强 |
+| **Jina Code Embeddings**（jina-embeddings-v2-base-code） | 0.5B / 1.5B | Jina 出品，长上下文（8K） |
+| **Salesforce CodeXEmbed**（SFR-Embedding-Code） | 400M / 2B / 7B | 多语言代码检索专用，开源 |
+| **Nomic-Embed-Code** | 7B | 开源代码检索，2025 |
+| **Qwen2.5-Coder-Embedding / CodeGemma-Embedding**（待核实） | — | 社区常提的"基于 Qwen2.5-Coder / CodeGemma 微调的 embedding"，是否有官方专用变体需按厂商最新发布核实 |
+
+> [!warning] 模型名以厂商最新发布为准
+> Code Embedding 领域更新很快，且"代码 LLM"与"代码 embedding 变体"经常被混称。表中 CodeBERT / GraphCodeBERT / Voyage-code-3 / Jina code embeddings / Salesforce CodeXEmbed / Nomic-Embed-Code 是已确认的代码检索模型；而"Qwen2.5-Coder-Embedding""CodeGemma-Embedding"这类名字可能指社区微调版而非官方专用 embedding，选型前请到对应厂商/HuggingFace 核实确切型号与参数。
 
 ### 3.2 通用 Embedding vs Code Embedding 对比
 
@@ -172,7 +176,7 @@ chunk_metadata = {
 通用 Embedding（BGE-M3）：
   ❌ 召回：含 JSON 字符串的任意代码（包括序列化、转换等无关场景）
 
-Code Embedding（Qwen2.5-Coder-Embedding）：
+Code Embedding（Voyage-code-3 / CodeXEmbed）：
   ✅ 召回：FileReader + ObjectMapper.readValue 模式
   ✅ 理解到 "读取 JSON 文件" = 文件 IO + JSON 反序列化
 ```
@@ -183,16 +187,16 @@ Code Embedding（Qwen2.5-Coder-Embedding）：
 
 | 场景 | 推荐 |
 |------|------|
-| 中小规模（< 10万文件） | Qwen2.5-Coder-Embedding-1.5B（开源、便宜） |
-| 大规模 / 高精度 | Qwen2.5-Coder-Embedding-7B 或 Voyage-code-3 |
+| 中小规模（< 10万文件） | CodeXEmbed-2B / Jina code embeddings（开源、便宜） |
+| 大规模 / 高精度 | CodeXEmbed-7B / Nomic-Embed-Code 或 Voyage-code-3 |
 | 超大规模 / 商业 SLA | Voyage-code-3 / OpenAI text-embedding-3 |
-| 单语言（如纯 Java） | 微调 Qwen2.5-Coder（详见 [[RAG向量与Embedding#六、Embedding 微调]]） |
+| 单语言（如纯 Java） | 在通用代码 embedding 上微调（详见 [[RAG向量与Embedding#六、Embedding 微调]]） |
 
 ---
 
-## 四、仓库级别 RAG（==核心==）
+## 四、仓库级别 RAG（核心）
 
-==Cursor / Continue / Claude Code 都做这件事==：把整个代码仓库索引起来，对话时实时检索。
+仓库级别 RAG 是 Code RAG 的==核心==——==Cursor / Continue / Claude Code 都做这件事==：把整个代码仓库索引起来，对话时实时检索。
 
 ### 4.1 整体流程
 
@@ -260,7 +264,9 @@ vscode.workspace.onDidSaveTextDocument(async (doc) => {
 
 ### 4.3 检索策略
 
-#### 多路召回（==Cursor 实战==）
+#### 多路召回（Cursor 实战）
+
+==Cursor 实战==中的多路召回：
 
 ```python
 def code_retrieve(query, current_file, cursor_position):
@@ -326,7 +332,9 @@ def code_retrieve(query, current_file, cursor_position):
 
 ---
 
-## 五、调用图增强（==Code RAG 杀手锏==）
+## 五、调用图增强（Code RAG 杀手锏）
+
+调用图增强是 Code RAG 的==杀手锏==。
 
 ### 5.1 为什么需要调用图
 
@@ -447,7 +455,7 @@ Embedding API 单价：$0.10 / 百万 token
 每天增量更新 + 偶尔全量重建 → 月成本 ~$50-200
 ```
 
-==中型团队==：本地部署 Qwen2.5-Coder-Embedding-1.5B（4GB GPU 跑），==成本几乎为零==。
+==中型团队==：本地部署轻量代码 embedding（如 CodeXEmbed-2B / Jina code embeddings，4GB GPU 跑），==成本几乎为零==。
 
 ---
 
@@ -457,7 +465,7 @@ Embedding API 单价：$0.10 / 百万 token
 
 ```
 切分：tree-sitter（function-level）
-Embedding：Qwen2.5-Coder-Embedding-1.5B（本地）
+Embedding：CodeXEmbed-2B / Jina code embeddings（本地）
 向量库：Qdrant 或 ChromaDB
 调用图：LSP（如有可编译项目）/ tree-sitter 静态分析
 框架参考：Cursor / Continue / sweep-ai

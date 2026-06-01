@@ -34,20 +34,20 @@ last_reviewed: 2026-05-07
 @Target(ElementType.METHOD)       // 只能用在方法上
 @Retention(RetentionPolicy.RUNTIME) // 运行时可读
 public @interface Log {
-    String value() default “”;     // 注解属性，有默认值
+    String value() default "";     // 注解属性，有默认值
     boolean async() default false;
 }
 
 // 使用
 public class UserService {
-    @Log(value = “查询用户”, async = true)
+    @Log(value = "查询用户", async = true)
     public User getUser(Long id) { ... }
 }
 
 // 通过反射读取注解
-Method method = UserService.class.getMethod(“getUser”, Long.class);
+Method method = UserService.class.getMethod("getUser", Long.class);
 Log log = method.getAnnotation(Log.class);
-System.out.println(log.value());  // “查询用户”
+System.out.println(log.value());  // "查询用户"
 ```
 
 典型场景：[[AOP 与动态代理|AOP]]、依赖注入（Spring `@Autowired`）、代码生成（Lombok）、参数校验（`@NotNull`）。
@@ -175,7 +175,7 @@ isEmpty.test("");  // true
 
 ```java
 // 创建
-Optional<String> opt1 = Optional.of(“hello”);      // 不能传 null，否则 NPE
+Optional<String> opt1 = Optional.of("hello");      // 不能传 null，否则 NPE
 Optional<String> opt2 = Optional.ofNullable(null); // 可以传 null
 Optional<String> opt3 = Optional.empty();
 
@@ -185,11 +185,11 @@ if (opt1.isPresent()) {
 }
 
 // 正确用法：链式操作
-String result = opt2.orElse(“默认值”);                    // 为空时返回默认值
+String result = opt2.orElse("默认值");                    // 为空时返回默认值
 String result2 = opt2.orElseGet(() -> computeDefault()); // 为空时执行 Supplier
 opt1.ifPresent(s -> System.out.println(s));               // 有值时执行
-String upper = opt1.map(String::toUpperCase).orElse(“”);  // 转换后取值
-opt2.orElseThrow(() -> new RuntimeException(“值为空”));   // 为空时抛异常
+String upper = opt1.map(String::toUpperCase).orElse("");  // 转换后取值
+opt2.orElseThrow(() -> new RuntimeException("值为空"));   // 为空时抛异常
 ```
 
 > [!warning] Optional 的正确使用场景
@@ -259,7 +259,7 @@ List<Integer> safe = Stream.of(1,2,3).parallel().collect(Collectors.toList());
 
 ## 相关链接
 
-- [[面向对象]] — 反射基于 Class 对象
+- [[面向对象核心]] — 反射基于 Class 对象，Lambda 与匿名内部类的关系
 - [[AOP 与动态代理]] — JDK 动态代理基于反射实现
 - [[Spring 基础与 IoC]] — Spring 依赖注入基于反射
 - [[JVM 类加载机制]] — 反射涉及类加载过程

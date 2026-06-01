@@ -1,5 +1,5 @@
 ---
-module: LLM
+module: Agent
 tags: [LLM, Agent, ReAct, Harness, 工具调用]
 difficulty: hard
 last_reviewed: 2026-05-25

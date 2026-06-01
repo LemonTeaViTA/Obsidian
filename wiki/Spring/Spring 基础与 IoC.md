@@ -7,6 +7,15 @@ last_reviewed: 2026-05-09
 
 # Spring 基础与 IoC
 
+> [!info] 本篇导读
+> 本篇覆盖 Spring 的地基知识，按三大块组织：
+> - **Spring 概述**：是什么、核心特性、模块划分、常用注解、设计模式。
+> - **IoC / DI**：控制反转思想、DI 三种注入方式、IoC 实现机制、BeanFactory vs ApplicationContext、容器启动流程、手写简易 IoC。
+> - **Bean**：Bean 概念、实例化方式、生命周期五阶段、作用域、单例实现与三级缓存（循环依赖）。
+> - **依赖注入**：字段注入的弊端、`@Autowired` vs `@Resource`、`@Autowired` 实现原理。
+>
+> 高频考点：IoC vs DI、Bean 生命周期、三级缓存解循环依赖（构造器注入解不了）、`@Autowired` vs `@Resource`。
+
 ## Spring 概述
 
 ### Spring是什么？
@@ -39,7 +48,7 @@ Spring AOP 模块提供了面向切面编程的支持，我们用的 `@Transacti
 
 Web 开发方面，Spring Web 模块提供了基础的 Web 功能，Spring WebMVC 就是我们常用的 MVC 框架，用来处理 HTTP 请求和响应。
 
-数据访问方面，Spring JDBC 简化了 JDBC 的使用，Spring ORM 提供了对 MyBatis-Plus 等 ORM 框架的集成支持。
+数据访问方面，Spring JDBC 简化了 JDBC 的使用，Spring ORM 提供了对 Hibernate、JPA 等 ORM 框架的集成支持；MyBatis/MyBatis-Plus 不属于 Spring ORM，它们通过第三方的 `mybatis-spring` 与 Spring 整合。
 
 Spring Test 模块提供了测试支持，可以很方便地进行单元测试和集成测试。
 
@@ -317,12 +326,13 @@ Bean 的生命周期可以分为 5 个主要阶段：
 
 **第二阶段：属性赋值。** Spring 会给 Bean 的属性赋值，包括通过 `@Autowired`、`@Resource` 这些注解注入的依赖对象，以及通过 `@Value` 注入的配置值。
 
-**第三阶段：初始化。** 这个阶段会依次执行：
-- `@PostConstruct` 标注的方法
+**第三阶段：初始化。** 初始化前后各有一次 BeanPostProcessor 回调，顺序是：
+- `postProcessBeforeInitialization`（before 回调；`@PostConstruct` 实际就是由 `InitDestroyAnnotationBeanPostProcessor` 在这一步触发的）
 - InitializingBean 接口的 `afterPropertiesSet` 方法
 - 通过 `@Bean` 的 `initMethod` 指定的初始化方法
+- `postProcessAfterInitialization`（after 回调）
 
-初始化后，Spring 还会调用所有注册的 BeanPostProcessor 后置处理方法。这个阶段经常用来创建代理对象，比如 AOP 代理。
+其中 after 回调经常用来创建代理对象，比如 AOP 代理就是在 `postProcessAfterInitialization` 阶段生成的。
 
 **第四阶段：使用 Bean。** 比如我们的 Controller 调用 Service，Service 调用 DAO。
 

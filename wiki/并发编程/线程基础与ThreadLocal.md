@@ -1,17 +1,25 @@
 ---
 module: 并发编程
-tags: [并发, 线程, ThreadLocal, CompletableFuture, Condition]
+tags: [并发, 线程, ThreadLocal, InheritableThreadLocal]
 difficulty: medium
-last_reviewed: 2026-05-07
+last_reviewed: 2026-06-01
 ---
 
 # 线程基础与ThreadLocal
 
+> [!info] 速览
+> 本篇覆盖并发编程的基础概念、线程的生命周期与 ThreadLocal 三大块，建议按顺序阅读：
+> - 并发基础概念：并发/并行、线程安全三要素、volatile、进程与线程、协程
+> - 线程基础：创建方式、start/run、调度方法、6 种状态、上下文切换、守护线程
+> - ThreadLocal：使用方式、实现原理、内存泄漏成因与 remove()、ThreadLocalMap 源码与扩容、InheritableThreadLocal
+>
+> 线程间通信与同步（wait/notify、Condition、Exchanger、CompletableFuture）已拆分到 [[线程通信与同步]]。
+
 ## 并发基础概念
 
 ### 并行跟并发有什么区别？
- 并行是多核 CPU 上的多任务处理，多个任务在同一时间真正地同时执行。
- 并发是单核 CPU 上的多任务处理，多个任务在同一时间段内交替执行，通过时间片轮转实现交替执行，用于解决 IO 密集型任务的瓶颈。
+ 并发（concurrency）指系统同时处理多个任务的能力，是一种任务组织方式：单核 CPU 通过时间片轮转让多个任务交替执行，多核 CPU 上同样存在并发，常用于缓解 IO 密集型任务的瓶颈。
+ 并行（parallelism）指多个任务在多核 CPU 上真正同时执行，是并发的一个子集，强调物理上的同时性。换句话说，多核机器上既有并发也有并行，不能简单地把“并发=单核、并行=多核”对立起来。
 
  举个例子，就好像我们去食堂打饭，并行就是每个人对应一个阿姨，同时打饭；而并发就是一个阿姨，轮流给每个人打饭，假如有个人磨磨唧唧，阿姨就会吆喝下一个人，这样就能提高食堂的打饭效率。
 
@@ -29,7 +37,7 @@ count.incrementAndGet(); // 原子操作
 
  可以通过 volatile 关键字来保证可见性。
 ```java
-private volatile String itwanger = "沉默王二";
+private volatile String message = "hello";
 ```
  ③、有序性 ：程序的执行顺序按照代码的先后顺序执行，在多线程环境下，需要保证指令不会因为 JVM 的指令重排序而导致执行顺序与预期不符。
 
@@ -131,7 +139,7 @@ fun main() = runBlocking {
 ```java
 class ThreadTask extends Thread {
 	public void run() {
-		System.out.println("看完二哥的 Java 进阶之路，上岸了!");
+		System.out.println("任务执行完毕");
 	}
 
 	public static void main(String[] args) {
@@ -146,7 +154,7 @@ class ThreadTask extends Thread {
 ```java
 class RunnableTask implements Runnable {
 	public void run() {
-		System.out.println("看完二哥的 Java 进阶之路，上岸了!");
+		System.out.println("任务执行完毕");
 	}
 
 	public static void main(String[] args) {
@@ -162,7 +170,7 @@ class RunnableTask implements Runnable {
 ```java
 class CallableTask implements Callable<String> {
 	public String call() {
-		return "看完二哥的 Java 进阶之路，上岸了!";
+		return "任务执行结果";
 	}
 
 	public static void main(String[] args) throws ExecutionException, InterruptedException {
@@ -185,7 +193,7 @@ import java.util.concurrent.Executors;
 class ThreadPoolTask implements Runnable {
     @Override
     public void run() {
-        System.out.println("看完二哥的 Java 进阶之路，上岸了! (使用线程池)");
+        System.out.println("任务执行完毕 (使用线程池)");
     }
 }
 
@@ -415,622 +423,10 @@ public class Main {
  区别之一是当最后一个非守护线程束时， JVM 会正常退出，不管当前是否存在守护线程，也就是说守护线程是否结束并不影响 JVM 退出。
  换而言之，只要有一个用户线程还没结束，正常情况下 JVM 就不会退出。
 
-### 线程间有哪些通信方式？
- 线程之间传递信息的方式有多种，比如说使用 volatile 和 synchronized 关键字共享对象、使用 wait() 和 notify() 方法实现生产者-消费者模式、使用 Exchanger 进行数据交换、使用 Condition 实现线程间的协调等。
-
-#### 简单说说 volatile 和 synchronized 的使用方式？
- 多个线程可以通过 volatile 和 synchronized 关键字访问和修改同一个对象，从而实现信息的传递。
- 关键字 volatile 可以用来修饰成员变量，告知程序任何对该变量的访问均需要从共享内存中获取，并同步刷新回共享内存，保证所有线程对变量访问的可见性。
- 关键字 synchronized 可以修饰方法，或者同步代码块，确保多个线程在同一个时刻只有一个线程在执行方法或代码块。
-```java
-class SharedObject {
-	private String message;
-	private boolean hasMessage = false;
-
-	public synchronized void writeMessage(String message) {
-		while (hasMessage) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		this.message = message;
-		hasMessage = true;
-		notifyAll();
-	}
-
-	public synchronized String readMessage() {
-		while (!hasMessage) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		hasMessage = false;
-		notifyAll();
-		return message;
-	}
-}
-
-public class Main {
-	public static void main(String[] args) {
-		SharedObject sharedObject = new SharedObject();
-
-		Thread writer = new Thread(() -> {
-			sharedObject.writeMessage("Hello from Writer!");
-		});
-
-		Thread reader = new Thread(() -> {
-			String message = sharedObject.readMessage();
-			System.out.println("Reader received: " + message);
-		});
-
-		writer.start();
-		reader.start();
-	}
-}
-```
-
-#### wait() 和 notify() 方法的使用方式了解吗？
- 一个线程调用共享对象的 wait() 方法时，它会进入该对象的等待池，释放已经持有的锁，进入等待状态。
- 一个线程调用 notify() 方法时，它会唤醒在该对象等待池中等待的一个线程，使其进入锁池，等待获取锁。
-```java
-class MessageBox {
-	private String message;
-	private boolean empty = true;
-
-	public synchronized void produce(String message) {
-		while (!empty) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		empty = false;
-		this.message = message;
-		notifyAll();
-	}
-
-	public synchronized String consume() {
-		while (empty) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		}
-		empty = true;
-		notifyAll();
-		return message;
-	}
-}
-
-public class Main {
-	public static void main(String[] args) {
-		MessageBox box = new MessageBox();
-
-		Thread producer = new Thread(() -> {
-			box.produce("Message from producer");
-		});
-
-		Thread consumer = new Thread(() -> {
-			String message = box.consume();
-			System.out.println("Consumer received: " + message);
-		});
-
-		producer.start();
-		consumer.start();
-	}
-}
-```
- Condition 也提供了类似的方法， await() 负责阻塞、 signal() 和 signalAll() 负责通知。
- 通常与锁 ReentrantLock 一起使用，为线程提供了一种等待某个条件成真的机制，并允许其他线程在该条件变化时通知等待线程。
-
-#### Condition 的核心用法？和 wait/notify 有什么区别？
-
-==Condition 最大的优势是支持多个等待队列，可以精准唤醒特定条件的线程==，而 `wait/notify` 只有一个等待队列，只能随机唤醒。
-
-**经典场景：生产者-消费者（有界队列）**
-
-```java
-class BoundedQueue<T> {
-    private final LinkedList<T> queue = new LinkedList<>();
-    private final int capacity;
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition notFull = lock.newCondition();   // 队列未满条件
-    private final Condition notEmpty = lock.newCondition();  // 队列非空条件
-
-    public BoundedQueue(int capacity) { this.capacity = capacity; }
-
-    // 生产者
-    public void put(T item) throws InterruptedException {
-        lock.lock();
-        try {
-            while (queue.size() == capacity) {
-                notFull.await();    // 队列满了，等待"未满"信号
-            }
-            queue.addLast(item);
-            notEmpty.signal();      // 通知消费者：队列非空了
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    // 消费者
-    public T take() throws InterruptedException {
-        lock.lock();
-        try {
-            while (queue.isEmpty()) {
-                notEmpty.await();   // 队列空了，等待"非空"信号
-            }
-            T item = queue.removeFirst();
-            notFull.signal();       // 通知生产者：队列未满了
-            return item;
-        } finally {
-            lock.unlock();
-        }
-    }
-}
-```
-
-> [!tip] Condition vs wait/notify 对比
-> | 对比项 | wait/notify | Condition |
-> |--------|------------|-----------|
-> | 所属 | Object 类 | [[锁\|ReentrantLock]] 的 API |
-> | 等待队列 | 只有一个 | 可以有多个（精准唤醒） |
-> | 释放锁 | 自动释放 monitor | 自动释放关联的 Lock |
-> | 超时等待 | `wait(timeout)` | `await(timeout, unit)` 更灵活 |
-> | 中断响应 | 支持 | 支持，还有 `awaitUninterruptibly()` |
-
-> [!warning] 为什么用 while 而不是 if？
-> `await()` 返回后条件可能已经被其他线程改变（虚假唤醒），必须用 `while` 重新检查条件。这是并发编程的基本规范。
- 
-#### Exchanger 的使用方式了解吗？
- Exchanger 是一个同步点，可以在两个线程之间交换数据。一个线程调用 exchange() 方法，将数据传递给另一个线程，同时接收另一个线程的数据。
-```java
-class Main {
-	public static void main(String[] args) {
-		Exchanger<String> exchanger = new Exchanger<>();
-
-		Thread thread1 = new Thread(() -> {
-			try {
-				String message = "Message from thread1";
-				String response = exchanger.exchange(message);
-				System.out.println("Thread1 received: " + response);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		});
-
-		Thread thread2 = new Thread(() -> {
-			try {
-				String message = "Message from thread2";
-				String response = exchanger.exchange(message);
-				System.out.println("Thread2 received: " + response);
-			} catch (InterruptedException e) {
-				Thread.currentThread().interrupt();
-			}
-		});
-
-		thread1.start();
-		thread2.start();
-	}
-}
-```
-
-#### CompletableFuture 的使用方式了解吗？
-
-CompletableFuture 是 Java 8 引入的异步编程工具，解决了传统 `Future` 的两大痛点：==不能链式调用==、==get() 会阻塞线程==。
-
-**基本用法：**
-
-```java
-// 1. 异步执行（有返回值）
-CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-    // 在 ForkJoinPool.commonPool() 中执行
-    return queryFromDB();
-});
-
-// 2. 异步执行（无返回值）
-CompletableFuture<Void> future2 = CompletableFuture.runAsync(() -> {
-    sendEmail();
-});
-```
-
-**链式调用（核心优势）：**
-
-```java
-CompletableFuture<String> result = CompletableFuture
-    .supplyAsync(() -> queryUser(userId))        // 异步查询用户
-    .thenApply(user -> user.getName())           // 转换：User → String
-    .thenApply(name -> "Hello, " + name);        // 再转换
-
-// thenApply vs thenCompose
-// thenApply：同步转换（Function<T, R>）
-// thenCompose：异步转换（Function<T, CompletableFuture<R>>），类似 flatMap
-CompletableFuture<Order> orderFuture = userFuture
-    .thenCompose(user -> queryOrderAsync(user.getId()));  // 返回新的 CompletableFuture
-```
-
-**组合多个异步任务：**
-
-```java
-// 两个任务都完成后合并结果
-CompletableFuture<String> nameFuture = CompletableFuture.supplyAsync(() -> queryName());
-CompletableFuture<Integer> ageFuture = CompletableFuture.supplyAsync(() -> queryAge());
-
-CompletableFuture<String> combined = nameFuture.thenCombine(ageFuture,
-    (name, age) -> name + " is " + age + " years old");
-
-// 多个任务全部完成
-CompletableFuture<Void> all = CompletableFuture.allOf(future1, future2, future3);
-
-// 多个任务任一完成（用于竞速）
-CompletableFuture<Object> any = CompletableFuture.anyOf(future1, future2, future3);
-```
-
-**异常处理：**
-
-```java
-CompletableFuture<String> result = CompletableFuture
-    .supplyAsync(() -> riskyOperation())
-    .exceptionally(ex -> {
-        log.error("失败", ex);
-        return "默认值";           // 异常时返回兜底值
-    });
-
-// handle：无论成功失败都会执行
-CompletableFuture<String> result2 = CompletableFuture
-    .supplyAsync(() -> riskyOperation())
-    .handle((value, ex) -> {
-        if (ex != null) return "默认值";
-        return value;
-    });
-```
-
-> [!warning] CompletableFuture 的常见坑
-> 1. 默认使用 `ForkJoinPool.commonPool()`，线程数有限，IO 密集型任务应传入自定义线程池
-> 2. 异常会被"吞掉"——如果不调用 `get()`/`join()`/`exceptionally()`，异常不会抛出
-> 3. `get()` 会阻塞，尽量用 `thenAccept/thenApply` 保持异步
-
-```java
-// 推荐：使用自定义线程池
-ExecutorService ioPool = Executors.newFixedThreadPool(10);
-CompletableFuture.supplyAsync(() -> queryDB(), ioPool);
-```
-
 ## 线程通信与同步
 
-### 请说说 sleep 和 wait 的区别？
- sleep 会让当前线程休眠，不需要获取对象锁，属于 Thread 类的方法；wait 会让获得对象锁的线程等待，要提前获得对象锁，属于 Object 类的方法。
- 
- 详细解释下。
- ①、所属类不同
- sleep() 方法专属于 Thread 类。
- wait() 方法专属于 Object 类。
-
- ②、锁行为不同
- 如果一个线程在持有某个对象锁时调用了 sleep 方法，它在睡眠期间仍然会持有这个锁。
-```java
-class SleepDoesNotReleaseLock {
-
-	private static final Object lock = new Object();
-
-	public static void main(String[] args) throws InterruptedException {
-		Thread sleepingThread = new Thread(() -> {
-			synchronized (lock) {
-				System.out.println("Thread 1 会继续持有锁，并且进入睡眠状态");
-				try {
-					Thread.sleep(5000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.out.println("Thread 1 醒来了，并且释放了锁");
-			}
-		});
-
-		Thread waitingThread = new Thread(() -> {
-			synchronized (lock) {
-				System.out.println("Thread 2 进入同步代码块");
-			}
-		});
-
-		sleepingThread.start();
-		Thread.sleep(1000);
-		waitingThread.start();
-	}
-}
-```
- 输出结果：
-```text
-Thread 1 会继续持有锁，并且进入睡眠状态
-Thread 1 醒来了，并且释放了锁
-Thread 2 进入同步代码块
-```
- 从输出中我们可以看到，waitingThread 必须等待 sleepingThread 完成睡眠后才能进入同步代码块。
- 而当线程执行 wait 方法时，它会释放持有的对象锁，因此其他线程也有机会获取该对象的锁。
-```java
-class WaitReleasesLock {
-
-	private static final Object lock = new Object();
-
-	public static void main(String[] args) throws InterruptedException {
-		Thread waitingThread = new Thread(() -> {
-			synchronized (lock) {
-				try {
-					System.out.println("Thread 1 持有锁，准备等待 5 秒");
-					lock.wait(5000);
-					System.out.println("Thread 1 醒来了，并且退出同步代码块");
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
-		Thread notifyingThread = new Thread(() -> {
-			synchronized (lock) {
-				System.out.println("Thread 2 尝试唤醒等待中的线程");
-				lock.notify();
-				System.out.println("Thread 2 执行完了 notify");
-			}
-		});
-
-		waitingThread.start();
-		Thread.sleep(1000);
-		notifyingThread.start();
-	}
-}
-```
- 输出结果：
-```text
-Thread 1 持有锁，准备等待 5 秒
-Thread 2 尝试唤醒等待中的线程
-Thread 2 执行完了 notify
-Thread 1 醒来了，并且退出同步代码块
-```
- 这表明 waitingThread 在调用 wait 后确实释放了锁。
- 
- ③、使用条件不同
- sleep() 方法可以在任何地方被调用。
- wait() 方法必须在同步代码块或同步方法中被调用，这是因为调用 wait() 方法的前提是当前线程必须持有对象的锁。否则会抛出 IllegalMonitorStateException 异常。
-
- ④、唤醒方式不同
- 调用 sleep 方法后，线程会进入 TIMED_WAITING 状态，即在指定的时间内暂停执行。当指定的时间结束后，线程会自动恢复到 RUNNABLE 状态，等待 CPU 调度再次执行。
- 调用 wait 方法后，线程会进入 WAITING 状态，直到有其他线程在同一对象上调用 notify 或 notifyAll 方法，线程才会从 WAITING 状态转变为 RUNNABLE 状态，准备再次获得 CPU 的执行权。
-
- 我们来通过代码再感受一下 sleep() 和 wait() 在用法上的区别，先看 sleep() 的用法：
-```java
-class SleepExample {
-	public static void main(String[] args) {
-		Thread thread = new Thread(() -> {
-			System.out.println("线程准备休眠 2 秒");
-			try {
-				Thread.sleep(2000); // 线程将睡眠2秒
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			System.out.println("线程醒来了");
-		});
-
-		thread.start();
-	}
-}
-```
- 再来看 wait() 的用法：
-```java
-class WaitExample {
-	public static void main(String[] args) {
-		final Object lock = new Object();
-
-		Thread thread = new Thread(() -> {
-			synchronized (lock) {
-				try {
-					System.out.println("线程准备等待 2 秒");
-					lock.wait(2000); // 线程会等待2秒，或者直到其他线程调用 lock.notify()/notifyAll()
-					System.out.println("线程结束等待");
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		});
-
-		thread.start();
-	}
-}
-```
-
-### 怎么保证线程安全？（补充）
- 线程安全是指在并发环境下，多个线程访问共享资源时，程序能够正确地执行，而不会出现数据不一致的问题。
- 为了保证线程安全，可以使用 synchronized 关键字 对方法加锁，对代码块加锁。线程在执行同步方法、同步代码块时，会获取类锁或者对象锁，其他线程就会阻塞并等待锁。
- 如果需要更细粒度的锁，可以使用 ReentrantLock 并发重入锁 等。
- 如果需要保证变量的内存可见性，可以使用 volatile 关键字 。
- 对于简单的原子变量操作，还可以使用 Atomic 原子类 。
- 对于线程独立的数据，可以使用 ThreadLocal 来为每个线程提供专属的变量副本。
- 对于需要并发容器的地方，可以使用 Concurrent[[HashMap核心原理|HashMap]] 、 CopyOnWriteArrayList 等。
-
-#### 有个int的变量为0，十个线程轮流对其进行++操作（循环10000次），结果大于10 万还是小于等于10万，为什么？
- 在这个场景中，最终的结果会小于 100000，原因是多线程环境下，++ 操作并不是一个原子操作，而是分为读取、加 1、写回三个步骤。
-
- 读取变量的值。
- 将读取到的值加 1。
- 将结果写回变量。
-
- 这样的话，就会有多个线程读取到相同的值，然后对这个值进行加 1 操作，最终导致结果小于 100000。
- 详细解释下。
- 多个线程在并发执行 ++ 操作时，可能出现以下竞态条件：
-
- 线程 1 读取变量值为 0。
- 线程 2 也读取变量值为 0。
- 线程 1 进行加法运算并将结果 1 写回变量。
- 线程 2 进行加法运算并将结果 1 写回变量，覆盖了线程 1 的结果。
-
- 可以通过 synchronized 关键字为 ++ 操作加锁。
-```java
-class Main {
-	private static int count = 0;
-
-	public static void main(String[] args) throws InterruptedException {
-		Runnable task = () -> {
-			for (int i = 0; i < 10000; i++) {
-				synchronized (Main.class) {
-					count++;
-				}
-			}
-		};
-
-		List<Thread> threads = new ArrayList<>();
-		for (int i = 0; i < 10; i++) {
-			Thread thread = new Thread(task);
-			threads.add(thread);
-			thread.start();
-		}
-
-		for (Thread thread : threads) {
-			thread.join();
-		}
-
-		System.out.println("Final count: " + count);
-	}
-}
-```
- 或者使用 AtomicInteger 的 incrementAndGet() 方法来替代 ++ 操作，保证变量的原子性。
-```java
-class Main {
-	private static AtomicInteger count = new AtomicInteger(0);
-
-	public static void main(String[] args) throws InterruptedException {
-		Runnable task = () -> {
-			for (int i = 0; i < 10000; i++) {
-				count.incrementAndGet();
-			}
-		};
-
-		List<Thread> threads = new ArrayList<>();
-		for (int i = 0; i < 10; i++) {
-			Thread thread = new Thread(task);
-			threads.add(thread);
-			thread.start();
-		}
-
-		for (Thread thread : threads) {
-			thread.join();
-		}
-
-		System.out.println("Final count: " + count.get());
-	}
-}
-```
-
-
-#### 场景:有一个 key 对应的 value 是一个json 结构，json 当中有好几个子任务，这些子任务如果对 key 进行修改的话，会不会存在线程安全的问题？
- 会。
- 在单节点环境中，可以使用 synchronized 关键字或 ReentrantLock 来保证对 key 的修改操作是原子的。
-```java
-class KeyManager {
-	private final ReentrantLock lock = new ReentrantLock();
-
-	private String key = "{ \" tasks \" : [ \" task1 \" , \" task2 \" ]}";
-
-	public String readKey() {
-		lock.lock();
-		try {
-			return key;
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	public void updateKey(String newKey) {
-		lock.lock();
-		try {
-			this.key = newKey;
-		} finally {
-			lock.unlock();
-		}
-	}
-}
-```
- 在多节点环境中，可以使用分布式锁 Redisson 来保证对 key 的修改操作是原子的。
-```java
-class DistributedKeyManager {
-	private final RedissonClient redisson;
-
-	public DistributedKeyManager() {
-		Config config = new Config();
-		config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-		this.redisson = Redisson.create(config);
-	}
-
-	public void updateKey(String key, String newValue) {
-		RLock lock = redisson.getLock(key);
-		lock.lock();
-		try {
-			// 模拟读取和更新操作
-			String currentValue = readFromDatabase(key); // 假设读取 JSON 数据
-			String updatedValue = modifyJson(currentValue, newValue); // 修改 JSON
-			writeToDatabase(key, updatedValue); // 写回数据库
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	private String readFromDatabase(String key) {
-		// 模拟从数据库读取
-		return "{ \" tasks \" : [ \" task1 \" , \" task2 \" ]}";
-	}
-
-	private String modifyJson(String json, String newValue) {
-		// 使用 JSON 库解析并修改
-		return json.replace("task1", newValue);
-	}
-
-	private void writeToDatabase(String key, String value) {
-		// 模拟写回数据库
-	}
-}
-```
-
-#### 说一个线程安全的使用场景？
- 单例模式。在多线程环境下，如果多个线程同时尝试创建实例，单例类必须确保只创建一个实例，并提供一个全局访问点。
- 饿汉式是一种比较直接的实现方式，它通过在类加载时就立即初始化单例对象来保证线程安全。
-```java
-class Singleton {
-	private static final Singleton instance = new Singleton();
-
-	private Singleton() {
-	}
-
-	public static Singleton getInstance() {
-		return instance;
-	}
-}
-```
- 懒汉式单例则在第一次使用时初始化单例对象，这种方式需要使用双重检查锁定来确保线程安全，volatile 关键字用来保证可见性，syncronized 关键字用来保证同步。
-```java
-class LazySingleton {
-	private static volatile LazySingleton instance;
-
-	private LazySingleton() {
-	}
-
-	public static LazySingleton getInstance() {
-		if (instance == null) { // 第一次检查
-			synchronized (LazySingleton.class) {
-				if (instance == null) { // 第二次检查
-					instance = new LazySingleton();
-				}
-			}
-		}
-		return instance;
-	}
-}
-```
-
-#### 能说一下 Hashtable 的底层数据结构吗？
- 与 HashMap 类似，Hashtable 的底层数据结构也是一个数组加上链表的方式，然后通过 synchronized 加锁来保证线程安全。
+> [!info] 本节已拆分为独立文档
+> 线程间通信方式（共享内存 / wait-notify / Condition / Exchanger / CompletableFuture）、sleep 与 wait 的区别、以及保证线程安全的手段与场景，已迁移到 [[线程通信与同步]] 一篇，便于聚焦阅读。
 
 ## ThreadLocal
 
@@ -1046,7 +442,7 @@ public static ThreadLocal<String> localVariable = new ThreadLocal<>();
  ②、设置 ThreadLocal 的值
 ```java
 // 设置ThreadLocal变量的值
-localVariable.set("沉默王二是沙雕");
+localVariable.set("user-A");
 ```
  ③、获取 ThreadLocal 的值
 ```java
@@ -1101,15 +497,15 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 
 
 #### 什么是弱引用，什么是强引用？
- 我先说一下强引用，比如 User user = new User("沉默王二") 中，user 就是一个强引用， new User("沉默王二") 就是强引用对象。
- 当 user 被置为 null 时（ user = null ）， new User("沉默王二") 对象就会被垃圾回收；否则即便是内存空间不足，JVM 也不会回收 new User("沉默王二") 这个强引用对象，宁愿抛出OutOfMemoryError。
+ 我先说一下强引用，比如 User user = new User("Tom") 中，user 就是一个强引用， new User("Tom") 就是强引用对象。
+ 当 user 被置为 null 时（ user = null ）， new User("Tom") 对象就会被垃圾回收；否则即便是内存空间不足，JVM 也不会回收 new User("Tom") 这个强引用对象，宁愿抛出OutOfMemoryError。
  弱引用，比如说在使用 ThreadLocal 中，Entry 的 key 就是一个弱引用对象。
 ```java
 ThreadLocal<User> userThreadLocal = new ThreadLocal<>();
-userThreadLocal.set(new User("沉默王二"));
+userThreadLocal.set(new User("Tom"));
 ```
  userThreadLocal 是一个强引用， new ThreadLocal<>() 是一个强引用对象；
- new User("沉默王二") 是一个强引用对象。
+ new User("Tom") 是一个强引用对象。
  调用 set 方法后，会将 key = new ThreadLocal<>() 放入 ThreadLocalMap 中，此时的 key 是一个弱引用对象。当 JVM 进行垃圾回收时，如果发现了弱引用对象，就会将其回收。
  
  其关系链就是：

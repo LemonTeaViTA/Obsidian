@@ -9,8 +9,8 @@ last_reviewed: 2026-05-28
 
 大模型（LLM）基础层——模型原理、工程框架、工具调用协议。
 
-> ==Agent 体系已独立到 [[wiki/Agent/]] 目录==，见 [[Agent索引_MOC]]。
-> RAG 体系已独立到 [[wiki/RAG/]] 目录。
+> ==Agent 体系已独立到 [[Agent索引_MOC|Agent 体系]] 目录==，见 [[Agent索引_MOC]]。
+> RAG 体系已独立到 [[RAG基础与架构|RAG 体系]] 目录。
 
 ---
 
@@ -62,7 +62,7 @@ Prompt 核心技术（Few-shot / CoT / ToT）、Fine-tuning vs RAG vs Prompting 
 ## 相关链接
 
 - [[Agent索引_MOC]] — Agent 完整体系（推理框架 / 协议 / Memory / Skills / 工程实践）
-- [[wiki/RAG/]] — RAG 完整体系
+- [[RAG基础与架构|RAG 体系]] — RAG 完整体系
 - [[Java基础索引_MOC]] — Java 后端是 LLM 应用的工程基础
 - [[MySQL索引_MOC]] — 向量数据库 vs 关系数据库的选型
 - [[Redis索引_MOC]] — 缓存在 RAG 系统中的作用

@@ -198,4 +198,4 @@ save 300 100
 - [[Redis 基础]] — Redis 整体概述
 - [[高可用与集群]] — 持久化是高可用的基础
 - [[Redis 进阶功能]] — 持久化对事务、Pipeline 的影响
-- [[MySQL 引擎与日志]] — RDB 类似快照，AOF 类似 binlog
+- [[引擎与日志]] — RDB 类似快照，AOF 类似 binlog
