@@ -2,7 +2,8 @@
 # wiki 机械检查独立脚本 (简化版,移除 JSON 输出)
 # 用法: ./check.sh [--encoding|--links|--structure|--callouts|--all]
 
-set -euo pipefail
+# 注意: 不用 set -e, 因为 ((var++)) 在 var=0 时返回 1 会触发退出
+set -uo pipefail
 
 WIKI_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$WIKI_ROOT"
@@ -43,8 +44,8 @@ check_links() {
     while IFS= read -r full_link; do
         [[ -z "$full_link" ]] && continue
 
-        # 提取 [[file]] 或 [[domain/file]]
-        local link=$(echo "$full_link" | sed 's/\[\[\(�[^#|]*\).*/\1/')
+        # 提取 [[file]] 或 [[domain/file]] (移除 #anchor/|alias/末尾的 ]])
+        local link=$(echo "$full_link" | sed -e 's/^\[\[//' -e 's/\]\]$//' -e 's/[#|].*//')
 
         # 跳过占位符
         [[ "$link" =~ ^(wikilink|主文档|1,).*$ ]] && continue
