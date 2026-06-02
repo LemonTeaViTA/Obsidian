@@ -19,7 +19,10 @@ last_reviewed: 2026-06-01
 
  线程基础与 ThreadLocal
 了解并发和并行的区别，掌握线程的状态流转、创建方式及上下文切换。重点死磕 ThreadLocal 的核心原理、内存泄漏问题以及 ThreadLocalMap 的底层设计与扩容机制。
-👉 **[[线程基础与ThreadLocal]]**
+👉 **[[线程基础与ThreadLocal]]** (MOC)
+  - [[并发基础概念]]
+  - [[线程基础与生命周期]]
+  - [[ThreadLocal与内存管理]]
 
  Java 内存模型 (JMM)
 探究 JVM 如何解决多线程环境下的可见性与有序性问题。理解 happens-before 原则、指令重排、as-if-serial，以及极其高频的 `volatile` 关键字的底层保障（内存屏障）。
