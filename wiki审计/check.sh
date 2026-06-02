@@ -84,11 +84,11 @@ check_structure() {
             fi
         fi
 
-        # 多 H1 检查
-        local h1_count=$(grep -c '^# ' "$file" 2>/dev/null || echo 0)
+        # 多 H1 检查 (使用 awk 区分代码块内外)
+        local h1_count=$(awk '/^```/{in_code=!in_code; next} !in_code && /^# /{c++} END{print c+0}' "$file")
         if [ "$h1_count" -gt 1 ]; then
             log_error "多H1($h1_count个): $file"
-            ((multi_h1++))
+            ((multi_h1++)) || true
         fi
 
     done < <(find wiki/ -name '*.md' -type f)
