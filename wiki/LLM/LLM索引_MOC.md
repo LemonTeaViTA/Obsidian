@@ -2,7 +2,7 @@
 module: LLM
 tags: [LLM, MOC, Prompt, Harness, Function Calling]
 difficulty: hard
-last_reviewed: 2026-05-28
+last_reviewed: 2026-06-01
 ---
 
 # LLM 索引 MOC (Map of Content)
@@ -35,8 +35,12 @@ Prompt 核心技术（Few-shot / CoT / ToT）、Fine-tuning vs RAG vs Prompting 
 ### 3. 工具调用协议
 
  Function Calling
-==工具调用协议详解==——请求结构（tools schema 怎么写）、四种消息角色（system/user/assistant/tool）、响应结构（tool_calls 字段）、多轮拼接、并行调用、==Image Tool Result（多模态返回）==、==用户输入图片 + 历史裁剪==、厂商差异（OpenAI/Anthropic/Qwen）、协议层可靠性。
+==工具调用协议详解==——请求结构（tools schema 怎么写）、四种消息角色（system/user/assistant/tool）、响应结构（tool_calls 字段）、多轮拼接、并行调用、厂商差异（OpenAI/Anthropic/Qwen）、协议层可靠性。
 👉 **[[Function Calling]]**
+
+ Function Calling 多模态
+[[Function Calling]] 的==多模态扩展分册==——图片如何进出模型：工具返回图片（Image Tool Result）、用户输入图片（user input）、历史图片裁剪三大场景，是 Browser MCP / Computer Use 落地的关键协议细节。
+👉 **[[Function Calling 多模态]]**
 
 ---
 
@@ -48,6 +52,7 @@ Prompt 核心技术（Few-shot / CoT / ToT）、Fine-tuning vs RAG vs Prompting 
 2. **[[Prompt Engineering]]** — 如何驾驭 LLM
 3. **[[Harness Engineering]]** — Agent 时代的工程方法论
 4. **[[Function Calling]]** — 工具调用协议（进入 Agent 体系的桥梁）
+5. **[[Function Calling 多模态]]** — Image Tool Result / 用户输入图片 / 历史图片裁剪
 
 ### 继续学习
 

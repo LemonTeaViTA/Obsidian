@@ -9,7 +9,7 @@ last_reviewed: 2026-06-01
 
 > ==Coding Agent 在用户面前的"门面"==——TUI(Terminal User Interface)的形态选择 / 渲染器抽象 / 流式输出 / 折叠块 / 状态栏 / HITL 交互的工程实践。
 >
-> ==与 [[Agent 工程实践#三、CLI 设计]] 的关键区别==:
+> ==与 [[Agent 工程实践#一、CLI 设计]] 的关键区别==:
 > - 那个讲==被 AI 调用的 CLI==(`gh issue list --json` 这种工具型 CLI)——一次执行、输出 JSON、给 Agent 解析
 > - 本文讲==给用户用的交互式 TUI==(Claude Code / Qoder REPL)——长会话、流式输出、人类可读 UI
 >
@@ -418,7 +418,7 @@ Allow? [y/n/a/s/m] (default n in non-interactive mode):
 | ==`/team <任务>`== | Multi-Agent | Planner + Worker + Reviewer 三角色 |
 | ==`/cancel`== | 终止 | 取消运行中任务,不结束 REPL |
 
-==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] / [[Reflection 实现]] / [[Agent 工程实践#multi-agent-架构]]。
+==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] / [[Reflection 实现]] / [[Multi-Agent 架构]]。
 
 ### 6.2 模式切换的 UX 设计要点
 
@@ -550,7 +550,7 @@ def select_renderer():
 ## 相关链接
 
 - [[AI 编程工具]] — Coding Agent 的大产品形态对比(CLI / IDE / 桌面)
-- [[Agent 工程实践#三、CLI 设计]] — 被 AI 调用的 CLI(本文是给用户用的 TUI,正交)
+- [[Agent 工程实践#一、CLI 设计]] — 被 AI 调用的 CLI(本文是给用户用的 TUI,正交)
 - [[Agent 工程实践#hitl-工具读写粒度细化]] — HITL 决策逻辑(本文是 UI 呈现层)
 - [[Coding Agent 工具集]] — Coding Agent 的工具集
 - [[长上下文工程#6-token-与成本可观测性]] — 状态栏显示 token / cost 的设计
