@@ -48,5 +48,5 @@ PaiFlow 的核心是一个领域特定语言（DSL）的解析和执行引擎。
 ## 相关链接
 
 - [[Agent 工程实践]] — DSL+DAG 工作流编排
-- [[LLM/Agent 核心概念]] — Agent 架构与推理模式
+- [[Agent/Agent 核心概念]] — Agent 架构与推理模式
 - [[Agent 框架]] — LangGraph 与框架选型
