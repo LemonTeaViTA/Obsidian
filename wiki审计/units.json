@@ -1,0 +1,207 @@
+[
+  {
+    "key": "Agent-核心与Memory",
+    "report": "领域报告/Agent-核心与Memory.md",
+    "domain": "Agent 核心机制（ReAct/Plan/Reflection/Memory/Skills/上下文/Multi-Agent/路由）",
+    "files": [
+      "wiki/Agent/Agent 核心概念.md",
+      "wiki/Agent/Agent 框架.md",
+      "wiki/Agent/Agent Memory 系统.md",
+      "wiki/Agent/Agent Skills 体系.md",
+      "wiki/Agent/长上下文工程.md",
+      "wiki/Agent/ReAct 与 Harness 实现.md",
+      "wiki/Agent/Reflection 实现.md",
+      "wiki/Agent/Plan-and-Execute 实现.md",
+      "wiki/Agent/Multi-Agent 架构.md",
+      "wiki/Agent/模型路由策略.md"
+    ],
+    "p0_hints": "P0：拆 Plan-and-Execute 实现(814行)——提取其他规划模式为新文件，主文件保留实现+Replan，目标~500行"
+  },
+  {
+    "key": "Agent-工具与协议",
+    "report": "领域报告/Agent-工具与协议.md",
+    "domain": "Coding Agent 工具与协议（MCP/工具集/LSP/TUI/AI编程工具）",
+    "files": [
+      "wiki/Agent/MCP 协议.md",
+      "wiki/Agent/Coding Agent 工具集.md",
+      "wiki/Agent/LSP 与代码诊断.md",
+      "wiki/Agent/Coding Agent TUI 设计.md",
+      "wiki/Agent/AI 编程工具.md",
+      "wiki/Agent/Agent索引_MOC.md"
+    ],
+    "p0_hints": "P0：拆 MCP 协议(927行)——提取生态+安全为独立文件；AI编程工具§8迁移到方法论"
+  },
+  {
+    "key": "Agent-安全部署与对比",
+    "report": "领域报告/Agent-安全部署与对比.md",
+    "domain": "Agent 安全/可靠/可观测/部署 + 主流实现对比",
+    "files": [
+      "wiki/Agent/Agent 安全模型.md",
+      "wiki/Agent/Agent 可观测性.md",
+      "wiki/Agent/Agent 可靠性设计.md",
+      "wiki/Agent/Agent 工程实践.md",
+      "wiki/Agent/Agent 部署与服务化.md",
+      "wiki/Agent/主流 Coding Agent 实现对比/Memory 实现对比.md",
+      "wiki/Agent/主流 Coding Agent 实现对比/WORKSPACE.md",
+      "wiki/Agent/主流 Coding Agent 实现对比/索引.md"
+    ],
+    "p0_hints": "P0：拆 Memory实现对比(1092行)——提取RAG教程到暂存；可观测性§6延迟优化迁到RAG"
+  },
+  {
+    "key": "算法-数据结构",
+    "report": "领域报告/算法-数据结构.md",
+    "domain": "数据结构类算法（数组/链表/栈队列/树/堆/字符串/图）",
+    "files": [
+      "wiki/算法/数组.md",
+      "wiki/算法/链表.md",
+      "wiki/算法/栈与队列.md",
+      "wiki/算法/树.md",
+      "wiki/算法/堆.md",
+      "wiki/算法/字符串.md",
+      "wiki/算法/图.md",
+      "wiki/算法/算法_MOC.md"
+    ],
+    "p0_hints": "P0：修 树.md self.max_sum NameError、图.md rawnge→range"
+  },
+  {
+    "key": "算法-高级算法",
+    "report": "领域报告/算法-高级算法.md",
+    "domain": "高级算法（DP/回溯/贪心/二分/排序/位运算/设计）",
+    "files": [
+      "wiki/算法/动态规划.md",
+      "wiki/算法/回溯算法.md",
+      "wiki/算法/贪心算法.md",
+      "wiki/算法/二分查找.md",
+      "wiki/算法/排序.md",
+      "wiki/算法/位运算.md",
+      "wiki/算法/设计.md"
+    ],
+    "p0_hints": "P0：拆 动态规划(927行)——提取背包问题为独立文件"
+  },
+  {
+    "key": "RAG-检索与向量",
+    "report": "领域报告/RAG-检索与向量.md",
+    "domain": "RAG 检索与向量（基础架构/Embedding/检索策略/分块/CodeRAG）",
+    "files": [
+      "wiki/RAG/RAG基础与架构.md",
+      "wiki/RAG/RAG向量与Embedding.md",
+      "wiki/RAG/RAG检索策略.md",
+      "wiki/RAG/分块策略.md",
+      "wiki/RAG/分块策略前沿.md",
+      "wiki/RAG/Code RAG.md"
+    ],
+    "p0_hints": "P0：拆 RAG检索策略(904行)——提取查询理解为独立文件"
+  },
+  {
+    "key": "RAG-评估安全与高级",
+    "report": "领域报告/RAG-评估安全与高级.md",
+    "domain": "RAG 评估/安全/高级技术/幻觉/多轮/解析综述",
+    "files": [
+      "wiki/RAG/RAG评估.md",
+      "wiki/RAG/RAG安全.md",
+      "wiki/RAG/RAG高级技术.md",
+      "wiki/RAG/幻觉与置信度.md",
+      "wiki/RAG/多轮对话.md",
+      "wiki/RAG/文档解析综述.md"
+    ],
+    "p0_hints": "无超长文件"
+  },
+  {
+    "key": "并发编程",
+    "report": "领域报告/并发编程.md",
+    "folder": "wiki/并发编程/",
+    "domain": "Java 并发编程",
+    "p0_hints": "P0：拆 线程基础与ThreadLocal(1446行)——提取线程通信与同步为独立文件"
+  },
+  {
+    "key": "MySQL",
+    "report": "领域报告/MySQL.md",
+    "folder": "wiki/MySQL/",
+    "domain": "MySQL 数据库",
+    "p0_hints": "P0：锁机制L36 乱码修复"
+  },
+  {
+    "key": "Java基础",
+    "report": "领域报告/Java基础.md",
+    "folder": "wiki/Java基础/",
+    "domain": "Java 语言基础",
+    "p0_hints": "P0：拆 面向对象(930行)为3篇；修弯引号19处"
+  },
+  {
+    "key": "JVM",
+    "report": "领域报告/JVM.md",
+    "folder": "wiki/JVM/",
+    "domain": "JVM 虚拟机",
+    "p0_hints": "P1事实订正为主"
+  },
+  {
+    "key": "Redis",
+    "report": "领域报告/Redis.md",
+    "folder": "wiki/Redis/",
+    "domain": "Redis",
+    "p0_hints": "P0：底层数据结构与实战 SSoT去重"
+  },
+  {
+    "key": "Spring",
+    "report": "领域报告/Spring.md",
+    "folder": "wiki/Spring/",
+    "domain": "Spring 框架",
+    "p0_hints": "P1坏链+代码修正"
+  },
+  {
+    "key": "集合框架",
+    "report": "领域报告/集合框架.md",
+    "folder": "wiki/集合框架/",
+    "domain": "Java 集合框架",
+    "p0_hints": "P0：Set↔HashMap SSoT去重"
+  },
+  {
+    "key": "LLM",
+    "report": "领域报告/LLM.md",
+    "folder": "wiki/LLM/",
+    "domain": "大模型基础（训练/Prompt/FunctionCalling/Harness）",
+    "p0_hints": "P1坏链修正为主"
+  },
+  {
+    "key": "文档解析",
+    "report": "领域报告/文档解析.md",
+    "folder": "wiki/文档解析/",
+    "domain": "文档解析（OCR/版面/公式/表格/VLM/清洗）",
+    "p0_hints": "无P0"
+  },
+  {
+    "key": "数据格式",
+    "report": "领域报告/数据格式.md",
+    "folder": "wiki/数据格式/",
+    "domain": "数据格式（XML/OOXML/PDF/DOM）",
+    "p0_hints": "P1：XML↔OOXML去重"
+  },
+  {
+    "key": "计算机网络",
+    "report": "领域报告/计算机网络.md",
+    "folder": "wiki/计算机网络/",
+    "domain": "计算机网络",
+    "p0_hints": "P0：章节重排+Agent传输拆出"
+  },
+  {
+    "key": "操作系统",
+    "report": "领域报告/操作系统.md",
+    "folder": "wiki/操作系统/",
+    "domain": "操作系统",
+    "p0_hints": "P1：IO多路复用SSoT边界"
+  },
+  {
+    "key": "Baize项目",
+    "report": "领域报告/Baize项目.md",
+    "folder": "wiki/Baize项目/",
+    "domain": "Baize 项目（白泽 AI 项目实现）",
+    "p0_hints": "P0：乱码+LLM选型矛盾+文件上传7H1"
+  },
+  {
+    "key": "PaiFlow",
+    "report": "领域报告/PaiFlow.md",
+    "folder": "wiki/PaiFlow/",
+    "domain": "PaiFlow 工作流平台",
+    "p0_hints": "P1坏链"
+  }
+]

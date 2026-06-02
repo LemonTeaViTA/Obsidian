@@ -589,6 +589,69 @@ last_reviewed: YYYY-MM-DD
 
 ---
 
+## 十、机械检查清单（Automated Checklist）
+
+> ==本清单与 §三「健康指标」对齐==——每项都可通过脚本验证，是审计工作流的输入规则。
+
+### 10.1 客观规则（grep/wc/python 可自动验证）
+
+#### 文档结构类
+- [ ] **单文档行数** < 600 行（>600 🟡 黄旗 / >800 🔴 红旗）
+  - 豁免：流水账文档（优化记录 / 思考记录）
+- [ ] **顶层小节数** ≤ 8 个（H2 标题数量）
+- [ ] **单文件单 H1**（多个 `#` 标题视为结构混乱）
+- [ ] **标题层级不跳级**（不允许 `##` 直接跳到 `####`）
+- [ ] **>400 行文档有顶部速览 callout**（`> [!tip]` 或 `> [!info]`，含章节导航）
+
+#### Frontmatter 类
+- [ ] **frontmatter 四字段齐全**：`module` / `tags` / `difficulty` / `last_reviewed`
+- [ ] **last_reviewed ≤ 6 个月**（过期需更新）
+- [ ] **module 与所在域一致**（如 `wiki/Agent/` 下文件 `module: Agent`，不是 `LLM`）
+
+#### 编码与格式类
+- [ ] **零 UTF-8 乱码**（`U+FFFD` 替换字符数 = 0）
+- [ ] **代码块有语言标签**（\`\`\` 后必须跟 java/python/bash/sql 等）
+- [ ] **代码块前后留空行**（提升可读性）
+
+#### Callout 规范类
+- [ ] **callout 类型仅限 5 种**：`tip` / `info` / `note` / `warning` / `danger`
+- [ ] **每 `###` 小节下 callout ≤ 3 个**（过多降低信息密度）
+- [ ] **禁止连用 callout**（两个 callout 间无正文，视觉疲劳）
+- [ ] **禁止嵌套 callout**（`> > [!...]` 格式破坏）
+
+#### 链接与引用类
+- [ ] **标题不内嵌 `[[wikilink]]` 或 `**bold**`**（破坏锚点匹配）
+- [ ] **所有 wikilink 指向存在的文件**（零死链）
+- [ ] **锚点文本与目标标题精确一致**（`[[file#anchor]]` 的 `anchor` 需逐字符匹配）
+
+### 10.2 半自动规则（需 agent 判断）
+
+以下规则需领域专家 + 知识库管理专家联合判定：
+
+- [ ] **Diátaxis 类型 ≤ 1.5 种**（混合 ≥2 类需拆分或重定位）
+- [ ] **域内 SSoT 无重复**（同一概念在本域 ≥2 篇文档各 ≥50 行重复讲解）
+- [ ] **内容边界清晰**（无跨域内容、无安装教程、无营销文案）
+- [ ] **求职方向对齐**（本库目标 Java + Agent 岗，非纯算法/纯大模型研发）
+
+### 10.3 检查脚本使用
+
+机械检查可通过 `wiki审计/check.sh` 独立执行（不启动完整审计工作流）：
+
+```bash
+# 全量检查
+./wiki审计/check.sh --all
+
+# 分项检查
+./wiki审计/check.sh --encoding   # UTF-8 乱码
+./wiki审计/check.sh --links      # wikilink 坏链
+./wiki审计/check.sh --structure  # 行数/H1/层级
+./wiki审计/check.sh --callouts   # callout 规范
+```
+
+输出格式为 JSON，可被 CI/CD 消费（见 [[QUALITY_CHECKLIST]]）。
+
+---
+
 ## 相关链接
 
 - [[AGENTS.md]] — 操作规范（引用本文档的健康守护规则）
@@ -596,6 +659,7 @@ last_reviewed: YYYY-MM-DD
 - [[QUALITY_CHECKLIST]] — 单文档质量检查
 - [[RAW_WORKFLOW_GUIDE]] — raws 整理流程
 - [[优化记录]] — 变更日志
+- [[wiki审计/README.md]] — 审计流程文档
 
 ==外部参考==：
 
