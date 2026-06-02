@@ -40,7 +40,7 @@ last_reviewed: 2026-05-06
 // 错误：循环中用 + 拼接，每次都 new StringBuilder，性能差
 String result = "";
 for (int i = 0; i < 1000; i++) {
-    result += i;  // ��价于 result = new StringBuilder(result).append(i).toString()
+    result += i;  // 等价于 result = new StringBuilder(result).append(i).toString()
 }
 
 // 正确：循环外创建一个 StringBuilder

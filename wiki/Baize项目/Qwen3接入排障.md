@@ -40,4 +40,4 @@ last_reviewed: 2026-05-10
 
 - [[Baize项目/模型选型]] — 为什么选 Qwen3
 - [[Baize项目/聊天助手模块]] — 流式对话中的 Thinking 处理
-- [[LLM/LLM基础与训练]] — LLM 推理参数调优
+- [[LLM/LLM 基础与训练]] — LLM 推理参数调优

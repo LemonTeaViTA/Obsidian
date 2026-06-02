@@ -2,10 +2,15 @@
 module: LLM
 tags: [LLM, Transformer, 训练, LoRA, 推理优化, MoE]
 difficulty: hard
-last_reviewed: 2026-05-09
+last_reviewed: 2026-06-01
 ---
 
 # LLM 基础与训练
+
+> [!info] 本文导览
+> 覆盖 Transformer 架构 → 训练三阶段（Pre-train / SFT / RLHF / DPO） → LoRA / QLoRA 微调 → Embedding 演进 → 推理优化（KV Cache / PagedAttention / MLA / 量化 / Flash Attention / 部署框架） → MoE & Mamba 新架构 → Token 经济学。
+>
+> 想了解 Prompt 工程见 [[Prompt Engineering]]，工程框架见 [[Harness Engineering]]。
 
 ---
 
@@ -499,7 +504,7 @@ output      = sum(weights[i] * Expert_i(x))    # 加权求和
 
 ## 相关链接
 
-- [[Prompt与Harness]] — Prompt 工程与 Harness 进阶
+- [[Prompt Engineering]] — Prompt 工程与 Harness 进阶
 - [[RAG基础与架构]] — RAG 是 LLM 落地的核心技术
 - [[Agent 核心概念]] — Agent 是 LLM 的应用形态
 - [[JVM JIT与字节码]] — JIT 编译优化与 LLM 推理优化的思想相通

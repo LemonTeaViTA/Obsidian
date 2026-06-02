@@ -7,6 +7,15 @@ last_reviewed: 2026-05-09
 
 # Redis 进阶功能
 
+> [!info] 本文导读
+> 本文是 Redis 进阶能力的 How-to 与机制说明集合：
+> - 阻塞排查与大 Key 处理（MONITOR / SLOWLOG / UNLINK）
+> - 消息队列：List、Pub/Sub 的不可靠队列，以及 5.0+ 的 Stream
+> - 事务（MULTI/EXEC，不支持回滚）与 Lua 脚本原子性
+> - Pipeline 批量、分布式锁（SETNX / Redisson / Redlock）
+>
+> 秒杀 / 限流算法 / SCAN 的端到端实战见 [[Redis 实战场景]]；缓存三高见 [[缓存经典问题]]。
+
 ## 阻塞与性能
 
 ### Redis 发生阻塞了怎么解决？
@@ -136,6 +145,40 @@ ZRANGEBYSCORE delay_queue -inf 1617024000  # 获取到期消息
 ZREM delay_queue task1                  # 删除已处理消息
 ```
 
+### Redis Stream 是什么？和前面的方案有什么区别？
+
+Stream 是 Redis 5.0 引入的专门用于消息队列的数据结构，弥补了 List 和 Pub/Sub "不可靠"的短板：它持久化存储消息、支持消费组（Consumer Group）、有 ACK 确认机制，还能记录消费进度，是 Redis 自带的最接近 Kafka 的方案。
+
+核心命令：
+
+```bash
+XADD mystream * field1 value1          # 追加消息，* 表示自动生成 ID（时间戳-序号）
+XREAD COUNT 10 BLOCK 2000 STREAMS mystream $   # 阻塞读取新消息
+XGROUP CREATE mystream group1 0        # 创建消费组
+XREADGROUP GROUP group1 consumer1 COUNT 10 STREAMS mystream >  # 消费组内读取
+XACK mystream group1 1617024000-0      # 确认消息已处理
+XPENDING mystream group1               # 查看未确认（PEL）的消息
+```
+
+几个关键点：
+
+- **消息 ID** 由"毫秒时间戳-序号"组成，天然有序、全局唯一。
+- **消费组**让多个消费者分摊同一个 Stream 的消息（类似 Kafka 的 Consumer Group），实现负载均衡。
+- **PEL（Pending Entries List）**记录已投递但未 ACK 的消息，消费者宕机后可由其他消费者通过 `XCLAIM` 接管，保证至少消费一次。
+- 与 Kafka 相比，Stream 部署轻量、无需额外组件，但不具备 Kafka 的分区水平扩展、超大吞吐和长期日志存储能力，适合中小规模可靠队列。
+
+Spring 集成方面，Spring Data Redis 提供了 `StreamMessageListenerContainer` 和 `StreamOperations`，可以声明式地订阅消费组并自动 ACK：
+
+```java
+StreamMessageListenerContainer<String, MapRecord<String, String, String>> container =
+    StreamMessageListenerContainer.create(connectionFactory);
+container.receiveAutoAck(
+    Consumer.from("group1", "consumer1"),
+    StreamOffset.create("mystream", ReadOffset.lastConsumed()),
+    message -> process(message.getValue()));
+container.start();
+```
+
 ## 事务
 
 ### 🌟Redis 支持事务吗？
@@ -246,23 +289,7 @@ private final String UNLOCK_SCRIPT =
     "end";
 ```
 
-滑动窗口限流器，一次性完成过期数据清理、计数检查、新记录添加三个操作：
-
-```java
-String luaScript =
-    "local key = KEYS[1] " +
-    "local now = tonumber(ARGV[1]) " +
-    "local window = tonumber(ARGV[2]) " +
-    "local limit = tonumber(ARGV[3]) " +
-    "redis.call('ZREMRANGEBYSCORE', key, 0, now - window) " +
-    "local current = redis.call('ZCARD', key) " +
-    "if current < limit then " +
-    "  redis.call('ZADD', key, now, now) " +
-    "  return 1 " +
-    "else " +
-    "  return 0 " +
-    "end";
-```
+限流同样适合用 Lua 把"清理过期 + 计数 + 写入"合成原子操作。滑动窗口、令牌桶的完整脚本统一收录在 [[Redis 实战场景#限流方案]]，此处不再重复。
 
 ## Pipeline
 
@@ -398,6 +425,7 @@ return false;
 
 - [[Redis 基础]] — Redis 整体概述
 - [[底层数据结构与实战]] — 进阶功能依赖底层结构
+- [[Redis 实战场景]] — 秒杀 / 限流 / SCAN 等端到端实战
 - [[缓存经典问题]] — 进阶功能解决缓存难题
 - [[高可用与集群]] — 集群环境下进阶功能的限制
 - [[Spring Boot 与微服务]] — Spring 集成 Redis 的实践

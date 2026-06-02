@@ -67,33 +67,30 @@ comm -23 /tmp/all.txt /tmp/linked.txt
 
 ## 6. 格式与 Obsidian 风格
 
-详细规则见 `OBSIDIAN_STYLE.md`，此处只列核心检查项：
+> ==格式规则==的 single source of truth 是 [[OBSIDIAN_STYLE]]。==本节只列==必检项 + 自动化命令。
 
-**Frontmatter**：
-- [ ] 每个 wiki 文件有 frontmatter（`module`, `tags`, `difficulty`, `last_reviewed`）
-- [ ] `last_reviewed` 为实际最后修改日期
+### 6.1 必检项
 
-**高亮**：
-- [ ] 单个 `###` 下 ≤ 3 处，只用于核心定义/考点/反直觉结论
-- [ ] 未高亮长整句（> 20 字）
+- [ ] ==Frontmatter==：4 字段齐全（`module` / `tags` / `difficulty` / `last_reviewed`）
+- [ ] ==高亮密度==：单 `###` 下 ≤ 3 处
+- [ ] ==Callout==：只用 tip/info/note/warning/danger 五种，无连续两个，无嵌套
+- [ ] ==代码块==：都有语言标签（java/bash/yaml 等），前后有空行
+- [ ] ==标题==：层级不跳级，无 `[[]]` / `**加粗**`
+- [ ] ==编码==：无 UTF-8 损坏字符（U+FFFD）
 
-**Callout**：
-- [ ] 只用 tip/info/note/warning/danger 五种
-- [ ] 无连续两个 callout，无嵌套
+==详细规则==见 [[OBSIDIAN_STYLE]]。
 
-**代码块**：
-- [ ] 都有语言标签（java/bash/yaml 等）
-- [ ] 前后有空行
-
-**标题**：
-- [ ] 层级不跳级（不从 `##` 直接跳到 `####`）
-- [ ] 标题内无 `[[]]` 链接或 `**加粗**`
-
-**编码**：
-- [ ] 无 UTF-8 损坏字符
+### 6.2 自动化命令
 
 ```bash
+# 编码检查(必跑)
 grep -rn $'\xef\xbf\xbd' wiki/
+
+# Frontmatter 完整性
+head -5 wiki/模块/文件.md | grep -q "last_reviewed"
+
+# Callout 嵌套检查(应该 0 行)
+grep -rn '> > \[!' wiki/
 ```
 
 ## 7. 变更记录

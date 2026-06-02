@@ -7,7 +7,8 @@ last_reviewed: 2026-05-25
 
 # RAG 评估
 
-> RAG 系统的"压舱石"——==没有评估的 RAG 等于盲飞==。本文系统讲清楚四件事：评估什么、用什么指标、怎么构建数据集、怎么做生产监控。
+> [!info] 速览
+> RAG 系统的"压舱石"——没有评估的 RAG 等于盲飞。本文系统讲清楚四件事：评估什么、用什么指标、怎么构建数据集、怎么做生产监控。
 >
 > 算法原理（HNSW/Embedding/Rerank）见 [[RAG向量与Embedding]]、[[RAG检索策略]]，本文只讲==质量评估==。
 
@@ -121,6 +122,9 @@ Faithfulness = 1/2 = 0.5
 ```
 
 ==Faithfulness < 0.8==就要警觉，==生产标准应该 > 0.95==。
+
+> [!note] 检测落地见姊妹篇
+> 本节定义 Faithfulness **指标**；把它做成"拆 claim → 逐条判定 → 实时拦截"的**工程流水线**（含 NLI 句对核查、Verify-Then-Answer）见 [[幻觉与置信度#2.1 引用对齐（==最常用==）|幻觉与置信度]]。
 
 #### Answer Relevancy（答案相关性）
 
@@ -362,16 +366,22 @@ kappa = cohen_kappa_score(labels_a, labels_b)
 
 ### 6.3 显著性检验
 
+点赞率是二元（0/1 伯努利）指标，==比例对比应优先用两比例 z 检验 / 卡方检验==，而不是为连续数据设计的 t 检验：
+
 ```python
-from scipy import stats
+from statsmodels.stats.proportion import proportions_ztest
 
-a_likes = [1, 0, 1, 1, 0, ...]   # A 组用户点赞
-b_likes = [1, 1, 1, 0, 1, ...]   # B 组用户点赞
+# A、B 两组的点赞数与样本量
+likes  = [a_likes, b_likes]        # 各组点赞次数
+totals = [a_total, b_total]        # 各组样本量
 
-t_stat, p_value = stats.ttest_ind(a_likes, b_likes)
+z_stat, p_value = proportions_ztest(count=likes, nobs=totals)
 # p_value < 0.05 → 显著差异
 # p_value >= 0.05 → 没看出差异
 ```
+
+> [!note] 为什么不用 t 检验
+> `ttest_ind` 假设数据近似正态、比较的是均值；点赞是 0/1 比例，样本量很大时 t 检验作为近似勉强可用，但二元比例对比的标准做法是两比例 z 检验或卡方检验。延迟、满意度评分这类连续指标才用 t 检验。
 
 ### 6.4 灰度发布
 

@@ -95,4 +95,4 @@ A：
 
 - [[Baize项目/对话上下文管理]] — 上下文截取策略
 - [[Baize项目/RAG管道设计]] — 检索结果如何注入 Prompt
-- [[LLM/Prompt与Harness]] — Prompt Engineering 理论
+- [[LLM/Prompt Engineering]] — Prompt Engineering 理论

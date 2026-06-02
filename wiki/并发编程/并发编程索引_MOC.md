@@ -2,7 +2,7 @@
 module: 并发编程
 tags: [并发编程, MOC]
 difficulty: hard
-last_reviewed: 2026-05-08
+last_reviewed: 2026-06-01
 ---
 
 # Java 并发编程 MOC (Map of Content)
@@ -38,6 +38,11 @@ last_reviewed: 2026-05-08
  并发工具类 (JUC Utils)
 学习基于 AQS 衍生出的一系列在特定并发场景下极其好用的工具类：CountDownLatch（倒计时器）、CyclicBarrier（循环栅栏）、Semaphore（信号量），以及并发安全的基石集合 ConcurrentHashMap 的底层锁分段与 CAS 操作。
 👉 **[[并发工具类]]**
+
+ 线程通信与同步
+**线程之间"传话与等待"的标准姿势。**
+`wait/notify/notifyAll` 的语义与必须配合 synchronized 的原因、`Condition` 多条件变量替代 wait/notify 的优势、`Exchanger` 数据交换、CompletableFuture 串/并联编排，以及与 [[锁]] / [[并发工具类]] 的边界划分。
+👉 **[[线程通信与同步]]**
 
  并发容器和框架
 了解 Fork/Join 框架的工作分窃（Work-Stealing）算法，以及各类并发容器在极致场景下的运用与特性。

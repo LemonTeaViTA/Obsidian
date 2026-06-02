@@ -104,15 +104,17 @@ public void parentMethod() {
 
 #### protected 和 private 方法加事务会生效吗？
 
-在 private 方法上加事务是肯定不会生效的，而 protected 方法在特定的代理模式下是可能生效的，但这两种用法都应该避免。
+在 private 方法上加事务是肯定不会生效的，protected/default 方法同样不会生效，这几种用法都应该避免。
+
+根本原因不在于代理方式，而在于 Spring 解析事务属性的 `AnnotationTransactionAttributeSource` 默认 `publicMethodsOnly = true`——它只会读取 **public** 方法上的 `@Transactional` 属性。所以无论是 JDK 动态代理还是 CGLIB 子类代理，protected/default/private 方法都拿不到事务属性，事务不会织入。
 
 JDK 动态代理要求目标类必须实现接口，代理只能拦截接口中声明的方法，而 protected 和 private 方法并不能在接口中声明，因此在 JDK 动态代理下，这些方法的事务注解会被直接忽略。
 
-Spring Boot 2.0 之后，Spring AOP 默认使用 CGLIB 代理。对于 private 方法来说，由于无法被子类重写，所以 CGLIB 代理也无法拦截，事务无法生效。对于 protected 方法来说，因为它可以被子类重写，所以理论上通过代理对象调用时事务是生效的，但通过 `this` 内部调用时仍然不生效。
+Spring Boot 2.0 之后，Spring AOP 默认使用 CGLIB 代理。对于 private 方法来说，由于无法被子类重写，CGLIB 代理也无法拦截；对于 protected 方法来说，它虽然可以被子类重写，但仍因上面 `publicMethodsOnly` 的限制而拿不到事务属性，事务不会生效。所以不要被"protected 能被 CGLIB 重写"误导——能被重写不等于事务会生效。声明式事务请始终标注在 public 方法上，且避免 `this` 内部调用。
 
 ## 相关链接
 
 - [[AOP 与动态代理]] — 声明式事务底层通过 AOP 代理实现
 - [[Spring 基础与 IoC]] — 事务管理器本身是 Spring 容器管理的 Bean
-- [[MySQL 锁与事务机制]] — Spring 事务隔离级别直接映射到数据库事务
+- [[锁机制]] — Spring 事务隔离级别直接映射到数据库事务
 - [[线程基础与ThreadLocal]] — 事务传播通过 ThreadLocal 绑定连接实现

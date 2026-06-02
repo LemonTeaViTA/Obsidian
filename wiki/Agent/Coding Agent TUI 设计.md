@@ -1,19 +1,26 @@
 ---
-module: LLM
-tags: [LLM, Agent, Coding Agent, TUI, CLI, JLine, lanterna, 产品形态]
+module: Agent
+tags: [Agent, Coding Agent, TUI, CLI, JLine, lanterna, 产品形态]
 difficulty: medium
-last_reviewed: 2026-05-28
+last_reviewed: 2026-06-01
 ---
 
 # Coding Agent TUI 设计
 
 > ==Coding Agent 在用户面前的"门面"==——TUI(Terminal User Interface)的形态选择 / 渲染器抽象 / 流式输出 / 折叠块 / 状态栏 / HITL 交互的工程实践。
 >
-> ==与 [[Agent 工程实践#三、CLI 设计]] 的关键区别==:
+> ==与 [[Agent 工程实践#一、CLI 设计]] 的关键区别==:
 > - 那个讲==被 AI 调用的 CLI==(`gh issue list --json` 这种工具型 CLI)——一次执行、输出 JSON、给 Agent 解析
 > - 本文讲==给用户用的交互式 TUI==(Claude Code / Qoder REPL)——长会话、流式输出、人类可读 UI
 >
 > 两者正交,生产 Coding Agent 经常==同时是被调 CLI 和交互 TUI==(`paicli "fix bug"` 单次 vs `paicli` 进 REPL)。
+
+> [!tip] 速览（一分钟读完）
+> - ==产品形态光谱==：非交互 CLI / inline 流式 TUI（主流）/ 全屏 TUI / IDE 插件 / 桌面应用——本文聚焦中间三类"终端形态"。
+> - ==核心架构是 Renderer 抽象==：inline / lanterna / plain 三种 Renderer 共享同一套 Agent 核心（推理 / Tool / Memory / MCP / Skill / HITL），只是 UI 呈现不同。
+> - ==inline 流式是事实标准==——主流终端 + 流式体验；lanterna 适合演示/复杂调试；plain 给 CI 和单测兜底。
+> - ==HITL 决策逻辑在核心层，UI 呈现在 Renderer 层==——同一个决策，inline 单字符、lanterna 模态、plain 回车。
+> - ==永远不要假设支持高级特性==——降级（NO_COLOR / 非 TTY / CI / dumb terminal → plain）是 TUI 工程的核心。
 
 ---
 
@@ -411,7 +418,7 @@ Allow? [y/n/a/s/m] (default n in non-interactive mode):
 | ==`/team <任务>`== | Multi-Agent | Planner + Worker + Reviewer 三角色 |
 | ==`/cancel`== | 终止 | 取消运行中任务,不结束 REPL |
 
-==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] / [[Reflection 实现]] / [[Agent 工程实践#multi-agent-架构]]。
+==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] / [[Reflection 实现]] / [[Multi-Agent 架构]]。
 
 ### 6.2 模式切换的 UX 设计要点
 
@@ -457,9 +464,9 @@ async def agent_run(task: str, cancel_token: CancelToken):
 | ==`<APP>_NO_STATUSBAR=true`== | 禁用底部状态栏 | 不支持 ANSI 光标控制的终端 |
 | ==`<APP>_RENDERER=plain`== | 强制 plain 模式 | CI / 重定向到文件 |
 | ==`<APP>_RENDERER=lanterna`== | 强制全屏 | 演示场景 |
-| ==`TERM=dumb`== | 标准 POSIX 信号——能力最弱终端 | 各种受限环境 |
+| ==`TERM=dumb`== | terminfo 终端类型为 dumb——能力最弱终端，无光标定位/颜色 | 各种受限环境 |
 
-==`NO_COLOR` 是行业标准==(noco lor.org)——==所有 CLI 工具都应该支持==。
+==`NO_COLOR` 是行业标准==(no-color.org)——==所有 CLI 工具都应该支持==。
 
 ### 7.2 自动检测降级
 
@@ -543,7 +550,7 @@ def select_renderer():
 ## 相关链接
 
 - [[AI 编程工具]] — Coding Agent 的大产品形态对比(CLI / IDE / 桌面)
-- [[Agent 工程实践#三、CLI 设计]] — 被 AI 调用的 CLI(本文是给用户用的 TUI,正交)
+- [[Agent 工程实践#一、CLI 设计]] — 被 AI 调用的 CLI(本文是给用户用的 TUI,正交)
 - [[Agent 工程实践#hitl-工具读写粒度细化]] — HITL 决策逻辑(本文是 UI 呈现层)
 - [[Coding Agent 工具集]] — Coding Agent 的工具集
 - [[长上下文工程#6-token-与成本可观测性]] — 状态栏显示 token / cost 的设计

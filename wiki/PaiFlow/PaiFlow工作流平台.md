@@ -1,5 +1,5 @@
 ---
-module: PaiFlow项目
+module: PaiFlow
 tags: [PaiFlow, 工作流, DAG, LangGraph, 插件化]
 difficulty: medium
 last_reviewed: 2026-05-10
@@ -21,7 +21,7 @@ PaiFlow 的核心是一个领域特定语言（DSL）的解析和执行引擎。
 
 ## 二、双引擎路由（EngineSelector）
 
-简单的线性工作流走 DAG 引擎（拓扑排序 + DFS 循环检测），有条件分支和循环的复杂工作流走 LangGraph 引擎。两个引擎共享同一套 NodeExecutor 执行器，通过 NodeAdapter 适配。
+简单的线性工作流走 DAG 引擎（基于 Kahn 算法的拓扑排序，按入度归零依次调度，若无法清空全部入度即说明存在环），有条件分支和循环的复杂工作流走 LangGraph 引擎。两个引擎共享同一套 NodeExecutor 执行器，通过 NodeAdapter 适配。
 
 选型依据：
 - **DAG 引擎**：可控、稳定、便于调试，适合步骤可枚举的任务
@@ -47,6 +47,6 @@ PaiFlow 的核心是一个领域特定语言（DSL）的解析和执行引擎。
 
 ## 相关链接
 
-- [[LLM/Agent工程实践]] — DSL+DAG 工作流编排
-- [[LLM/Agent核心概念]] — Agent 架构与推理模式
-- [[LLM/框架选型]] — LangGraph 与框架选型
+- [[Agent 工程实践]] — DSL+DAG 工作流编排
+- [[LLM/Agent 核心概念]] — Agent 架构与推理模式
+- [[Agent 框架]] — LangGraph 与框架选型

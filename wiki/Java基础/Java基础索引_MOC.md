@@ -2,7 +2,7 @@
 module: Java基础
 tags: [Java基础, MOC]
 difficulty: easy
-last_reviewed: 2026-05-08
+last_reviewed: 2026-06-01
 ---
 
 # Java 基础篇 MOC (Map of Content)
@@ -28,7 +28,17 @@ last_reviewed: 2026-05-08
  面向对象核心构建
 **Java 世界观的根本。**
 死磕三大特性（封装、继承、多态），理解重载与重写、抽象类与接口。深入搞懂构造方法的执行顺序与 this/super 引用。
-👉 **[[面向对象]]**
+👉 **[[面向对象核心]]**
+
+ 类成员与关键字
+**OOP 落地的语法细节集合。**
+访问控制（public/protected/default/private）、static / final 的语义、内部类四种形态（成员/静态/局部/匿名）、this 与 super 的引用机制，以及它们如何影响初始化顺序。
+👉 **[[类成员与关键字]]**
+
+ 对象语义
+**对象的"等价"与"流动"。**
+死磕 `==` vs `equals()` vs `hashCode()` 的协同契约（与 [[包装类与 Object]] 的 Object 方法呼应）、Java 值传递的真相、对象创建的五种方式、深拷贝与浅拷贝的工程取舍。
+👉 **[[对象语义]]**
 
  String 字符串设计哲学
 字符串是 Java 中使用最频繁的对象结构。理解不可变的哲学设计、字符串驻留池、不可变带来的开销，以及 StringBuilder 与 StringBuffer 之间的使用博弈。

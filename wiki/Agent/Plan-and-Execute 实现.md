@@ -1,8 +1,8 @@
 ---
-module: LLM
-tags: [LLM, Agent, Plan-and-Execute, Task Decomposition, Replan, LangGraph]
+module: Agent
+tags: [Agent, Plan-and-Execute, Task Decomposition, Replan, LangGraph]
 difficulty: hard
-last_reviewed: 2026-05-25
+last_reviewed: 2026-06-01
 ---
 
 # Plan-and-Execute 实现
@@ -10,6 +10,14 @@ last_reviewed: 2026-05-25
 > 与 [[ReAct 与 Harness 实现]] 配对的"另一种推理框架"实现文档——==80 行 Python 看清 Plan-and-Execute 的完整流程==。
 >
 > 推理模式概念见 [[Agent 核心概念#2.1 三种推理框架]]；与 ReAct 的功能对比见 [[Agent 核心概念#2.3 三种框架对比]]；Claude Code 的 Plan Mode 是 ReAct + Plan-and-Execute 混合（详见 §五）。
+
+> [!tip] 速览（一分钟读完）
+> - ==Plan-and-Execute==:先一次性产出完整计划(Plan),再按计划逐步执行——区别于 ReAct 的"边想边做"。
+> - ==核心两阶段==(§二):Planner 一次调用产出 JSON 步骤列表 → Executor 按序执行,生产框架(LangGraph)只是在此之上加 Replan / 并行 / 持久化。
+> - ==Plan schema 三档==(§三):V1 线性 → V2 加 `depends_on`(DAG,可并行) → V3 加输入输出绑定(数据流图)。
+> - ==Replan==(§四):计划锁死是最大弱点,补丁是 Replan;==不爆炸的关键是两层 context 分离==——Planner 只看 metadata,Executor 通过引用从 state 加载完整 artifact。
+> - ==生产是混合架构==(§五):顶层 Plan 给全局视野,每个 Step 内部用 ReAct 探索——这就是 Claude Code 的 Plan Mode。
+> - ==其他规划模式==(ReWOO / LLMCompiler / ToT / LATS / Hierarchical)见 [[Plan 模式家族对比]]。
 
 ---
 
@@ -245,17 +253,7 @@ DAG 可以==渲染成图==给用户看进度——一眼看出哪些步骤在并
 
 #### DAG 不是 Plan-and-Execute 独有
 
-==DAG 是计算机工程里的老概念==,到处都是:
-
-| 系统 | DAG 用途 |
-|------|---------|
-| ==Airflow / Prefect== | 数据管道用 DAG 描述任务依赖 |
-| ==Make / Bazel== | 构建系统用 DAG 描述编译依赖 |
-| ==Git== | Commit 历史是 DAG(merge 让它有分支但无环) |
-| ==Spark== | DAG Scheduler 把 RDD 转换链编排成执行图 |
-| ==Plan-and-Execute Agent== | 子任务依赖关系编排 |
-
-==Plan-and-Execute 用 DAG 不是新概念==——只是把数据管道编排的成熟方法==搬到 Agent 任务编排上==。本质和 Airflow 是一回事,==只不过节点变成"LLM 调用 + 工具调用"==。
+==DAG 是计算机工程里的老概念==——Airflow / Prefect(数据管道)、Make / Bazel(构建依赖)、Git(commit 历史)、Spark(RDD 调度)都用它描述依赖。==Plan-and-Execute 用 DAG 不是新概念==——只是把数据管道编排的成熟方法==搬到 Agent 任务编排上==,==只不过节点变成"LLM 调用 + 工具调用"==。
 
 ---
 
@@ -631,157 +629,12 @@ app = graph.compile()
 
 ## 七、其他规划模式(Plan 家族)
 
-Plan-and-Execute 是最经典的,但学术界 + 生产中还有几种重要变体——==都是给"==让 LLM 怎么规划复杂任务=="提供不同思路==。理解这些能让你对"==Plan 是什么==有更全面的认知"。
+Plan-and-Execute 是最经典的,但学术界 + 生产中还有几种重要变体——ReWOO / LLMCompiler / ToT / LATS / Hierarchical。它们都是给"==让 LLM 怎么规划复杂任务=="提供不同思路。
 
-### 7.1 ReWOO(Reasoning WithOut Observation)
-
-==2023 年由 USC + Microsoft 提出==。和 Plan-and-Execute 类似但==更彻底前向==。
-
-==核心区别==:
-- ==Plan-and-Execute==:Plan 一次性生成,但==执行每步还会让 LLM 看上下文==(每步可能再调 LLM 决策细节)
-- ==ReWOO==:Plan 里==直接用占位符==`#E1` `#E2` 引用前步结果,==Executor 阶段完全不调 LLM==,只跑工具
-
-```
-Plan(LLM 一次调用):
-  Step 1: search("Python tutorial") → #E1
-  Step 2: search(==#E1== 中提到的最受欢迎库) → #E2
-  Step 3: summarize(==#E1==, ==#E2==) → answer
-
-Executor(==零 LLM 调用==,只跑工具):
-  执行 Step 1 → 把结果替换 #E1
-  执行 Step 2 → 把结果替换 #E2(==Step 2 的参数=="#E1 中..."==文本替换==)
-  执行 Step 3 → 输出
-```
-
-==优点==:==省 5x LLM 调用==(论文实测),适合 Plan 步骤简单清晰的场景。
-==缺点==:对 Plan 质量要求==极高==——一次错全错,完全没有中途调整能力。
-
-==生产中很少独立用 ReWOO==,但思想被吸收到 LLMCompiler 里。
-
-### 7.2 LLMCompiler
-
-==2023 年 UC Berkeley 提出==,可以理解为==ReWOO 的工程化升级版==。
-
-==核心思想==:==把 Plan 编译成可并行执行图==,类似编程语言编译器把代码编译成 IR。
-
-```
-LLM Planner 输出:
-  $1 = search("Cursor 价格")
-  $2 = search("Claude Code 价格")
-  $3 = search("Aider 价格")
-  $4 = compare($1, $2, $3)        ← Compiler 自动识别依赖
-  $5 = summarize($4)
-
-Compiler 自动构建 DAG:
-   $1   $2   $3
-    ↘   ↓   ↙
-        $4
-        ↓
-        $5
-
-Executor:
-  $1‖$2‖$3 ==自动并行==          ← 不需要 LLM 显式声明 depends_on
-  → $4 → $5
-```
-
-==vs Plan-and-Execute 加 DAG 的区别==:Plan-and-Execute 需要 ==LLM 自己声明 depends_on==(可能错);LLMCompiler ==自动从变量引用推断依赖==(==更可靠==)。
-
-==优点==:极致性能,自动并行,延迟可降低 35%,成本降低 25%。
-==缺点==:Plan 表达受限于 DSL(用变量引用而不是 JSON);中途 Replan 难。
-
-==类比==:Plan-and-Execute 是手写 Makefile,LLMCompiler 是 Bazel 自动推依赖。
-
-### 7.3 Tree of Thoughts(ToT)
-
-==2023 年 Princeton + Google 提出==。==不是单条 Plan,是 N 条 Plan 的搜索树==。
-
-==核心思想==:每步生成==多个候选思路==,搜索==树状探索==,最后选最好的:
-
-```
-                   [根:用户任务]
-            /        |        \
-       思路 A     思路 B     思路 C       ← LLM 一次生成 3 个候选
-        /   \      / \       / \
-      A1    A2    B1  B2    C1  C2       ← 每个候选再展开
-       ✓     ✗     ✓   ✓     ✗   ✓
-       ↓
-==选 A1 路径==(评估打分最高)
-```
-
-==与 Plan-and-Execute 的区别==:
-- Plan-and-Execute 是==单条线==——一次 Plan,顺序执行
-- ToT 是==多分支==——同一步多个候选,==搜索 + 评估 + 剪枝==
-
-==适用==:高难度推理(数学题、24 点游戏、逻辑谜题)——需要==探索多种解法==的场景。
-
-==缺点==:==成本极高==——每步 N 倍 LLM 调用,深度 D 的树 = O(N^D) 调用。==生产中几乎不用纯 ToT==,但思想用在 Reflection 和 LATS 里。
-
-### 7.4 LATS(Language Agent Tree Search)
-
-==2024 年 UIUC 提出==,把 ==MCTS(蒙特卡洛树搜索)+ ReAct== 混合。
-
-==核心思想==:每步用 MCTS 决定最优动作:
-- 从当前状态出发,模拟 K 个可能动作
-- 每个动作执行后用 LLM 评估"==离目标多近=="
-- 反向传播打分,选最高分动作执行
-
-==与 ToT 的区别==:ToT 是 BFS/DFS 搜索,LATS 是==MCTS==(类似 AlphaGo)——==更聪明的搜索算法==。
-
-==适用==:编码 Agent、复杂 Web 操作、多步推理任务。
-
-==代价==:==极慢且贵==——单步要跑 K 次 LLM 评估。==生产中用 LATS 的主要是研究项目==,实际产品很少。
-
-### 7.5 Hierarchical / 递归 Plan
-
-==经典 AI 规划==(HTN, Hierarchical Task Network)的 LLM 时代版本。
-
-==核心思想==:==大任务拆子任务,子任务再拆子子任务==,树状层级:
-
-```
-[写一本技术书]
-   ├── [Ch 1: 基础概念]
-   │     ├── 1.1 写大纲
-   │     ├── 1.2 写正文
-   │     │     ├── 1.2.1 写每一节
-   │     │     └── ...
-   │     └── 1.3 校对
-   ├── [Ch 2: 进阶技术]
-   │     └── ...
-   └── [Ch 3: 实战]
-```
-
-==每一层都是一个 Plan==——顶层 Plan 是几个章节,二层 Plan 是每章节的小节,三层 Plan 是每小节的段落。
-
-==适用==:超长任务、明显层级结构的任务(写书、重构整个项目、写一个完整系统)。
-
-==代价==:层级过深难追踪;==每层都可能 Replan,失败传播复杂==。
-
-==生产中的体现==:Anthropic 的 Multi-Agent Research(2024)就是 Hierarchical 模式——==Lead Agent 拆任务,Sub-Agent 各自执行子任务==。
-
-### 7.6 Plan 模式选型
-
-==现实生产中的选择==:
-
-| 场景 | 推荐 |
-|------|------|
-| 简单流水线、步骤明确 | ==Plan-and-Execute(线性)== |
-| 步骤之间有并行机会 | ==Plan-and-Execute + DAG== |
-| 极致性能优化、Plan 简单 | ==LLMCompiler== |
-| Plan 简单到不需要中途调整 | ==ReWOO== |
-| 高难度数学/逻辑推理 | ==ToT==(贵) |
-| 复杂 Web 操作、需要回溯 | ==LATS==(慢且贵) |
-| 超长任务、明显层级结构 | ==Hierarchical== |
-| 任务开放、需要边走边看 | ==ReAct==(==不要规划==) |
-| ==90% 的实际场景== | ==Plan-and-Execute + ReAct 混合==(详见 §五) |
-
-==关键认知==:
-- ==绝大多数生产场景==,Plan-and-Execute(线性或 DAG) + ReAct 混合就够
-- ==ToT / LATS 是研究产物==,生产价值有限(贵 + 慢)
-- ==Hierarchical 在长任务场景==(写书、深度研究)有真实价值
-- ==LLMCompiler / ReWOO 在性能敏感场景==(高吞吐 Agent 服务)有价值
-
-==面试时讲清"==90% 用 Plan-and-Execute,5% 用 Hierarchical,4% 用 LLMCompiler,1% 用 ToT/LATS=="==,比死记所有模式更有判断力。
-
+> [!info] 完整对比已独立成文
+> 这 5 种模式的核心思想、优缺点、与 Plan-and-Execute 的区别,以及==选型矩阵==见 [[Plan 模式家族对比]]。
+>
+> ==一句话选型==:90% 用 Plan-and-Execute,5% 用 Hierarchical(超长/层级任务),4% 用 LLMCompiler(性能敏感),1% 用 ToT/LATS(研究)。
 ---
 
 ## 八、关键认知:Plan ≠ 更聪明
@@ -807,6 +660,7 @@ Executor:
 ## 相关链接
 
 - [[ReAct 与 Harness 实现]] — 配对的另一种推理框架完整实现(60 行 Python)
+- [[Plan 模式家族对比]] — ReWOO / LLMCompiler / ToT / LATS / Hierarchical 对比 + 选型矩阵
 - [[Agent 核心概念#二、推理模式与 Harness 控制流]] — 三种推理框架的概念对比
 - [[Agent 框架#2.2 LangGraph]] — Plan-and-Execute 的工程化版本
 - [[Harness Engineering#控制流模式（六大组件之外的"第七维"）]] — 控制流是 Harness 的第七维

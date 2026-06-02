@@ -59,7 +59,7 @@ JDK 自带的命令行工具层面，我用过 jps、jstat、jinfo、jmap、jhat
 
 - `-XX:+UseSerialGC`：设置串行收集器
 - `-XX:+UseParallelGC`：设置并行收集器
-- `-XX:+UseParalledlOldGC`：设置并行老年代收集器
+- `-XX:+UseParallelOldGC`：设置并行老年代收集器
 - `-XX:+UseConcMarkSweepGC`：设置并发收集器
 
 #### 配置并行收集的参数有哪些？

@@ -112,7 +112,7 @@ Integer.parseInt("12.3");  // NumberFormatException（不支持小数）
 | `hashCode()` | 返回哈希码 | 重写 equals 时必须同时重写 |
 | `toString()` | 返回字符串表示 | 默认 `类名@hashCode十六进制` |
 | `getClass()` | 返回运行时 Class 对象 | final 方法，不能重写 |
-| `clone()` | 浅拷贝 | 需实现 Cloneable，见 [[面向对象#深拷贝和浅拷贝]] |
+| `clone()` | 浅拷贝 | 需实现 Cloneable，见 [[对象语义#说说深拷贝和浅拷贝的区别？]] |
 | `wait/notify/notifyAll` | 线程协作 | 见 [[线程基础与ThreadLocal]] |
 | `finalize()` | GC 前回调 | 已废弃，不推荐使用 |
 
@@ -243,7 +243,7 @@ if (dog instanceof Animal a) {
 ## 相关链接
 
 - [[基础语法]] — 基本类型与包装类转换、自动装箱陷阱
-- [[面向对象]] — 深拷贝/浅拷贝（clone）、equals 与 hashCode 的深入讨论
+- [[对象语义]] — 深拷贝/浅拷贝（clone）、equals 与 hashCode 的深入讨论
 - [[String]] — String 重写了 equals/hashCode
 - [[HashMap核心原理]] — hashCode/equals 是 HashMap 的基础
 - [[JVM 内存管理]] — 自动装箱拆箱与对象创建

@@ -9,6 +9,13 @@ last_reviewed: 2026-05-20
 
 > 本文覆盖向量基础设施全链路：Embedding 模型演进与选型、向量数据库与检索算法、生产级优化、召回率评估。检索策略见 [[RAG检索策略]]，高级技术见 [[RAG高级技术]]。
 
+> [!info] 速览（本文较长，按需跳读）
+> - **§一~二 向量数据库与检索算法**：KNN vs ANN、HNSW/IVF/PQ/RaBitQ、DISKANN/ScaNN 原理。
+> - **§三 向量数据库选型**：主流方案对比 + 元数据过滤与向量索引的结合（Pre/Post/Hybrid）。
+> - **§四~五 Embedding 演进与选型**：三代→四代 LLM-backbone、选型五维度与决策树、2026 主流模型。
+> - **§六 Embedding 微调**：何时微调、合成数据、企业实战。
+> - **§七~八 生产优化与召回率评估**：延迟/并发优化、测试集构建、核心指标与工具选型。
+
 ## 一、向量数据库基础
 
 ### 为什么 LLM 需要向量数据库
@@ -200,7 +207,9 @@ ANN 找 Top-100 → 应用 WHERE doc_type='合同' → 可能只剩 30 个
 
 适用：过滤条件严、命中率 < 5%。
 
-#### 3. Hybrid（混合过滤）：HNSW 遍历时==同步检查==元数据
+#### 3. Hybrid（混合过滤）：HNSW 遍历时同步检查元数据
+
+Hybrid 在 HNSW 遍历时==同步检查==元数据：
 
 ```python
 # Hybrid 的伪代码
@@ -310,14 +319,17 @@ ES 8.x 支持 HNSW 索引，向量检索复杂度 O(log N)。
 
 #### 把 LLM 改造成 Embedding 的关键技术
 
-LLM 是 decoder-only（causal attention，只能看前文），直接拿来做 embedding 不合适，需要四步改造：
+LLM 是 decoder-only（causal attention，只能看前文），直接拿来做 embedding 不合适，需要几步改造：
 
 | 步骤 | 做什么 | 目的 |
 |------|-------|------|
-| 1. 去 causal mask | 把 attention 改为==双向==（让每个 token 看到全句） | 句子表示需要全局信息 |
+| 1. 注意力 / pooling 适配 | 两条主流路线：① ==去 causal mask 改双向 attention==（LLM2Vec、NV-Embed 一类）；② ==保留 causal attention + last-token pooling==（e5-mistral、部分 Qwen-Embedding 一类） | 让单向语言模型产出能代表整句的表示 |
 | 2. 特殊 pooling | last-token pooling 或 ==latent attention pooling==（NV-Embed 提出） | 把 token 序列压成一个向量 |
 | 3. 对比学习微调 | InfoNCE loss + 难负例挖掘 | 学相似度判别 |
 | 4. Instruction tuning | 用任务前缀（"Represent this sentence for retrieval:"）告诉模型场景 | 一个模型支持多任务（检索/聚类/分类） |
+
+> [!note] "去 causal mask" 不是唯一路线
+> 把双向化当成通用第 1 步是常见误解。去 mask 改双向（LLM2Vec / NV-Embed）和保留 causal + last-token pooling（e5-mistral / 部分 Qwen-Embedding）是==两条并行的主流路线==，不少登顶 MTEB 的模型走的是后者，并未改双向。
 
 #### 为什么效果显著超越 BERT 系
 
@@ -486,7 +498,7 @@ test_cases = [
 
 ### 前沿趋势
 
-1. **超大参数模型崛起：** KaLM-Embedding（12B）登顶 MTEB，Embedding 也在走向"大模型化"
+1. **超大参数模型崛起：** Embedding 也在走向"大模型化"，7B/8B 级 LLM-backbone 模型（NV-Embed、Qwen3-Embedding-8B 等）登顶 MTEB，参数量较 BERT 系高一个数量级
 2. **多模态统一嵌入：** Amazon Nova 首次实现单模型支持文本/图像/视频/音频，简化多模态 RAG 架构
 3. **知识蒸馏让小模型也能打：** LEAF 等框架让小型模型达到接近大型模型的效果
 4. **混合检索成为标配：** BGE-M3 同时生成稠密向量和稀疏向量，兼顾关键词精确性和语义理解

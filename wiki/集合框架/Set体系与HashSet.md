@@ -69,71 +69,9 @@ public boolean add(E e) {
 }
 ```
 
-所以 HashSet 判断元素重复的逻辑底层依然是 HashMap 的底层逻辑。
+元素本身作为 HashMap 的 key 存入，因此「键唯一即去重」：`put` 时通过 `hashCode` 定位桶、再用 `equals` 精确比较，命中相同 key 就覆盖旧值并返回旧值（非 `null`），`add` 据此返回 `false` 表示元素已存在。
 
-HashMap 在插入元素时，通常需要三步：
-
-第一步，通过 `hash` 方法计算 key 的哈希值。
-
-```java
-static final int hash(Object key) {
-    int h;
-    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
-}
-```
-
-第二步，数组进行第一次扩容。
-
-```java
-if ((tab = table) == null || (n = tab.length) == 0)
-    n = (tab = resize()).length;
-```
-
-第三步，根据哈希值计算 key 在数组中的下标，如果对应下标正好没有存放数据，则直接插入。
-
-```java
-if ((p = tab[i = (n - 1) & hash]) == null)
-    tab[i] = newNode(hash, key, value, null);
-```
-
-如果对应下标已经有数据了，就需要判断是否为相同的 key，是则覆盖 value，否则需要判断是否为树节点，是则向树中插入节点，否则向链表中插入数据。
-
-```java
-else {
-    Node<K, V> e; K k;
-    if (p.hash == hash &&
-        ((k = p.key) == key || (key != null && key.equals(k))))
-        e = p;
-    else if (p instanceof TreeNode)
-        e = ((TreeNode<K, V>) p).putTreeVal(this, tab, hash, key, value);
-    else {
-        for (int binCount = 0; ; ++binCount) {
-            if ((e = p.next) == null) {
-                p.next = newNode(hash, key, value, null);
-                if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
-                    treeifyBin(tab, hash);
-                break;
-            }
-            if (e.hash == hash &&
-                ((k = e.key) == key || (key != null && key.equals(k))))
-                break;
-            p = e;
-        }
-    }
-}
-```
-
-也就是说，HashSet 通过元素的哈希值来判断元素是否重复，如果重复了，会覆盖原来的值。
-
-```java
-if (e != null) { // existing mapping for key
-    V oldValue = e.value;
-    if (!onlyIfAbsent || oldValue == null)
-        e.value = value;
-    afterNodeAccess(e);
-    return oldValue;
-}
-```
+> [!info] HashSet 去重的底层就是 HashMap 的 put 逻辑（hash 扰动 → `(n-1) & hash` 寻址 → 链表/红黑树冲突处理 → 相同 key 覆盖），完整流程见 [[HashMap核心原理#🌟HashMap 的 put 流程知道吗？]]。
 
 ## 相关链接
 
