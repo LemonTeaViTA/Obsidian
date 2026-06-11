@@ -193,6 +193,16 @@ String s = "Hello" + " " + "World";
 
 **答案：**
 
+> [!info] 先理清：hashCode 从哪来？为什么 String 要自己算？
+> `hashCode()` 不是 String 独有的——它是**所有对象**从父类 `Object` 继承来的方法，返回一个 int。`Object` 的默认实现基于**内存地址**，所以两个内容相同但地址不同的对象，默认 hashCode **不同**。
+> String **重写**了它，改成**按字符内容计算**——目的是让内容相同的字符串 hashCode 也相同，这是它能安全当 HashMap key 的前提（见下方 tip）。
+
+```java
+String a = new String("abc");
+String b = new String("abc");   // 内容相同，但是两个不同对象
+a.hashCode() == b.hashCode();   // ✅ true（因为 String 按内容算，不按地址）
+```
+
 ```java
 // String.hashCode() 的实现
 int hash = 0;
