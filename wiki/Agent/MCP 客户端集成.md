@@ -117,7 +117,7 @@ def clean_schema(schema: dict, root: dict = None) -> dict:
 
 ### Schema 清洗与 token 预算的关系
 
-清洗不只是修复格式错误，==长 description 截断直接减少工具描述占用的 token==。挂 3 个 MCP server 时工具描述可达 12k tokens，清洗后可压到 5k 以内——详见 [[Coding Agent 工具集#66-工具集-token-管理工具描述是隐形的-prompt-成本]]。
+清洗不只是修复格式错误，==长 description 截断直接减少工具描述占用的 token==。挂 3 个 MCP server 时工具描述可达 12k tokens，清洗后可压到 5k 以内——详见 [[Coding Agent 工具集_MOC#5.6 工具集 token 管理]]。
 
 ---
 
@@ -354,5 +354,5 @@ async def run_session(read, write, server_name: str):
 - [[MCP 服务端开发]] — Server 实现、工具注册、生命周期管理
 - [[MCP Server 生态]] — 主流 Server 清单
 - [[MCP 安全模型]] — 三道安全关卡 / 审计日志
-- [[Coding Agent 工具集]] — token 管理、工具描述优化
+- [[Coding Agent 工具集_MOC]] — token 管理、工具描述优化
 - [[Function Calling]] — LLM 协议层

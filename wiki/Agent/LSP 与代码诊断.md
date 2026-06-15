@@ -632,6 +632,6 @@ write_file 后:
 - [[Function Calling]] — Tool 调用协议(LSP 工具暴露给 LLM 经过 FC 层)
 - [[Reflection 实现#3.3 外部验证器]] — 诊断回注是外部验证器思想的具体落地
 - [[Harness Engineering]] — Generator-Evaluator 架构(LSP 是天然 Evaluator)
-- [[Coding Agent 工具集#22-代码搜索类]] — `get_definition` / `get_references` 走 LSP
+- [[代码分析工具#五、LSP：跳转定义与查找引用]] — `get_definition` / `get_references` 走 LSP
 - [[Code RAG]] — LSP 在 Code RAG 中的调用图增强
 - [[Coding Agent TUI 设计]] — 诊断的 UI 呈现(IDE 显示 vs Agent 回注 LLM)

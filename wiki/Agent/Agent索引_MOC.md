@@ -88,6 +88,10 @@ Claude Code / Cursor / Aider 等==实际提供的工具集索引==——工具�
 Skills 定义、渐进式披露原理（索引段 ≤ 4KB / 启用上限 20 个）、专用 load_skill 工具 vs 通用 view、三层加载位置（内置 < 用户级 < 项目级）、典型案例（web-access skill）、与 HITL 的协同。
 👉 **[[Agent Skills 体系]]**
 
+ Agent Hooks 机制
+==确定性控制层==——在生命周期固定时机（PreToolUse/PostToolUse/SessionStart 等 8+ 事件）强制执行命令，对冲 LLM 概率性行为。阻断语义（非零退出码拦下工具调用）是安全闸门基础；五大用途（安全拦截/格式化/上下文注入/审计/持久化）；Hooks vs Skills vs Commands vs MCP 区分。
+👉 **[[Agent Hooks 机制]]**
+
  长上下文工程
 ==2025-2026 Agent 工程核心方向==——Prompt Caching（三家厂商对比 + Anthropic `cache_control` + 命中率经济学省 80%+）+ 模型能力 self-aware（80% Rule 动态预算）+ Context Mode 三档切换（short/balanced/long）+ RAG topK 自适应 + Token 可观测性。
 👉 **[[长上下文工程]]**

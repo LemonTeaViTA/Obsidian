@@ -487,6 +487,6 @@ def safe_fetch(url: str, depth: int = 0) -> str:
 
 - [[Agent 可靠性设计]] — 系统正常运行不出错（与对抗安全互补）
 - [[Agent 可观测性]] — 审计日志的工程细节（schema 演进 / 凭证脱敏）
-- [[Coding Agent 工具集#48-联网工具的-ssrf-防御]] — Web 工具的 SSRF 防御
+- [[Coding Agent 工具集_MOC#2.5 联网类]] — Web 工具的 SSRF 防御
 - [[MCP 协议#六、安全模型]] — MCP 工具的三道安全关卡
 - [[Function Calling#工具权限控制]] — 协议层的工具权限实现

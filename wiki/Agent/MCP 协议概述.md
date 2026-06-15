@@ -242,5 +242,5 @@ MCP 和 A2A（Agent-to-Agent）解决的是两个不同层次的问题：
 - [[MCP Server 生态]] — 主流 Server 清单 + 浏览器自动化 / CDP / isolated-shared 工作模式
 - [[MCP 安全模型]] — 三道安全关卡 / 常见坑 / 审计日志凭证脱敏
 - [[Function Calling]] — LLM 协议层（FC 解决"LLM 怎么调工具"，MCP 解决"工具怎么暴露"）
-- [[Coding Agent 工具集]] — Claude Code / Cursor 等具体提供的工具集（含 MCP 动态工具）
+- [[Coding Agent 工具集_MOC]] — Claude Code / Cursor 等具体提供的工具集（含 MCP 动态工具）
 - [[计算机网络]] — stdio / Streamable HTTP / WebSocket 底层传输机制

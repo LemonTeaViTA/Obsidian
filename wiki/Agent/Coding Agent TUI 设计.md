@@ -552,6 +552,6 @@ def select_renderer():
 - [[AI 编程工具]] — Coding Agent 的大产品形态对比(CLI / IDE / 桌面)
 - [[Agent 工程实践#一、CLI 设计]] — 被 AI 调用的 CLI(本文是给用户用的 TUI,正交)
 - [[Agent 工程实践#hitl-工具读写粒度细化]] — HITL 决策逻辑(本文是 UI 呈现层)
-- [[Coding Agent 工具集]] — Coding Agent 的工具集
+- [[Coding Agent 工具集_MOC]] — Coding Agent 的工具集
 - [[长上下文工程#6-token-与成本可观测性]] — 状态栏显示 token / cost 的设计
 - [[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] — `/plan` 切换的目标模式

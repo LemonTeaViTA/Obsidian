@@ -179,5 +179,5 @@ def close_page(target_id: str):
 
 - [[MCP 协议]] — 协议核心（架构 / transport / 握手 / Host 集成层）
 - [[MCP 安全模型]] — 三道安全关卡 / 凭证脱敏
-- [[Coding Agent 工具集]] — 浏览器 MCP 作为 `fetch_url` 的重量层 fallback
+- [[Coding Agent 工具集_MOC]] — 浏览器 MCP 作为 `fetch_url` 的重量层 fallback
 - [[Function Calling]] — 截图返回值的 image 类型协议

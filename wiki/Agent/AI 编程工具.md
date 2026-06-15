@@ -209,7 +209,7 @@ Claude Code 的能力通过六层概念组织，从简单到复杂递进：
 
 用户直接输入的 prompt 驱动 Agent 行为。可复用命令存储在 `.claude/commands/` 目录，通过 `/` 前缀调用。命令本质是预定义的 prompt 模板，适合高频重复操作。
 
-> ==实现机制详解==(Host 拦截斜杠命令 / 三种实现风格 / Markdown 即 Prompt / Tool/Command/Skill 三层关系)见 [[Coding Agent 工具集#五、Commands / Skills:Tool 的上层封装]]。
+> ==实现机制详解==(Host 拦截斜杠命令 / 三种实现风格 / Markdown 即 Prompt / Tool/Command/Skill 三层关系)见 [[Coding Agent 工具集_MOC#四、Tool / Command / Skill 三者关系]]。
 
 ### 7.2 Skills（技能）
 
@@ -225,11 +225,10 @@ Claude Code 的能力通过六层概念组织，从简单到复杂递进：
 
 ### 7.4 Hooks（生命周期钩子）
 
-在 Agent 执行的关键节点插入自定义逻辑：
-- `pre_session` / `post_session` — 会话开始/结束时触发
-- `pre_tool` / `post_tool` — 工具调用前后触发
+在 Agent 执行的关键节点（工具调用前后、会话开始/结束等）强制执行自定义命令，是「确定性控制层」——对冲 LLM 的概率性行为（如必然格式化、强制拦截危险操作）。
 
-典型用法：会话结束时压缩上下文并持久化、工具调用后自动通知、下次会话自动恢复压缩的上下文。
+> [!info] 完整机制见独立文档
+> Hooks 的本质（确定性 vs 概率性）、8+ 生命周期事件、阻断语义、五大用途、以及 Hooks vs Skills vs Commands vs MCP 的区分，详见 [[Agent Hooks 机制]]。
 
 ### 7.5 Subagents（子代理）
 

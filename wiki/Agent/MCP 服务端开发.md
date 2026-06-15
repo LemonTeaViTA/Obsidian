@@ -411,4 +411,4 @@ claude mcp add github -- env GITHUB_TOKEN=$TOKEN npx -y @modelcontextprotocol/se
 - [[MCP Server 生态]] — 主流 Server 清单 + 浏览器自动化 / CDP
 - [[MCP 安全模型]] — 三道安全关卡 / 常见坑 / 审计日志
 - [[Function Calling]] — LLM 协议层
-- [[Coding Agent 工具集]] — 具体提供的工具集
+- [[Coding Agent 工具集_MOC]] — 具体提供的工具集
