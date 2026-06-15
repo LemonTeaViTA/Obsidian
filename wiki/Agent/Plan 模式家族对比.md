@@ -99,6 +99,9 @@ Executor:
 
 ==缺点==:==成本极高==——每步 N 倍 LLM 调用,深度 D 的树 = O(N^D) 调用。==生产中几乎不用纯 ToT==,但思想用在 Reflection 和 LATS 里。
 
+> [!note] 两个视角看 ToT
+> 本文讲 ToT 作为**规划搜索架构**（树形展开 + 评估 + 剪枝）。ToT 作为**提示词技巧**（引导非推理模型探索多路径，现已被推理模型淘汰）见 [[Prompt Engineering#Tree-of-Thought（ToT）]]。
+
 ## 四、LATS(Language Agent Tree Search)
 
 ==2024 年 UIUC 提出==,把 ==MCTS(蒙特卡洛树搜索)+ ReAct== 混合。

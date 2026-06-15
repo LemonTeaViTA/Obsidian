@@ -28,6 +28,13 @@ Agent 定义与基本架构、四个核心模块、Agent vs LLM Chain 的本质�
 
 ### 2. 推理框架：Agent 怎么思考
 
+> [!info] 推理谱系：从"模型内部怎么想"到"Harness 怎么编排"
+> Agent 的推理能力横跨两层，本节讲的是**第二层（Harness 编排）**：
+> - **模型内部推理**（LLM 自己怎么想）：CoT（思维链）/ Long CoT / ToT 作为提示技巧 → 见 [[Prompt Engineering]]。2025-2026 这层已被训练进推理模型（o3/DeepSeek-R1/Claude thinking）。
+> - **Harness 编排推理**（外部怎么组织 LLM 的多步思考）：本节的 **ReAct**（想-做循环）、**Reflection**（自我批判）、**Plan-and-Execute**（先规划后执行）、**ToT/LATS**（搜索树，见 [[Plan 模式家族对比]]）。
+>
+> 一句话：==CoT 是"模型自己一步步想"，ReAct/Plan 是"Harness 让模型分步想 + 调工具"==——前者在 LLM 域，后者在这里。
+
  ReAct 与 Harness 实现
 ==最底层认知==——LLM 的本质（无状态纯函数）、LLM/Harness 完整分工对照、60 行极简 ReAct 实现、工具识别两种方式（传统 prompt vs Function Calling）。
 👉 **[[ReAct 与 Harness 实现]]**
