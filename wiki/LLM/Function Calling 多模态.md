@@ -192,4 +192,4 @@ def prune_image_history(messages: list) -> list:
 
 - [[Function Calling]] — Function Calling 协议主干（请求/响应/角色/多轮/并行/厂商差异）
 - [[长上下文工程]] — 多模态 token 预算与历史压缩策略
-- [[Coding Agent 工具集]] — Browser MCP 截图工具的返回值协议
+- [[Coding Agent 工具集_MOC]] — Browser MCP 截图工具的返回值协议
