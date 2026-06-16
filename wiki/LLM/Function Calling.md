@@ -9,7 +9,7 @@ last_reviewed: 2026-06-01
 
 > Function Calling 是==模型的原生能力==——通过专门训练，让 LLM 能输出符合 JSON Schema 的结构化工具调用指令，而不是在自然语言里"猜"工具。
 >
-> 本文聚焦协议细节：请求/响应结构、四种消息角色、多轮拼接、并行调用、厂商差异、可靠性与权限控制。多模态（图片进出模型、Browser/Computer Use 截图协议）单独见 [[Function Calling 多模态]]。
+> 本文聚焦协议细节：请求/响应结构、四种消息角色、多轮拼接、并行调用、厂商差异、可靠性与权限控制、以及多模态图片进出模型。
 >
 > 协议在分层架构中的位置见 [[Agent 核心概念#二、推理模式与 Harness 控制流]]；具体的 ReAct 实现示例见 [[ReAct 与 Harness 实现]]。
 
@@ -169,7 +169,7 @@ LLM 返回：
 ==注意==：`tool` 角色消息==必须带 `tool_call_id`==，关联到上一轮 LLM 调用的某个 `tool_calls[i].id`——这样 LLM 知道这条结果对应哪次调用。多个并行工具调用就是多个 `tool` 消息。
 
 > [!info] 多模态：tool 消息也能返回图片
-> `tool` 消息的 content 不止是字符串——还支持 image 类型（截图 / 图表回传给模型），加上"用户直接输入图片""历史图片裁剪"三大场景，是 Browser / Computer Use 落地的关键协议细节。这部分内容已独立成篇，见 [[Function Calling 多模态]]。
+> `tool` 消息的 content 支持 image 类型（截图 / 图表回传给模型）。完整说明见 [[#八、多模态：图片进出模型]]。
 
 ---
 
@@ -473,11 +473,110 @@ Error: tool_call_id "call_xxx" does not match any tool call in the conversation.
 
 ---
 
+## 八、多模态：图片进出模型
+
+==这是 Browser MCP / Computer Use 落地的关键协议细节==——Agent 调 `take_snapshot` 拿到截图，必须能塞回模型才形成闭环。
+
+### 8.1 Image Tool Result（工具返回图片）
+
+==tool 消息的 content 不止是字符串==——支持 ==image 类型==，把工具产生的截图 / 图表直接作为下一轮 LLM 的视觉输入。
+
+**三家厂商格式**：
+
+==Anthropic Claude==（content blocks 数组）：
+```python
+{"role": "tool", "tool_call_id": "call_abc",
+ "content": [
+     {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "iVBORw0K..."}},
+     {"type": "text", "text": "页面已加载，截图如上"}
+ ]}
+```
+
+==OpenAI==（multimodal content）：
+```python
+{"role": "tool", "tool_call_id": "call_abc",
+ "content": [
+     {"type": "image_url", "image_url": {"url": "data:image/png;base64,iVBORw0K..."}},
+     {"type": "text", "text": "页面已加载"}
+ ]}
+```
+
+==Qwen-VL / GLM-4V / Kimi-Vision==：兼容 OpenAI 格式（`image_url` + `data:image/png;base64,`）。
+
+**text fallback 必须保留**——生产 Agent 不能只发 image：
+
+| 场景 | 原因 |
+|------|------|
+| 模型不支持图片 | Router 路到纯文本模型时 image content 直接报错 |
+| 审计日志 | image base64 几 MB，日志存不下也读不动 |
+| 成本敏感 | 一张 1024×1024 截图 ~1500 tokens，短任务退化为纯文本省钱 |
+
+```python
+def normalize_tool_result(raw: dict, client: LlmClient) -> dict:
+    parts = []
+    if "image" in raw and client.supports_vision():
+        parts.append({"type": "image", "source": {...}})
+    # ★ text 永远保留(作为 fallback / 摘要 / 日志)
+    parts.append({"type": "text", "text": raw.get("text") or describe(raw["image"])})
+    return {"role": "tool", "tool_call_id": raw["call_id"], "content": parts}
+```
+
+**Token 计费陷阱**：Browser MCP 一轮可能 5-10 张截图，token 消耗几万级。优先用 DOM snapshot（文本，几百 token）替代截图，只在需要视觉理解时用图片。
+
+---
+
+### 8.2 用户输入图片（Image as User Input）
+
+==用户直接粘贴截图 / `@image:` 引用本地文件==——消息角色是 `user`，不是 `tool`：
+
+```python
+{"role": "user",
+ "content": [
+     {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "iVBORw0K..."}},
+     {"type": "text", "text": "这个报错是什么意思？"}
+ ]}
+```
+
+**图片预处理（发送前必做）**：压缩/缩放到 1024px 以内、alpha 通道铺白底（透明 PNG 发给部分模型会报错）、注入来源元信息。
+
+==本轮图片优先原则==：用户本轮输入了图片，要求 LLM 优先分析本轮图片，不能用历史旧截图替代。
+
+---
+
+### 8.3 历史 Image Payload 裁剪
+
+图片 token 贵（1024×1024 ≈ 1500 tokens），历史轮次的图片如果全保留，几轮之后 context 就被旧截图占满。
+
+==生产做法：新 turn 开始前，省略历史消息里的 image payload，只保留文本元信息==：
+
+```python
+def prune_image_history(messages: list) -> list:
+    pruned = []
+    for msg in messages[:-1]:  # 最新一轮保留完整图片
+        if isinstance(msg["content"], list):
+            new_parts = []
+            for part in msg["content"]:
+                if part["type"] == "image":
+                    new_parts.append({"type": "text",
+                        "text": f"[图片已省略: {part.get('_meta', {}).get('source', 'unknown')}]"})
+                else:
+                    new_parts.append(part)
+            pruned.append({**msg, "content": new_parts})
+        else:
+            pruned.append(msg)
+    pruned.append(messages[-1])  # 最新一轮原样保留
+    return pruned
+```
+
+==同理==：`reasoning_content`（模型思考过程）只写日志/展示，==不回传进下一轮请求历史==——避免思考过程占用大量 context。
+
+---
+
 ## 相关链接
 
-- [[Function Calling 多模态]] — 图片进出模型：tool result / 用户输入 / 历史裁剪（Browser·Computer Use）
 - [[Agent 核心概念]] — Agent 整体架构
 - [[ReAct 与 Harness 实现]] — 60 行 ReAct 代码 + 工具识别两种方式
 - [[Harness Engineering]] — Function Calling 在 Harness 分层中的位置
-- [[Agent 核心概念#四、MCP 协议]] — MCP 协议（工具如何标准化暴露给模型）
+- [[MCP 协议概述]] — MCP 协议（工具如何标准化暴露给模型）
+- [[长上下文工程]] — 多模态 token 预算与历史压缩策略
 - [[Agent 工程实践#八-B、Agent 可靠性设计（实战设计题）]] — ==执行层/决策层==的可靠性（工具超时、Fallback 策略、L1-L4 决策路径、Human-in-the-Loop）
