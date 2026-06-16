@@ -100,8 +100,10 @@ Skills 定义、渐进式披露原理（索引段 ≤ 4KB / 启用上限 20 个�
 👉 **[[Agent Hooks 机制]]**
 
  长上下文工程
-==2025-2026 Agent 工程核心方向==——Prompt Caching（三家厂商对比 + Anthropic `cache_control` + 命中率经济学省 80%+）+ 模型能力 self-aware（80% Rule 动态预算）+ Context Mode 三档切换（short/balanced/long）+ RAG topK 自适应 + Token 可观测性。
+==2025-2026 Agent 工程核心方向==——Prompt Caching 省 80%+ 成本、模型能力 self-aware（80% Rule 动态预算）、Context Mode 三档切换（topK / 压缩 / Resources 注入联动）、Token 可观测性。
 👉 **[[长上下文工程]]**
+   - **[[Prompt-Caching详解]]** — 三家厂商差异 + `cache_control` 用法 + 命中率经济学
+   - **[[Context-Mode策略详解]]** — 策略矩阵 + RAG topK 自适应 + MCP Resources 注入
 
 ---
 
