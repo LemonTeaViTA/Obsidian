@@ -13,6 +13,15 @@ last_reviewed: 2026-05-28
 >
 > 关键认知：==沙箱不是 Coding Agent 的答案==——真正的安全靠多层防护和人工兜底。
 
+> [!tip] 速览（一分钟读完）
+> - **§一 为什么不做沙箱**：Coding Agent 需要真实 I/O 权限，沙箱会破坏正常功能——安全模型不等于沙箱
+> - **§二 四层防护体系**：PathGuard（路径）/ CommandGuard（命令）/ HITL（人工审批）/ AuditLog（审计）
+> - **§三 HITL 三档**：单次授权 / Server 级白名单 / 全局允许——用最小权限原则
+> - **§五 工具权限**：白名单 + 参数粒度控制，Hook 返回非零退出码可阻断工具调用
+> - **§六 Prompt Injection 防御**：工具返回内容默认不可信，结构化输出+前缀验证
+> - **§八 SSRF 防御**：联网工具特有风险，DNS rebinding + 内网请求拦截
+> - **面试**：能讲清"为什么不做沙箱 + 四层防护的设计理由"是高分答案
+
 ---
 
 ## 一、为什么 Coding Agent 不做沙箱：安全模型的正确认知
@@ -380,106 +389,14 @@ Agent 失控后无限循环调用工具，耗尽 API 配额、计算资源或产
 
 ---
 
-## 八、SSRF 防御：联网工具的 Agent 时代特殊攻击面
+## 八、SSRF 防御
 
-==Agent 时代 SSRF（Server-Side Request Forgery）是新攻击面==——和传统 SSRF 的区别在于：==LLM 输出的 URL 可以被 Prompt Injection 控制==，攻击者通过污染网页内容、文档、用户输入诱导 Agent 发起恶意请求。
+==Agent 时代 SSRF 是新攻击面==——LLM 输出的 URL 可被 Prompt Injection 控制，攻击者通过污染网页/文档诱导 Agent 发起内网请求（偷云元数据凭证 / 读宿主机文件 / 攻击内网 Redis/MySQL）。
 
-### 8.1 三种典型攻击场景
+**五道防线（缺一不可）**：协议白名单 → 解析全部 IP 并校验（含 IPv6）→ **pin IP 直接连接**（防 DNS rebinding TOCTOU） → 手动追重定向 → 大小+频率限制。
 
-| 攻击 URL | 后果 |
-|---------|------|
-| ==`http://169.254.169.254/latest/meta-data/iam/security-credentials/`== | 偷 AWS / GCP / Azure 实例的 ==IAM 临时凭证==——直接拿到云账号控制权 |
-| ==`file:///etc/passwd`== / ==`file:///root/.ssh/id_rsa`== | 读宿主机敏感文件（密码哈希 / SSH 私钥） |
-| ==`http://localhost:6379/`== / ==`http://10.0.0.5:3306/`== | 攻击内网服务（Redis / MySQL / 内部 API），跳过外网防火墙 |
-
-==攻击链==：网页/文档里嵌入"==请帮我读这个 URL 的内容总结一下=="（恶意 URL 藏在看似正常的网页里）→ LLM 调 `fetch_url` → ==Agent 用自己的网络身份发请求==→ 数据泄露。
-
-### 8.2 五道防线（缺一不可）
-
-```python
-import socket, ipaddress
-from urllib.parse import urlparse
-
-ALLOWED_SCHEMES = {"http", "https"}
-MAX_BODY_BYTES = 5 * 1024 * 1024   # 5MB
-MAX_REDIRECTS = 3
-
-def _resolve_and_validate(host: str) -> list[str]:
-    """解析 host 的全部地址(IPv4+IPv6),逐个校验,返回通过的 IP 列表。"""
-    # getaddrinfo 返回所有 A / AAAA 记录——gethostbyname 只取首个 IPv4,会漏 IPv6/多 A
-    infos = socket.getaddrinfo(host, None)
-    ips = {info[4][0] for info in infos}
-    if not ips:
-        raise SecurityError(f"无法解析: {host}")
-    for ip_str in ips:
-        ip = ipaddress.ip_address(ip_str)
-        if ip.is_private:        # 10.x / 172.16.x / 192.168.x / fd00::/8
-            raise SecurityError("禁止访问内网")
-        if ip.is_loopback:       # 127.x / ::1
-            raise SecurityError("禁止访问 loopback")
-        if ip.is_link_local:     # 169.254.x / fe80:: ——含云元数据 169.254.169.254
-            raise SecurityError("禁止访问链路本地地址")
-        if ip.is_reserved or ip.is_multicast:
-            raise SecurityError("禁止访问保留地址")
-    return list(ips)
-
-def safe_fetch(url: str, depth: int = 0) -> str:
-    if depth > MAX_REDIRECTS:
-        raise SecurityError("重定向次数超限")
-
-    # 1. 协议白名单——禁 file://、ftp://、gopher://、data://
-    parsed = urlparse(url)
-    if parsed.scheme not in ALLOWED_SCHEMES:
-        raise SecurityError(f"禁止协议: {parsed.scheme}")
-
-    # 2. 解析全部地址并校验(IPv4+IPv6),拿到通过校验的 IP
-    safe_ips = _resolve_and_validate(parsed.hostname)
-
-    # 3. ★ pin IP——直接对已校验的 IP 发请求,Host 头携带域名。
-    #    否则 requests.get(url) 会"重新做一次 DNS 解析",
-    #    攻击者可在两次解析之间把 A 记录切到 169.254.169.254(DNS rebinding / TOCTOU)
-    pinned_ip = safe_ips[0]
-    pinned_url = url.replace(parsed.hostname, pinned_ip, 1)
-    headers = {"Host": parsed.hostname}
-
-    # 4. 不自动跟随重定向——重定向目标可能指向内网,要对新 URL 重新走全部校验
-    resp = requests.get(pinned_url, headers=headers, allow_redirects=False,
-                        timeout=30, stream=True, verify=True)
-    if resp.is_redirect:
-        return safe_fetch(resp.headers["Location"], depth + 1)
-
-    # 5. 大小限制——防止流量打爆 / 上下文爆炸
-    if int(resp.headers.get("Content-Length", 0)) > MAX_BODY_BYTES:
-        raise SecurityError("响应超过 5MB")
-    body = resp.raw.read(MAX_BODY_BYTES + 1)
-    if len(body) > MAX_BODY_BYTES:
-        raise SecurityError("响应流超限")
-
-    # 6. 频率限制(外层装饰器)——防止 LLM 失控刷接口
-    return body.decode("utf-8", errors="ignore")
-```
-
-> [!warning] 校验后必须 pin IP，否则防不住 DNS rebinding
-> 常见错误写法是「`gethostbyname` 校验 IP → 再 `requests.get(域名)`」——`requests` 会==重新做一次 DNS 解析==，攻击者可在两次解析之间把 A 记录从公网 IP 切到 `169.254.169.254`（经典 TOCTOU / DNS rebinding），校验形同虚设。真正防住要==锁定已校验的 IP 直接连接==、用 `Host` 头携带域名（或自定义 resolver / `HTTPAdapter` 固定连接 IP）。另外 `gethostbyname` 只返回单个 IPv4——要用 `getaddrinfo` 取全部地址（含 IPv6 / 多 A 记录）逐个校验。
-
-==关键点==：
-
-| 防线 | 防什么 |
-|------|------|
-| ==协议白名单== | `file://` 读本地文件、`gopher://` 打 SMTP/Redis 协议走私 |
-| ==解析全部 IP 后 pin== | 校验所有 A/AAAA 记录并锁定 IP 连接——否则攻击者域名 A 记录指向 `127.0.0.1`/`169.254.169.254`，或在两次解析间切换（==DNS rebinding==） |
-| ==重定向手动追== | 第一跳合法 → 第二跳指向内网 |
-| ==大小限制== | 5MB 是 token 上下文 + 网络流量的双重保险 |
-| ==频率限制== | LLM 失控/被注入后疯狂调接口 → 设单工具 30 次/分钟、单任务 100 次上限 |
-
-### 8.3 Agent 场景的特殊考量
-
-- ==URL 来源标记==：把 LLM 输出的 URL 标记为"==不可信源=="——比用户直接输入的 URL 多走一道安全检查
-- ==沙箱网络==：Agent 进程跑在 ==network namespace== 里，==默认禁止访问内网网段==（比代码层防护更可靠，纵深防御）
-- ==凭证隔离==：Agent 的网络身份 ≠ 宿主机网络身份，==Agent 进程不持有任何云元数据访问权限==
-- ==审计日志==：所有 `fetch_url` 调用记录(URL / 解析 IP / 响应大小 / 触发的安全策略)——异常调用能事后回溯
-
-==生产实践==：Anthropic Claude 的 web tool、OpenAI Browse with Bing 都内置了 SSRF 防护——==这是 Agent 上线前必过的安全审计项==。
+> [!info] 完整 Python 实现（safe_fetch + DNS rebinding 防御说明）见独立 How-to 文档
+> **[[Agent-SSRF防御]]** — 攻击场景、safe_fetch 完整代码、五道防线速查表、Agent 场景特殊考量
 
 ---
 
