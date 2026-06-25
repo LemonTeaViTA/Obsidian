@@ -65,7 +65,7 @@ last_reviewed: 2026-05-28
 
 | 角色 | 职责 | 实现来源 |
 |------|------|---------|
-| ==Planner== | 接收任务 → 拆解子任务 → 输出执行计划 | [[Plan-and-Execute 实现]] |
+| ==Planner== | 接收任务 → 拆解子任务 → 输出执行计划 | [[Plan-and-Execute 模式]] |
 | ==Worker== | 接收单个子任务 → 用 ReAct 循环完成 | [[ReAct 与 Harness 实现]] |
 | ==Reviewer== | 审查 Worker 输出 → 通过/打回 + 反馈 | [[Reflection 实现]]（Critic Model 变体） |
 
@@ -227,7 +227,7 @@ def three_role_loop(task, max_review_rounds=2):
 
 - [[Agent 核心概念]] — 单 Agent 推理模式（ReAct / Plan-and-Execute / Reflection）
 - [[ReAct 与 Harness 实现]] — Worker 的实现基础
-- [[Plan-and-Execute 实现]] — Planner 的实现基础
+- [[Plan-and-Execute 模式]] — Planner 的实现基础
 - [[Reflection 实现]] — Reviewer 的实现基础
 - [[Agent 可靠性设计]] — 单 Agent 失败处理（与多 Agent 仲裁互补）
 - [[模型路由策略]] — Worker / Reviewer 用不同模型的成本经济学

@@ -7,7 +7,7 @@ last_reviewed: 2026-05-27
 
 # Reflection 实现
 
-> 与 [[ReAct 与 Harness 实现]] 和 [[Plan-and-Execute 实现]] 配对的第三种推理框架实现文档。
+> 与 [[ReAct 与 Harness 实现]] 和 [[Plan-and-Execute 模式]] 配对的第三种推理框架实现文档。
 >
 > ==Reflection 不是独立的执行框架==——它是==质量保障层==，可以叠加在 ReAct 或 Plan-and-Execute 之上。推理模式概念见 [[Agent 核心概念#2.1 三种推理框架]]。
 
@@ -268,7 +268,7 @@ Plan-and-Execute（顶层规划）
 ## 相关链接
 
 - [[ReAct 与 Harness 实现]] — 配对的第一种推理框架（60 行 Python）
-- [[Plan-and-Execute 实现]] — 配对的第二种推理框架（80 行 Python）
+- [[Plan-and-Execute 模式]] — 配对的第二种推理框架（80 行 Python）
 - [[Agent 核心概念#2.1 三种推理框架]] — 三种框架的概念对比
 - [[Agent 工程实践#经典三角色组合：Planner + Worker + Reviewer]] — Reflection 在 Multi-Agent 中的应用
 - [[Function Calling]] — Reflection 循环中工具调用的协议

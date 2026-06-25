@@ -247,7 +247,6 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(
 ==查询时==:==Markdown 不参与==,直接从 SQLite 读 chunks,通过 FTS5 + 向量混合检索找到相关 chunks 返回。
 
 > [!info] ==FTS5 / SQLite / chunk 策略的实现细节==
-> ==SQL schema 原文==、==`chunkMarkdown` 切分逻辑==、==BM25+向量混合检索 SQL==、==chunk 粒度澄清==（一个文件 N 个 chunk，不是每行一个）、==与完整 RAG 的对比==——见 [[Memory 实现对比#5.5 SQLite + FTS5 实现详解（轻量化 RAG）]]。
 >
 > ==关键认知==：OpenClaw 的 Memory 检索==就是个轻量化 RAG==——把 RAG 的核心思想（chunk + 索引 + 混合检索）压进单个 SQLite 文件，零依赖、零运维。
 
@@ -283,13 +282,11 @@ CREATE VIRTUAL TABLE chunks_vec USING vec0(
 ==3 是最隐式的==,详见 §四。
 
 > [!info] ==四项目的 L3 实现差异巨大,详细对比已独立成文==
-> 各项目的 L3 实现差异巨大（==Claude Code 无索引==，==Hermes Frozen Snapshot==，==OpenClaw 评分提升==，==Codex 用户掌控==），完整源码级对比见 ==[[Memory 实现对比#二、Claude Code 的"轻型路线"]]==。本文不重复实现细节。
 
 ---
 
 ## 四、短期 → 长期转换机制
 
-> [!note] 本节是 L2→L3 的==通用方法论==;四个主流项目（Claude Code 后台 forked agent / Codex 仅日志 / Hermes 4 重保险 / OpenClaw 评分提升 + 仿生 Dreaming）的实测差异见 ==[[Memory 实现对比#四、Hermes 的 4 重保险]]==。
 
 ==L2 短期记忆==是==当前会话的完整流水账==,==L3 长期记忆==是==跨会话沉淀的关键事实==——==两者的鸿沟需要"转换"来跨越==。这是 Memory 系统最关键也是最容易做错的环节。
 
@@ -513,7 +510,6 @@ LLM 调 save_memory("项目约定:所有 PR 必须带测试")
 ## 七、四种风格 + 选型原则
 
 > [!info] ==详细对比已独立成文==
-> 完整的 4 项目（Claude Code / Codex CLI / Hermes / OpenClaw）源码级对比、9 维度对照表、选型决策树见 ==[[Memory 实现对比]]==。本节只讲==设计哲学和选型原则==。
 
 ### 7.1 四种 Memory 风格
 
@@ -546,7 +542,6 @@ LLM 调 save_memory("项目约定:所有 PR 必须带测试")
 
 ## 相关链接
 
-- ==[[Memory 实现对比]]== — ★ 四项目源码级 Memory 实现详细对比
 - [[Agent 核心概念]] — Agent 整体架构(Memory 是其中一个核心模块)
 - [[多轮对话]] — 对话存储 schema、上下文窗口管理、五种重要性判断方案
 - [[Agent Skills 体系]] — Skills 是显式的能力包,Memory 是隐式的事实沉淀

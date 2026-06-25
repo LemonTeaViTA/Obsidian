@@ -7,9 +7,9 @@ last_reviewed: 2026-06-01
 
 # MCP Server 生态
 
-> 本文是 [[MCP 协议]] 的生态分册——主流 MCP Server 分类清单 + 浏览器自动化（CDP / isolated vs shared / 登录态）这一最复杂的 Server 类别的工程细节。
+> 本文是 [[MCP 协议概述]] 的生态分册——主流 MCP Server 分类清单 + 浏览器自动化（CDP / isolated vs shared / 登录态）这一最复杂的 Server 类别的工程细节。
 >
-> 协议核心（架构 / transport / 握手 / Host 集成层）见 [[MCP 协议]]；安全模型见 [[MCP 安全模型]]。
+> 协议核心（架构 / transport / 握手 / Host 集成层）见 [[MCP 协议概述]]；安全模型见 [[MCP 安全模型]]。
 
 > [!tip] 速览（一分钟读完）
 > - ==2026 年 MCP Server 生态已成熟==——Anthropic 维护[官方仓库](https://github.com/modelcontextprotocol/servers)，社区贡献上百个 Server。
@@ -177,7 +177,7 @@ def close_page(target_id: str):
 
 ## 相关链接
 
-- [[MCP 协议]] — 协议核心（架构 / transport / 握手 / Host 集成层）
+- [[MCP 协议概述]] — 协议核心（架构 / transport / 握手 / Host 集成层）
 - [[MCP 安全模型]] — 三道安全关卡 / 凭证脱敏
 - [[Coding Agent 工具集_MOC]] — 浏览器 MCP 作为 `fetch_url` 的重量层 fallback
 - [[Function Calling]] — 截图返回值的 image 类型协议

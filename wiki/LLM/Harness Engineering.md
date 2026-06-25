@@ -11,8 +11,8 @@ last_reviewed: 2026-05-29
 >
 > Harness Engineering 是==给 LLM 搭运行环境的工程方法论==——本文讲==思想和原则==（三代进化、四大原则、六大组件）。
 >
-> ==具体怎么落地==见 [[Agent索引_MOC]] 下的各篇文档：
-> - 工具集成 → [[MCP 协议]] / [[Function Calling]] / [[Coding Agent 工具集_MOC]]
+> ==具体怎么落地==见 [[_MOC]] 下的各篇文档：
+> - 工具集成 → [[MCP 协议概述]] / [[Function Calling]] / [[Coding Agent 工具集_MOC]]
 > - 上下文工程 → [[长上下文工程]] / [[Agent Memory 系统]]
 > - 状态持久化 → [[Agent 部署与服务化]]（Durable Task Queue）
 > - 子代理编排 → [[Multi-Agent 架构]]

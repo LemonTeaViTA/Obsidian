@@ -350,7 +350,7 @@ description: |
 
 ## 浏览器优先级
 
-shared 模式仅在==必要时切==——公开页面优先 isolated。详见 [[MCP 协议#isolated-vs-shared]]。
+shared 模式仅在==必要时切==——公开页面优先 isolated。详见 [[MCP Server 生态#isolated vs shared:两种工作模式]]。
 
 ## Jina 兜底
 

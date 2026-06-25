@@ -9,7 +9,7 @@ last_reviewed: 2026-05-28
 
 > 本文是 Agent 知识体系的==聚合入口==——每个核心概念给"是什么 + 一句话定位"，详细的实现/协议/方法论拆到独立文档。
 >
-> 想找具体内容？直接看 [[Agent索引_MOC]] 的分类导航。
+> 想找具体内容？直接看 [[_MOC]] 的分类导航。
 
 ---
 
@@ -86,7 +86,7 @@ Agent 的核心差异在于"怎么思考、怎么行动"。目前主流有三种
 
 **详细实现**：
 - [[ReAct 与 Harness 实现]] — 60 行 Python 看清 LLM/Harness 分工
-- [[Plan-and-Execute 实现]] — 80 行 Python + Plan schema + Replan 上下文裁剪
+- [[Plan-and-Execute 模式]] — 80 行 Python + Plan schema + Replan 上下文裁剪
 - [[Reflection 实现]] — 50 行 Python + Self-Reflection vs Critic Model
 
 ### 分层架构中的位置
@@ -125,7 +125,7 @@ Agent 的核心差异在于"怎么思考、怎么行动"。目前主流有三种
 
 **详细内容**：
 - [[Function Calling]] — 工具调用协议（请求/响应/四种角色/多轮拼接）
-- [[MCP 协议]] — 工具标准化接入（Host/Client/Server 三层 + 主流 Server 生态）
+- [[MCP 协议概述]] — 工具标准化接入（Host/Client/Server 三层 + 主流 Server 生态）
 - [[Agent Skills 体系]] — Skills 的渐进式披露 + 三层加载 + 典型案例
 - [[Agent Memory 系统]] — 三层记忆架构（L1/L2/L3）+ L2→L3 转换机制
 
@@ -133,7 +133,7 @@ Agent 的核心差异在于"怎么思考、怎么行动"。目前主流有三种
 
 ## 相关链接
 
-- [[Agent索引_MOC]] — 完整导航（按工程师任务分类）
+- [[_MOC]] — 完整导航（按工程师任务分类）
 - [[ReAct 与 Harness 实现]] — 最底层认知（60 行 Python）
 - [[Harness Engineering]] — LLM 工程的统一框架
 - [[Multi-Agent 架构]] — 多 Agent 协作模式

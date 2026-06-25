@@ -9,7 +9,7 @@ last_reviewed: 2026-06-01
 
 > 本文是 Coding Agent 工具集的总索引——分类概览、使用场景对比、设计原则。
 >
-> 协议见 [[Function Calling]]；接入方式见 [[MCP 协议]]；产品对比见 [[AI 编程工具]]；代码检索底层见 [[Code RAG]]；Skills 详解见 [[Agent Skills 体系]]。
+> 协议见 [[Function Calling]]；接入方式见 [[MCP 协议概述]]；产品对比见 [[AI 编程工具]]；代码检索底层见 [[Code RAG]]；Skills 详解见 [[Agent Skills 体系]]。
 
 > [!tip] ==Coding Agent 工具集速览（一分钟读完）==
 >
@@ -67,7 +67,7 @@ last_reviewed: 2026-06-01
 │  - 内置工具（写死在产品代码里）                      │
 │  - MCP 动态工具（用户挂的外部 Server 运行时发现）    │
 ├──────────────────────────────────────────────────────┤
-│  ↓ 通过 [[MCP 协议]] 接入外部工具（仅 MCP 动态工具） │
+│  ↓ 通过 [[MCP 协议概述]] 接入外部工具（仅 MCP 动态工具） │
 ├──────────────────────────────────────────────────────┤
 │  ↓ 通过 [[Function Calling]] 协议调用                │
 ├──────────────────────────────────────────────────────┤
@@ -105,7 +105,7 @@ last_reviewed: 2026-06-01
 
 ==`edit_file` vs `write_file`==：现代 Coding Agent 强烈倾向 ==`edit_file` 局部修改==而非 ==`write_file` 整体覆盖==——前者出错只损失一段，后者出错丢整个文件。
 
-详见 [[文件操作工具]]。
+（详细文档待补充）
 
 ### 2.2 代码分析类
 
@@ -121,7 +121,7 @@ last_reviewed: 2026-06-01
 
 ==Claude Code 的特色：无索引模式==——不预建代码向量索引，==靠 grep + glob + read_file 现场检索==，依赖 Claude 的长上下文能力。详见 [[Code RAG#主流产品对比]]。Cursor 走的是相反路线——预建索引+语义检索。
 
-详见 [[代码分析工具]]。
+（详细文档待补充）
 
 ### 2.3 执行与调试类
 
@@ -138,7 +138,7 @@ last_reviewed: 2026-06-01
 - 命令白名单（只允许 `npm/yarn/git/python/...`）或黑名单（拦 `rm/curl|sh/...`）
 - 高危命令==弹窗确认==（[[Agent 工程实践#Human-in-the-Loop]]）
 
-详见 [[执行与调试工具]]。
+（详细文档待补充）
 
 ### 2.4 Git 与协作类
 
@@ -152,7 +152,7 @@ last_reviewed: 2026-06-01
 | ==`update_dependency`== | 升级依赖版本 |
 | ==`refactor_rename`== | 全项目改名（变量/函数/文件） |
 
-详见 [[Git与协作工具]]。
+（详细文档待补充）
 
 ### 2.5 联网类
 
@@ -172,7 +172,7 @@ last_reviewed: 2026-06-01
 
 ## 三、MCP 动态工具
 
-==除了内置工具==，Coding Agent 通过 [[MCP 协议]] 在运行时挂载==外部工具==。
+==除了内置工具==，Coding Agent 通过 [[MCP 协议概述]] 在运行时挂载==外部工具==。
 
 ### 3.1 内置 vs MCP 动态：本质区别
 
@@ -201,7 +201,7 @@ last_reviewed: 2026-06-01
 | 搜索 | brave-search | Web 搜索 |
 | 文件 | filesystem（受限路径） | 跨项目文件访问 |
 
-==完整生态见== [[MCP 协议#四、MCP 生态：主流 Server]]。
+==完整生态见== [[MCP Server 生态]]。
 
 ---
 
@@ -347,7 +347,7 @@ description: (
 
 **方案二：工具描述截断**
 
-==MCP server 返回的 schema 必须清洗==——description 超 500 字符截断，`$ref` 内联展开，`anyOf` 简化。这是 MCP→FC 转换层的标配，不是可选项。详见 [[MCP 协议#42-schema-清洗从-mcp-server-到-llm-tools-的必踩坑]]。
+==MCP server 返回的 schema 必须清洗==——description 超 500 字符截断，`$ref` 内联展开，`anyOf` 简化。这是 MCP→FC 转换层的标配，不是可选项。详见 [[MCP 客户端集成#二、Schema 清洗：从 MCP Server 到 LLM tools 的必踩坑]]。
 
 **方案三：渐进式工具披露（高级）**
 
@@ -396,17 +396,13 @@ Aider ==只用 git ls-files + cat==——没有 grep 工具、没有 codebase �
 
 ## 分类详解
 
-- [[文件操作工具]] — Read / Write / Edit / NotebookEdit 详细说明
-- [[代码分析工具]] — LSP / Grep / Search / AST 底层实现
-- [[执行与调试工具]] — Bash / 测试 / 性能分析工具
-- [[Git与协作工具]] — Git / PR / 代码审查流程
 
 ---
 
 ## 相关链接
 
 - [[Function Calling]] — 工具调用协议层
-- [[MCP 协议]] — 工具标准化接入协议
+- [[MCP 协议概述]] — 工具标准化接入协议
 - [[Agent Skills 体系]] — Skill / Command 详细机制
 - [[Agent 安全模型]] — SSRF 防御 / 工具权限 / HITL
 - [[Agent 可靠性设计]] — 工具失败处理 / Fallback

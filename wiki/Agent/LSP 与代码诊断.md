@@ -11,7 +11,7 @@ last_reviewed: 2026-05-31
 >
 > Coding Agent 与 IDE 用同一套 LSP,但==处理诊断的方式完全不同==——IDE 显示给人看,Coding Agent ==把诊断回注 LLM 让它自己修==,这是 Agent 与 IDE 的本质区别。
 >
-> 与 [[MCP 协议]] / [[Function Calling]] 是同源协议家族(都是 JSON-RPC),与 [[Reflection 实现#3.3 外部验证器]] 是落地关系——本文是诊断回注的具体实现。
+> 与 [[MCP 协议概述]] / [[Function Calling]] 是同源协议家族(都是 JSON-RPC),与 [[Reflection 实现#3.3 外部验证器]] 是落地关系——本文是诊断回注的具体实现。
 
 > [!tip] ==LSP / MCP / LLM 三层关系速览（一分钟读完）==
 >
@@ -150,7 +150,7 @@ VS Code / IntelliJ / Vim / Neovim / Emacs / Sublime / Helix ...
 | ==深度可对等 IDE== | rust-analyzer 在 VS Code 的 Rust 体验 ≈ JetBrains RustRover |
 | ==Coding Agent 友好== | Agent 调 LSP server 拿语言能力,不用嵌入解析器 |
 
-==类比==:LSP 就是==编辑器与语言之间的 USB==——和 [[MCP 协议#类比usb-之前-vs-之后]] 异曲同工。
+==类比==:LSP 就是==编辑器与语言之间的 USB==——和 [[MCP 协议概述#类比：USB 协议]] 异曲同工。
 
 ---
 
@@ -158,7 +158,7 @@ VS Code / IntelliJ / Vim / Neovim / Emacs / Sublime / Helix ...
 
 ### 2.1 通信机制
 
-==基于 JSON-RPC 2.0==(与 [[MCP 协议]] 同源),通过 ==stdio / TCP / WebSocket== 传输。生产几乎都用 stdio——编辑器启动 server 子进程,通过 stdin/stdout 通信。
+==基于 JSON-RPC 2.0==(与 [[MCP 协议概述]] 同源),通过 ==stdio / TCP / WebSocket== 传输。生产几乎都用 stdio——编辑器启动 server 子进程,通过 stdin/stdout 通信。
 
 ```
 编辑器(Client)
@@ -570,7 +570,7 @@ write_file 后:
 ==升级的工程成本==:
 - ==安装 LSP server==——用户机器要装 JDT LS / rust-analyzer 等(部分语言要 SDK)
 - ==协议适配==——70+ 方法,不同 server 对扩展协议支持不同
-- ==状态管理==——server 进程生命周期(参考 [[MCP 协议#35-server-生命周期与异步启动]])
+- ==状态管理==——server 进程生命周期(参考 [[MCP 服务端开发#二、Server 生命周期与 initialize 握手]])
 
 ### 6.3 渐进式策略的工程价值
 
@@ -579,7 +579,7 @@ write_file 后:
 2. ==高频语言先接==——Python / TypeScript 是 Coding Agent 主战场,优先
 3. ==小众语言走 MCP 桥接==——不内置,通过 `langserver-mcp` 让用户自己挂
 
-==这个策略与 [[MCP 协议]] / [[Agent Skills 体系]] / [[长上下文工程]] 的"==渐进式==思路一致==——MVP 验证 → 主流场景内置 → 长尾走插件。
+==这个策略与 [[MCP 协议概述]] / [[Agent Skills 体系]] / [[长上下文工程]] 的"==渐进式==思路一致==——MVP 验证 → 主流场景内置 → 长尾走插件。
 
 ---
 
@@ -628,10 +628,10 @@ write_file 后:
 
 ## 相关链接
 
-- [[MCP 协议]] — JSON-RPC 协议家族(MCP 借鉴 LSP 设计)
+- [[MCP 协议概述]] — JSON-RPC 协议家族(MCP 借鉴 LSP 设计)
 - [[Function Calling]] — Tool 调用协议(LSP 工具暴露给 LLM 经过 FC 层)
 - [[Reflection 实现#3.3 外部验证器]] — 诊断回注是外部验证器思想的具体落地
 - [[Harness Engineering]] — Generator-Evaluator 架构(LSP 是天然 Evaluator)
-- [[代码分析工具#五、LSP：跳转定义与查找引用]] — `get_definition` / `get_references` 走 LSP
+- [[LSP 与代码诊断]] — `get_definition` / `get_references` 走 LSP
 - [[Code RAG]] — LSP 在 Code RAG 中的调用图增强
 - [[Coding Agent TUI 设计]] — 诊断的 UI 呈现(IDE 显示 vs Agent 回注 LLM)

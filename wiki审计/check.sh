@@ -33,32 +33,38 @@ check_encoding() {
 
 # 2. 链接检查
 check_links() {
-    log_section "Wikilink 坏链检查 (抽样)"
+    log_section "Wikilink 坏链检查 (全量)"
 
-    local dead_count=0
-    local checked=0
+    # 先把所有文件名建成查找表，O(1) 查询（wiki/ + 根目录 + raws/）
+    declare -A wiki_files
+    while IFS= read -r f; do
+        wiki_files["$(basename "$f" .md)"]=1
+    done < <({ find wiki/ raws/ projects/ -name '*.md' -type f; find . -maxdepth 1 -name '*.md' -type f; })
 
-    # 抽样检查(全量太慢,抽 50 个)
-    local sample_links=$(grep -rohP '\[\[[^\]]+\]\]' wiki/ 2>/dev/null | sort -u | head -50)
+    local dead_count=0 checked=0
+    declare -a dead_list=()
 
+    # 全量唯一链接
     while IFS= read -r full_link; do
-        [[ -z "$full_link" ]] && continue
+        local link
+        link=$(echo "$full_link" | sed -e 's/^\[\[//' -e 's/\]\]$//' -e 's/[#|].*//' -e 's|.*/||' -e 's/\.md$//')
+        [[ -z "$link" ]] && continue
+        [[ "$link" =~ ^(wikilink|主文档|1,|file|相关文档|相关\ wiki) ]] && continue
 
-        # 提取 [[file]] 或 [[domain/file]] (移除 #anchor/|alias/末尾的 ]])
-        local link=$(echo "$full_link" | sed -e 's/^\[\[//' -e 's/\]\]$//' -e 's/[#|].*//')
-
-        # 跳过占位符
-        [[ "$link" =~ ^(wikilink|主文档|1,).*$ ]] && continue
-
-        # 检查文件是否存在
-        if [[ ! -f "wiki/$link.md" ]] && ! find wiki/ -name "$(basename "$link").md" -type f 2>/dev/null | grep -q .; then
-            ((dead_count++))
-            log_warn "死链: $full_link"
-        fi
         ((checked++))
-    done <<< "$sample_links"
+        if [[ -z "${wiki_files[$link]+x}" ]]; then
+            ((dead_count++))
+            dead_list+=("$link")
+        fi
+    done < <(grep -rohP '\[\[[^\]]+\]\]' wiki/ 2>/dev/null | sort -u)
 
-    log_ok "抽样检查: $checked 个链接, $dead_count 个死链"
+    if [ "$dead_count" -eq 0 ]; then
+        log_ok "全量: $checked 个唯一链接, 0 死链"
+    else
+        log_error "全量: $checked 个唯一链接, $dead_count 个死链"
+        printf '  死链: [[%s]]\n' "${dead_list[@]}" | head -30
+        [ "$dead_count" -gt 30 ] && echo "  ...还有 $((dead_count-30)) 个"
+    fi
 }
 
 # 3. 结构检查

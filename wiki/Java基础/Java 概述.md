@@ -178,4 +178,4 @@ try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
 - [[JVM 内存管理]] — 堆、栈、方法区的内存分配
 - [[JVM 类加载机制]] — 类加载的完整流程
 - [[注解、反射与 Java 8]] — Lambda、Stream、反射机制
-- [[并发编程索引_MOC]] — Java 并发体系总览
+- [[_MOC]] — Java 并发体系总览

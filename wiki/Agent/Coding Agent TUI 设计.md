@@ -418,7 +418,7 @@ Allow? [y/n/a/s/m] (default n in non-interactive mode):
 | ==`/team <任务>`== | Multi-Agent | Planner + Worker + Reviewer 三角色 |
 | ==`/cancel`== | 终止 | 取消运行中任务,不结束 REPL |
 
-==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] / [[Reflection 实现]] / [[Multi-Agent 架构]]。
+==推理模式各自详见==:[[ReAct 与 Harness 实现]] / [[Plan-and-Execute 模式]] / [[Reflection 实现]] / [[Multi-Agent 架构]]。
 
 ### 6.2 模式切换的 UX 设计要点
 
@@ -554,4 +554,4 @@ def select_renderer():
 - [[Agent 工程实践#hitl-工具读写粒度细化]] — HITL 决策逻辑(本文是 UI 呈现层)
 - [[Coding Agent 工具集_MOC]] — Coding Agent 的工具集
 - [[长上下文工程#6-token-与成本可观测性]] — 状态栏显示 token / cost 的设计
-- [[ReAct 与 Harness 实现]] / [[Plan-and-Execute 实现]] — `/plan` 切换的目标模式
+- [[ReAct 与 Harness 实现]] / [[Plan-and-Execute 模式]] — `/plan` 切换的目标模式

@@ -7,9 +7,9 @@ last_reviewed: 2026-06-01
 
 # MCP 安全模型
 
-> 本文是 [[MCP 协议]] 的安全分册——MCP 把工具变成独立进程带来的安全特性、三道安全关卡、常见坑、审计日志的凭证脱敏。
+> 本文是 [[MCP 协议概述]] 的安全分册——MCP 把工具变成独立进程带来的安全特性、三道安全关卡、常见坑、审计日志的凭证脱敏。
 >
-> 协议核心见 [[MCP 协议]]；生态与浏览器自动化见 [[MCP Server 生态]]；Agent 整体安全（CommandGuard / PathGuard / SSRF / Prompt Injection 纵深防御）见 [[Agent 安全模型]]。
+> 协议核心见 [[MCP 协议概述]]；生态与浏览器自动化见 [[MCP Server 生态]]；Agent 整体安全（CommandGuard / PathGuard / SSRF / Prompt Injection 纵深防御）见 [[Agent 安全模型]]。
 
 > [!tip] 速览（一分钟读完）
 > - ==MCP 把工具变成独立进程==是最重要的安全特性——但==协议本身不解决信任问题==。
@@ -116,7 +116,7 @@ audit_log.write({
 
 ## 相关链接
 
-- [[MCP 协议]] — 协议核心（进程隔离是协议设计带来的安全特性）
+- [[MCP 协议概述]] — 协议核心（进程隔离是协议设计带来的安全特性）
 - [[MCP Server 生态]] — 浏览器 MCP 的 isolated/shared 安全模式
 - [[Agent 安全模型]] — Agent 整体安全：CommandGuard / PathGuard / SSRF / Prompt Injection 纵深防御
 - [[Agent 可观测性]] — 审计日志的结构化与凭证脱敏

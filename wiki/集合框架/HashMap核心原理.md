@@ -604,7 +604,7 @@ scores.lastKey();          // 90（最大 key）
 | 查找效率 | $O(1)$（无冲突） | $O(\log n)$ |
 | null key | 允许一个 | 不允许 |
 | 适用场景 | 快速查找 | 范围查询、有序遍历 |
-| 线程安全 | 否（用 [[并发工具类\|ConcurrentHashMap]]） | 否（用 `Collections.synchronizedSortedMap`） |
+| 线程安全 | 否（用 [[并发工具类|ConcurrentHashMap]]） | 否（用 `Collections.synchronizedSortedMap`） |
 
 ## 相关链接
 

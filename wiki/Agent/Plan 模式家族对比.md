@@ -7,9 +7,9 @@ last_reviewed: 2026-06-01
 
 # Plan 模式家族对比
 
-> 从 [[Plan-and-Execute 实现]] 拆出的 ==Reference 文档==——把"==让 LLM 怎么规划复杂任务=="的几种主流变体放在一起对比。
+> 从 [[Plan-and-Execute 模式]] 拆出的 ==Reference 文档==——把"==让 LLM 怎么规划复杂任务=="的几种主流变体放在一起对比。
 >
-> Plan-and-Execute 是最经典的一种（实现见 [[Plan-and-Execute 实现]]），本文讲它之外的 5 种：ReWOO / LLMCompiler / ToT / LATS / Hierarchical，以及==选型矩阵==。理解这些能让你对"==Plan 是什么=="有更全面的认知。
+> Plan-and-Execute 是最经典的一种（实现见 [[Plan-and-Execute 模式]]），本文讲它之外的 5 种：ReWOO / LLMCompiler / ToT / LATS / Hierarchical，以及==选型矩阵==。理解这些能让你对"==Plan 是什么=="有更全面的认知。
 
 ---
 
@@ -158,7 +158,7 @@ Executor:
 | 复杂 Web 操作、需要回溯 | ==LATS==(慢且贵) |
 | 超长任务、明显层级结构 | ==Hierarchical== |
 | 任务开放、需要边走边看 | ==ReAct==(==不要规划==) |
-| ==90% 的实际场景== | ==Plan-and-Execute + ReAct 混合==(见 [[Plan-and-Execute 实现#五、与 ReAct 的混合(生产级架构)]]) |
+| ==90% 的实际场景== | ==Plan-and-Execute + ReAct 混合==(见 [[Plan-and-Execute 模式#二、与 ReAct 的对比]]) |
 
 ## 七、关键认知
 
@@ -173,7 +173,7 @@ Executor:
 
 ## 相关链接
 
-- [[Plan-and-Execute 实现]] — 最经典的规划模式,完整实现 + Replan + 与 ReAct 的混合
+- [[Plan-and-Execute 模式]] — 最经典的规划模式,完整实现 + Replan + 与 ReAct 的混合
 - [[ReAct 与 Harness 实现]] — Plan 之外的另一种推理框架(边想边做)
 - [[Multi-Agent 架构]] — Hierarchical 模式在多 Agent 协作中的落地
 - [[Reflection 实现]] — ToT 的思想用在 Reflection 的评估剪枝里

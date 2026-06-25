@@ -147,7 +147,7 @@ messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
 - 每一步只传入必要的上下文（上一步的最终结论），而不是完整的推理过程
 - 用结构化的状态对象传递信息，而不是自然语言（自然语言容易引入歧义）
 
-==Plan-and-Execute 的两层 context 分离==：详见 [[Plan-and-Execute 实现#4.4 Replan 上下文裁剪策略]]——Planner 看 metadata，Executor 看完整 artifact。
+==Plan-and-Execute 的两层 context 分离==：详见 [[Plan-and-Execute 实现教程#三、Replan 机制实现]]——Planner 看 metadata，Executor 看完整 artifact。
 
 **4. 回滚机制（Agent 状态层）**
 
@@ -279,5 +279,5 @@ def restore_snapshot(project_root: str, n: int):
 - [[Multi-Agent 架构]] — 多 Agent 冲突仲裁（与单 Agent 失败处理互补）
 - [[Reflection 实现]] — 中间结果验证的 Generator-Evaluator 模式
 - [[LSP 与代码诊断]] — Coding Agent 的诊断回注落地
-- [[Plan-and-Execute 实现]] — Replan 上下文裁剪策略
+- [[Plan-and-Execute 模式]] — Replan 上下文裁剪策略
 - [[Function Calling]] — 错误回注 tool 消息的协议
