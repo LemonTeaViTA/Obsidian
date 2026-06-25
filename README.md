@@ -4,114 +4,75 @@
 
 ---
 
-## 包含哪些内容
-
-`wiki/` 目录按主题组织：
-
-### Java 后端
-
-- [Java 基础](wiki/Java基础/) — 语言核心
-- [集合框架](wiki/集合框架/)
-- [并发编程](wiki/并发编程/)
-- [JVM](wiki/JVM/) — 虚拟机与内存管理
-- [Spring](wiki/Spring/) — Spring 生态
-
-### 数据与中间件
-
-- [MySQL](wiki/MySQL/) — 锁、事务、索引
-- [Redis](wiki/Redis/) — 缓存、持久化、集群
-
-### 计算机基础
-
-- [操作系统](wiki/操作系统/)
-- [计算机网络](wiki/计算机网络/)
-- [算法](wiki/算法/) — 题解模板（Python 3）
-
-### LLM / Agent / RAG
-
-- [LLM 基础](wiki/LLM/) — 模型原理、Prompt、Harness、Function Calling
-- [Agent 体系](wiki/Agent/) — 推理框架、MCP/LSP 协议、Memory、Skills、可靠性、安全、可观测性
-- [RAG 体系](wiki/RAG/) — 检索、向量、评估、安全
-- [数据格式](wiki/数据格式/) / [文档解析](wiki/文档解析/) — RAG 数据基础
-
-### 工程项目
-
-- [Baize 项目](wiki/Baize项目/) — RAG 管道相关实践
-- [PaiFlow](wiki/PaiFlow/) — 工作流平台
-
-### 面试
-
-- [面试题目](wiki/面试题目.md) — 题目清单 + 跳转链接，按知识点聚合
-
----
-
-## LLM 在这套知识库里干什么
-
-**整理与记录**：根据我的理解和素材，由 LLM 帮我把内容重构、补全细节、统一格式。每一篇 wiki 文档都不是直接生成的，而是==我提出方向 → LLM 协助起草 → 我审核修改==的产物。
-
-**结构维护**：当某个主题文档膨胀到难以阅读时（比如 1000+ 行的 `Agent 工程实践.md`），由 LLM 协助按逻辑拆分成多个独立文档，并修复跨文件的 wikilink。
-
-**数据集整理（raws/）**：`raws/` 目录是从公众号 / 论文 / 博客等来源收集的原始素材，由 LLM 按主题归类、去重、提取要点，再决定是否进入 `wiki/`。这部分的协作约定见 [RAW_WORKFLOW_GUIDE.md](RAW_WORKFLOW_GUIDE.md)。
-
----
-
-## 根目录辅助文件
-
-- [AGENTS.md](AGENTS.md) — 给 AI 协作者看的规则（哪些操作禁止、历史踩过的坑）
-- [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) — Obsidian 写作风格规范
-- [QUALITY_CHECKLIST.md](QUALITY_CHECKLIST.md) — 文档质量检查清单
-- [RAW_WORKFLOW_GUIDE.md](RAW_WORKFLOW_GUIDE.md) — `raws/` 处理流程
-- [wiki-管理方法论.md](wiki-管理方法论.md) — Wiki 组织方法论（Diátaxis / SSoT / 健康指标）
-- [思考记录.md](思考记录.md) — 决策记录（ADR 风格，记"为什么"）
-- [优化记录.md](优化记录.md) — 全局变更日志，每次重构都记一笔
-
-### 文档分工关系
+## 目录结构
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  AGENTS.md  ← 给 Agent 看的"做事规则"(操作触发规则)     │
-│       │                                                  │
-│       │ 引用                                             │
-│       ↓                                                  │
-│  ┌────────────────────────────────────────┐             │
-│  │ wiki-管理方法论.md                     │             │
-│  │ ↳ 知识库管理的"宪法"(Diátaxis/SSoT/健康)│             │
-│  └────────────────────────────────────────┘             │
-│       │                                                  │
-│       │ 具体规则展开                                     │
-│       ↓                                                  │
-│  ┌──────────────────┐  ┌──────────────────┐            │
-│  │ OBSIDIAN_STYLE   │  │ QUALITY_CHECKLIST│            │
-│  │ ↳ 写作格式规范   │  │ ↳ 质量检查清单   │            │
-│  │   (高亮/callout) │  │   (引用 STYLE)   │            │
-│  └──────────────────┘  └──────────────────┘            │
-│                                                          │
-│  ┌──────────────────────────────────────────┐           │
-│  │ RAW_WORKFLOW_GUIDE.md  ← raws/ 高层流程  │           │
-│  │ ↳ 细节在 raws/WORKSPACE.md(SSoT)         │           │
-│  └──────────────────────────────────────────┘           │
-│                                                          │
-│  ┌──────────────────┐  ┌──────────────────┐            │
-│  │ 思考记录.md      │  │ 优化记录.md      │            │
-│  │ ↳ 决策"为什么"   │  │ ↳ 流水账"做了啥" │            │
-│  │   (ADR 格式)     │  │   (按月归档)     │            │
-│  └──────────────────┘  └──────────────────┘            │
-└─────────────────────────────────────────────────────────┘
+wiki/       技术知识（面试+学习）
+projects/   项目文档与工具笔记
+career/     求职材料
+raws/       原始文档流水线（inbox → staged → processed）
 ```
 
-==读哪一个==：
+### wiki/ — 技术知识
 
-| 我想... | 看 |
-|--------|------|
-| 知道 wiki 是什么 | [README.md](README.md)（本文档） |
-| 给 Agent 写指令 | [AGENTS.md](AGENTS.md) |
-| 学怎么管理 wiki | [wiki-管理方法论.md](wiki-管理方法论.md) |
-| 写 wiki 内容 | [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) |
-| 检查文档质量 | [QUALITY_CHECKLIST.md](QUALITY_CHECKLIST.md) |
-| 整理 raws | [RAW_WORKFLOW_GUIDE.md](RAW_WORKFLOW_GUIDE.md) → [raws/WORKSPACE.md](raws/WORKSPACE.md) |
-| 看历史决策 | [思考记录.md](思考记录.md) |
-| 看变更日志 | [优化记录.md](优化记录.md) |
+**Java 后端**
+- [Java 基础](wiki/Java基础/) · [集合框架](wiki/集合框架/) · [并发编程](wiki/并发编程/) · [JVM](wiki/JVM/) · [Spring](wiki/Spring/)
+
+**数据与中间件**
+- [MySQL](wiki/MySQL/) · [Redis](wiki/Redis/)
+
+**计算机基础**
+- [操作系统](wiki/操作系统/) · [计算机网络](wiki/计算机网络/) · [算法](wiki/算法/)
+
+**LLM / Agent / RAG**
+- [LLM](wiki/LLM/) · [Agent 体系](wiki/Agent/) · [RAG 体系](wiki/RAG/)
+- [数据格式](wiki/数据格式/) · [文档解析](wiki/文档解析/)
+
+> 每个模块根目录有 `_MOC.md`（排序置顶），包含文档导航和面试考点清单。
+
+### projects/ — 项目文档
+
+- [Baize 项目](projects/Baize项目/) — RAG 知识库系统（ES + Kafka + MinIO）
+- [CluadeCode](projects/CluadeCode/) — Claude Code 工具笔记
+- [SageCLI](projects/SageCLI/) — SageCLI 工具笔记
+
+### career/ — 求职材料
+
+- [简历](career/简历/) — 写法指南 + 项目范例
 
 ---
 
-仅供个人学习使用，不保证内容准确性，欢迎指正。
+## 工作流
+
+```
+raws/inbox/  →  staged/<类别>/  →  (提取知识到 wiki/)  →  processed/
+```
+
+LLM 协作约定见 [AGENTS.md](AGENTS.md)；raw 整理规则见 [raws/WORKSPACE.md](raws/WORKSPACE.md)。
+
+零碎想法 → [scratch.md](scratch.md)（先记下，不考虑格式）  
+设计决策 → [思考记录.md](思考记录.md)（对话中的洞察和误区纠正）  
+变更日志 → [优化记录.md](优化记录.md)
+
+---
+
+## 根目录文件
+
+| 文件 | 用途 |
+|------|------|
+| [AGENTS.md](AGENTS.md) | AI 操作规范（操作约束 + 黄金样例） |
+| [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) | 写作格式规范（Frontmatter/高亮/Callout） |
+| [raws/WORKSPACE.md](raws/WORKSPACE.md) | raws 目录操作契约 |
+| [scratch.md](scratch.md) | 零摩擦速记草稿区 |
+| [思考记录.md](思考记录.md) | 设计决策（ADR 格式） |
+| [优化记录.md](优化记录.md) | 变更日志（每条 2-3 行） |
+
+---
+
+## 重大变更历史
+
+| 时间 | 变更 |
+|------|------|
+| 2026-06-25 | 结构重构：新建 `projects/` 和 `career/`，wiki 专注技术知识；面试题目.md 废弃，考点分散到各模块 `_MOC.md`；治理文档从 6 份压缩到 3 份；补充 OS/网络缺失考点；并发编程大文件加顶部速览；优化记录从 1147 行压缩至 290 行 |
+| 2026-06-01 | 全量审计 + P0/P1 修复：~50 个文件重构，SSoT 收敛，MOC 建立，死链清理 |
+| 2026-05-25 | RAG 基础与架构大重构（1165→217行），新建文档解析/分块策略等独立文档 |
