@@ -1,3 +1,10 @@
+---
+module: CluadeCode
+type: project
+tags: [Claude Code, Agent, 工具笔记]
+last_reviewed: 2026-07-22
+---
+
 # CC 对话循环的健壮性外壳
 
 > **一句话定位**：CC 的对话循环骨架很简单，但真实世界会不停出岔子。这篇讲清楚——循环会从哪几个方向出岔子、每个方向 CC 怎么自己救回来。不涉及代码，只讲机制。

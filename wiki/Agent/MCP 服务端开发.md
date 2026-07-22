@@ -2,7 +2,7 @@
 module: Agent
 tags: [Agent, MCP, Server, Implementation]
 difficulty: hard
-last_reviewed: 2026-06-01
+last_reviewed: 2026-07-22
 ---
 
 # MCP 服务端开发
@@ -323,7 +323,7 @@ Server 可以==主动向 Client 推送通知==——告诉 Host"==我的能力�
 | Notification | 触发场景 | Host 应该做什么 |
 |--------------|---------|---------------|
 | ==`notifications/tools/list_changed`== | Server 动态加/减工具 | 重新调 `tools/list` 拉最新工具列表，==更新 LLM 的 tools 参数== |
-| ==`notifications/resources/list_changed`== | 文件系统/数据库 schema 变化 | 重新拉 resources 列�� |
+| ==`notifications/resources/list_changed`== | 文件系统/数据库 schema 变化 | 重新拉 resources 列表 |
 | ==`notifications/resources/updated`== | 单个 resource 内容变了 | ==失效缓存==，下次读取重新拉 |
 
 ### Server 端发送示例

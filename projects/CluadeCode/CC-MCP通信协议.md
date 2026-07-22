@@ -1,3 +1,10 @@
+---
+module: CluadeCode
+type: project
+tags: [Claude Code, Agent, 工具笔记]
+last_reviewed: 2026-07-22
+---
+
 # CC 怎么和 MCP 工具通信（协议层）
 
 > **一句话定位**：MCP（Model Context Protocol）是一个**标准协议**，让 CC 能接入各种外部工具服务（数据库、Slack、监控系统……）。这篇讲**协议层面 CC 和这些外部服务到底怎么对话**——握手、要工具清单、调工具、传输方式。（上层的「工具太多怎么按需加载」见 [[08-MCP-延迟加载-ToolSearch]]。）

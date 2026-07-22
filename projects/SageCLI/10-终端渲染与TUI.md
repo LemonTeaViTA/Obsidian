@@ -1,3 +1,10 @@
+---
+module: SageCLI
+type: project
+tags: [SageCLI, Agent, 项目笔记]
+last_reviewed: 2026-07-22
+---
+
 # 终端渲染与 TUI
 
 **是什么**：流式输出的终端渲染层，让 LLM 输出像打字机一样实时显示，并保持底部状态栏固定。

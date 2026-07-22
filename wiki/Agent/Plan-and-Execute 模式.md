@@ -2,7 +2,7 @@
 module: Agent
 tags: [Agent, Plan-and-Execute, Task Decomposition, Reasoning Pattern]
 difficulty: medium
-last_reviewed: 2026-06-01
+last_reviewed: 2026-07-22
 ---
 
 # Plan-and-Execute 模式
@@ -186,7 +186,7 @@ DAG 可以==渲染成图==给用户看进度——一眼看出哪些步骤在并
 
 ==关键==：
 - ==Planner 不看原始内容==——只看元信息，足以重新规划下游
-- ==Executor 看原始内容==——执行时从 state 加载，通过 `{{step_X.output}}` ��用注入
+- ==Executor 看原始内容==——执行时从 state 加载，通过 `{{step_X.output}}` 引用注入
 - ==两个 context 完全独立==——Planner 始终没看过 5000 字原文
 
 详细实现见 [[Plan-and-Execute 实现教程#Replan 上下文裁剪]]。

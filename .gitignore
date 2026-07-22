@@ -1,4 +1,14 @@
-/raws/
+/raws/*
+!/raws/WORKSPACE.md
+!/raws/inbox/
+/raws/inbox/*
+!/raws/inbox/.gitkeep
+!/raws/staged/
+/raws/staged/*
+!/raws/staged/.gitkeep
+!/raws/processed/
+/raws/processed/*
+!/raws/processed/.gitkeep
 /claude-code-sourcemap/
 /hermes-agent/
 /openclaw/

@@ -20,7 +20,6 @@ wiki/                  # 正式知识内容（面试+技术知识）
 ├── RAG/
 ├── LLM/
 ├── Agent/
-├── PaiFlow/
 ├── 算法/
 ├── Meta/              # 知识库方法论
 └── Git.md
@@ -212,7 +211,7 @@ bash wiki审计/check.sh --encoding
 
 ## type: project 文件的特殊规则
 
-适用模块：`wiki/CluadeCode/`、`wiki/SageCLI/`、`wiki/Baize项目/`（frontmatter 含 `type: project`）
+适用模块：`projects/CluadeCode/`、`projects/SageCLI/`、`projects/Baize项目/`（frontmatter 含 `type: project`）
 
 - ❌ 不需要同步面试考点到 _MOC.md
 - ❌ 不需要 Diátaxis 类型对齐

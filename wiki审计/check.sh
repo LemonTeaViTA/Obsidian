@@ -17,7 +17,10 @@ log_error() { echo "🔴 $1"; }
 check_encoding() {
     log_section "UTF-8 乱码检查"
 
-    local corrupt_files=$(grep -rlP '\xef\xbf\xbd' wiki/ 2>/dev/null || true)
+    local scan_roots=(wiki/)
+    [ -d projects/ ] && scan_roots+=(projects/)
+    [ -d career/ ] && scan_roots+=(career/)
+    local corrupt_files=$(grep -rl $'\xef\xbf\xbd' "${scan_roots[@]}" 2>/dev/null || true)
     local corrupt_count=0
     if [ -n "$corrupt_files" ]; then
         corrupt_count=$(echo "$corrupt_files" | wc -l)
@@ -35,11 +38,11 @@ check_encoding() {
 check_links() {
     log_section "Wikilink 坏链检查 (全量)"
 
-    # 先把所有文件名建成查找表，O(1) 查询（wiki/ + 根目录 + raws/）
-    declare -A wiki_files
+    # 先收集所有可链接的文件名（wiki/ + projects/ + career/ + raws/ + 根目录）
+    declare -a wiki_files=()
     while IFS= read -r f; do
-        wiki_files["$(basename "$f" .md)"]=1
-    done < <({ find wiki/ raws/ projects/ -name '*.md' -type f; find . -maxdepth 1 -name '*.md' -type f; })
+        wiki_files+=("$(basename "$f" .md)")
+    done < <({ find wiki/ projects/ career/ -name '*.md' -type f; [ -d raws/ ] && find raws/ -name '*.md' -type f; find . -maxdepth 1 -name '*.md' -type f; })
 
     local dead_count=0 checked=0
     declare -a dead_list=()
@@ -52,11 +55,11 @@ check_links() {
         [[ "$link" =~ ^(wikilink|主文档|1,|file|相关文档|相关\ wiki) ]] && continue
 
         ((checked++))
-        if [[ -z "${wiki_files[$link]+x}" ]]; then
+        if ! printf '%s\n' "${wiki_files[@]}" | grep -Fqx "$link"; then
             ((dead_count++))
             dead_list+=("$link")
         fi
-    done < <(grep -rohP '\[\[[^\]]+\]\]' wiki/ 2>/dev/null | sort -u)
+    done < <(grep -rohE '\[\[[^]]+\]\]' wiki/ 2>/dev/null | sort -u)
 
     if [ "$dead_count" -eq 0 ]; then
         log_ok "全量: $checked 个唯一链接, 0 死链"
@@ -110,7 +113,7 @@ check_callouts() {
     log_section "Callout 规范检查"
 
     # 非法 callout 类型
-    local invalid=$(grep -rnP '>\s*\[!(?!(tip|info|note|warning|danger)\b)' wiki/ 2>/dev/null || true)
+    local invalid=$(grep -rnE '^>[[:space:]]*\[![^]]+\]' wiki/ 2>/dev/null | grep -vE '>[[:space:]]*\[!(tip|info|note|warning|danger)(\]|[[:space:]])' || true)
     local invalid_count=0
     if [ -n "$invalid" ]; then
         invalid_count=$(echo "$invalid" | wc -l)
@@ -121,7 +124,7 @@ check_callouts() {
     fi
 
     # 嵌套 callout
-    local nested=$(grep -rnP '^>\s*>\s*\[!' wiki/ 2>/dev/null || true)
+    local nested=$(grep -rnE '^>[[:space:]]*>[[:space:]]*\[!' wiki/ 2>/dev/null || true)
     local nested_count=0
     if [ -n "$nested" ]; then
         nested_count=$(echo "$nested" | wc -l)
@@ -160,7 +163,7 @@ case "${1:-}" in
         echo ""
         echo "选项:"
         echo "  --encoding   : UTF-8 乱码检查"
-        echo "  --links      : Wikilink 坏链检查(抽样 50 个)"
+        echo "  --links      : Wikilink 坏链检查(全量)"
         echo "  --structure  : 行数/多H1检查"
         echo "  --callouts   : Callout 规范检查"
         echo "  --all        : 全部检查"

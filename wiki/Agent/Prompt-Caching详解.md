@@ -2,7 +2,7 @@
 module: Agent
 tags: [LLM, Agent, Prompt Caching, 成本优化]
 difficulty: hard
-last_reviewed: 2026-06-12
+last_reviewed: 2026-07-22
 ---
 
 # Prompt Caching 详解
@@ -27,7 +27,7 @@ last_reviewed: 2026-06-12
 
 ==没缓存==:每轮都要把 8k-50k 的固定前缀==重新算 KV==——延迟 + 成本 N 轮叠加。
 
-==开缓存==:固定前缀==算一次缓存住==,后续 N 轮只��增量(几百 token)——==省 80%-90% 成本 + 延迟降到 1/3==。
+==开缓存==:固定前缀==算一次缓存住==,后续 N 轮只算增量(几百 token)——==省 80%-90% 成本 + 延迟降到 1/3==。
 
 ==Anthropic 公开数据==:Claude Code 用户的 cache hit rate 中位数 ==85%+==,这就是为什么 Claude Code 长会话也不贵。
 

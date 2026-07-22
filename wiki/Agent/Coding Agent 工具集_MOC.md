@@ -2,7 +2,7 @@
 module: Agent
 tags: [Agent, Coding Agent, Tool Use, Claude Code, Cursor, MOC]
 difficulty: medium
-last_reviewed: 2026-06-01
+last_reviewed: 2026-07-22
 ---
 
 # Coding Agent 工具集_MOC
@@ -185,7 +185,7 @@ last_reviewed: 2026-06-01
 | 适用 | 通用、高频、必备的能力 | 团队特定 / 第三方系统集成 |
 
 ==典型场景==：
-- ==读文件== → ���置（所有人都要）
+- ==读文件== → 内置（所有人都要）
 - ==发 Slack 消息== → MCP（只有用 Slack 的团队需要）
 - ==查公司内部 Postgres== → MCP（每家公司库不一样）
 

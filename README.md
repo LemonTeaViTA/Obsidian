@@ -62,6 +62,7 @@ LLM 协作约定见 [AGENTS.md](AGENTS.md)；raw 整理规则见 [raws/WORKSPACE
 |------|------|
 | [AGENTS.md](AGENTS.md) | AI 操作规范（操作约束 + 黄金样例） |
 | [OBSIDIAN_STYLE.md](OBSIDIAN_STYLE.md) | 写作格式规范（Frontmatter/高亮/Callout） |
+| [.gitattributes](.gitattributes) / [.editorconfig](.editorconfig) | 统一文本文件使用 LF 行尾 |
 | [raws/WORKSPACE.md](raws/WORKSPACE.md) | raws 目录操作契约 |
 | [scratch.md](scratch.md) | 零摩擦速记草稿区 |
 | [思考记录.md](思考记录.md) | 设计决策（ADR 格式） |
@@ -73,6 +74,7 @@ LLM 协作约定见 [AGENTS.md](AGENTS.md)；raw 整理规则见 [raws/WORKSPACE
 
 | 时间 | 变更 |
 |------|------|
+| 2026-07-22 | 修复全库 CRLF 行尾污染并建立 LF 约束；恢复 `raws/` 目录骨架与 `WORKSPACE.md`；修正项目路径和审计工具兼容性 |
 | 2026-06-25 | 结构重构：新建 `projects/` 和 `career/`，wiki 专注技术知识；面试题目.md 废弃，考点分散到各模块 `_MOC.md`；治理文档从 6 份压缩到 3 份；补充 OS/网络缺失考点；并发编程大文件加顶部速览；优化记录从 1147 行压缩至 290 行 |
 | 2026-06-01 | 全量审计 + P0/P1 修复：~50 个文件重构，SSoT 收敛，MOC 建立，死链清理 |
 | 2026-05-25 | RAG 基础与架构大重构（1165→217行），新建文档解析/分块策略等独立文档 |

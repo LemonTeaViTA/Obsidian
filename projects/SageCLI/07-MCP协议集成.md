@@ -1,3 +1,10 @@
+---
+module: SageCLI
+type: project
+tags: [SageCLI, Agent, 项目笔记]
+last_reviewed: 2026-07-22
+---
+
 # MCP 协议集成
 
 **是什么**：通过 MCP（Model Context Protocol）协议动态接入外部工具，不需要修改 CLI 代码。

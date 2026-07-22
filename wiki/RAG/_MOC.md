@@ -1,7 +1,8 @@
 ---
 module: RAG
 tags: [RAG, MOC]
-last_reviewed: 2026-06-25
+difficulty: easy
+last_reviewed: 2026-07-22
 ---
 
 # RAG 体系 MOC

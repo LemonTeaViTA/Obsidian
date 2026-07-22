@@ -1,3 +1,10 @@
+---
+module: CluadeCode
+type: project
+tags: [Claude Code, Agent, 工具笔记]
+last_reviewed: 2026-07-22
+---
+
 # Claude Code 学习地图
 
 > 这是理解 Claude Code 内部机制的知识索引。每篇聚焦一个主题，用**纯白话 + 地图式结构**讲透"CC 这里怎么做的"。

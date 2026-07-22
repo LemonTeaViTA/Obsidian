@@ -1,3 +1,10 @@
+---
+module: CluadeCode
+type: project
+tags: [Claude Code, Agent, 工具笔记]
+last_reviewed: 2026-07-22
+---
+
 # CC 的 goal：目标驱动的自主工作
 
 > **一句话定位**：`/goal` 让你设一个「完成条件」，Claude 会**自己一轮一轮干下去、不把控制权还给你**，直到条件达成。每轮结束后由一个**独立的小模型当裁判**检查"达成没"。这是 CC「轻量目标驱动」的代表——不规划步骤，只验收结果。

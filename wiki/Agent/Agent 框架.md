@@ -2,14 +2,14 @@
 module: Agent
 tags: [LLM, Agent, 框架, LangGraph, CrewAI, AutoGen, Hermes, OpenClaw]
 difficulty: medium
-last_reviewed: 2026-05-25
+last_reviewed: 2026-07-22
 ---
 
 # Agent 框架
 
 > 主流 Agent 框架的对比与选型，从国际大厂（LangChain/LangGraph/CrewAI/AutoGen/LlamaIndex）到国产框架（Hermes/OpenClaw/Spring AI）的完整画像。
 >
-> Agent 通用概念（ReAct/Function Calling/Memory）见 [[Agent 核心概念]]；通�� Harness 框架见 [[Harness Engineering]]。
+> Agent 通用概念（ReAct/Function Calling/Memory）见 [[Agent 核心概念]]；通用 Harness 框架见 [[Harness Engineering]]。
 
 > [!tip] 速览（一分钟读完）
 > - **最本质差异**：不是功能，是"谁控制控制流"——LangGraph 你画图、CrewAI LLM 分配、AutoGen 对话决定
@@ -120,7 +120,7 @@ graph.add_conditional_edges("generate", should_retry,
 ```
 
 > [!tip] LangChain 用户迁移建议
-> 如果你有 LangChain 代码，不建议直接重写。新功能用 LangGraph 开发，旧代���等有重构需求时再迁移。LangGraph 可以调用 LangChain 的 Tool，生态兼容。
+> 如果你有 LangChain 代码，不建议直接重写。新功能用 LangGraph 开发，旧代码等有重构需求时再迁移。LangGraph 可以调用 LangChain 的 Tool，生态兼容。
 
 ---
 

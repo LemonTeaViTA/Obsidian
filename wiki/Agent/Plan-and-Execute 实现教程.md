@@ -2,7 +2,7 @@
 module: Agent
 tags: [Agent, Plan-and-Execute, Tutorial, Implementation, Python, Replan]
 difficulty: hard
-last_reviewed: 2026-06-01
+last_reviewed: 2026-07-22
 ---
 
 # Plan-and-Execute 实现教程
@@ -256,7 +256,7 @@ def make_plan_with_history(user_task: str, history: list) -> list:
 │ → 只看 metadata / 摘要                    │
 │ → "Step 1 拉到了 5000 字文章，主题 X"     │
 │ → ==2-5k tokens== (无论中间产物多大)      │
-└────────────────��──────────────────────────┘
+└───────────────────────────────────────────┘
 
 ┌───────────────────────────────────────────┐
 │ Execution State (==Executor LLM 看到的==) │
