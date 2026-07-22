@@ -1,9 +1,8 @@
 ---
 module: 工具
-tags:
-  - Git
+tags: [Git]
 difficulty: easy
-last_reviewed: 2026-06-02
+last_reviewed: 2026-07-22
 ---
 
 # Git 常用命令
@@ -70,6 +69,8 @@ git check-ignore -v 文件名              # 会告诉你是哪条规则忽略�
 
 ## 标准工作流
 
+### 单任务分支流程
+
 ```bash
 # 1. 开始新功能
 git checkout -b xxx
@@ -88,3 +89,61 @@ git checkout main
 git pull
 git branch -d feature/xxx   # 清理旧分支
 ```
+
+### AI 并行开发工作流
+
+> [!tip] 核心边界
+> 分支只隔离提交历史，同一工作目录一次仍只能检出一个分支。真正同时运行多个 AI 开发任务，应使用**每个任务一个分支 + 一个独立 worktree**。
+
+#### 1. 确认干净基线
+
+```bash
+git switch main
+git status --short                         # 应无未提交改动
+git log -1 --oneline                       # 记录并行任务的共同起点
+```
+
+#### 2. 为独立任务创建 worktree
+
+```bash
+git worktree add ../project-task-a -b ai/task-a main
+git worktree add ../project-task-b -b ai/task-b main
+git worktree list
+```
+
+在 `project-task-a` 和 `project-task-b` 中分别启动 AI 开发任务。两个任务应有独立验收标准，并尽量避免同时修改相同核心文件。
+
+#### 3. 用小提交保存 checkpoint
+
+```bash
+git status --short
+git diff --check
+git add <本任务的文件>
+git commit -m "feat: complete task a checkpoint"
+```
+
+checkpoint 应对应一个可解释、可测试、可回退的小步，不要等到整个长任务结束才第一次提交。
+
+#### 4. 逐个合并并重新验证
+
+```bash
+git switch main
+git merge --no-ff ai/task-a
+# 运行项目测试
+git merge --no-ff ai/task-b
+# 再次运行项目测试
+```
+
+> [!warning] 不适合并行的任务
+> 高耦合重构、共享 schema 变更、同一核心文件的大量修改，应优先串行完成公共接口，再分配并行任务。否则并行节省的时间很可能会被合并冲突抵消。
+
+任务合并并确认不再需要独立工作区后，再执行：
+
+```bash
+git worktree remove ../project-task-a
+git worktree remove ../project-task-b
+git branch -d ai/task-a
+git branch -d ai/task-b
+```
+
+这套流程的核心是：**分支提供变更边界，worktree 提供并行空间，commit 提供可追溯 checkpoint，测试提供合并信心**。
