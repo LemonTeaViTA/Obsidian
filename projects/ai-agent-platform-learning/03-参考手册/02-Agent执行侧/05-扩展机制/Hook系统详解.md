@@ -134,10 +134,11 @@ Claude 认为任务完成
 
 ```python
 HOOK_FACTORIES = {
-    "proposal_files_gate": create_proposal_files_gate,
-    "task_completion_gate": create_task_completion_gate,
-    "prd_audit_gate": create_prd_audit_gate,
-    "app_split_gate": create_app_split_gate,
+    "proposal_files_gate": _proposal_files_gate_factory,
+    "task_completion_gate": _task_completion_gate_factory,
+    "prd_audit_gate": _prd_audit_gate_factory,
+    "app_split_gate": _app_split_gate_factory,
+    "files_gate": _files_gate_factory,
 }
 ```
 
@@ -145,6 +146,7 @@ HOOK_FACTORIES = {
 
 - 使用命名工厂函数，不是旧文档里的 lambda 写法。
 - 只包含动态门禁 Hook。
+- `files_gate` 接受 `files`、`blockMessage`、`maxLoops` 参数，必须通过 `stageHooks` 的对象格式下发。
 - `document_upload`、`single_scoring` 等由系统/元数据路径装配，不通过这个白名单动态下发。
 
 ### 3.3 使用流程
@@ -335,6 +337,23 @@ PostToolUse Hook 触发
 - `app_split_gate`：检查应用拆分相关产出/约束。
 
 它们共享 `StopGateHook + Validator + Verdict` 模式：Validator 只负责判断，StopGateHook 统一负责 RETRY 拦截、防循环、放行策略。
+
+### 6.6 files_gate（通用文件存在性门禁）
+
+`files_gate` 不硬编码业务文件名，由 Stage 通过 `stageHooks` 下发参数：
+
+```json
+{
+  "name": "files_gate",
+  "params": {
+    "files": ["design.md", "test.md"],
+    "blockMessage": "仍缺少：\n{missing_files}",
+    "maxLoops": 5
+  }
+}
+```
+
+它在 Stop 时检查 `openspec/changes/{taskId}/`。目录不存在、Hook 异常或达到 1-10 范围内的最大循环次数时会放行，因此它是流程完整性保护，不应替代 CI 的强制校验。完整协议见 [[03-参考手册/02-Agent执行侧/05-扩展机制/CCR多模型适配与动态门禁|CCR 多模型适配与动态门禁]]。
 
 ---
 

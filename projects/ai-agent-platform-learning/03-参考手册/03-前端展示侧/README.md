@@ -3,6 +3,9 @@
 > React 19 + TypeScript + React Router 7 + TanStack Query  
 > 负责：用户界面、任务创建、实时通信、审批操作
 
+> [!tip] 2026-08 当前变化
+> 首页已改为个人工作台，Custom Agent 实时接收以 GMS 为主；审批角色状态、产物历史和最新模板开关已形成新的交互闭环。先读 [[03-参考手册/03-前端展示侧/02-核心功能/个人工作台与审批产物闭环|个人工作台与审批产物闭环]]。
+
 ---
 
 ## 📚 学习路线
@@ -15,10 +18,11 @@
   ├─ 01-项目架构/目录结构详解.md
   └─ 01-项目架构/环境配置.md
 
-第2天：��心功能
+第2天：核心功能
   ├─ 02-核心功能/任务创建流程.md
   ├─ 02-核心功能/任务列表与筛选.md
-  └─ 02-核心功能/WebSocket实时通信.md
+  ├─ 02-核心功能/WebSocket实时通信.md
+  └─ 02-核心功能/个人工作台与审批产物闭环.md
 ```
 
 ### 深入掌握（3-5天）
@@ -69,21 +73,19 @@ POST /api/taskInfo/create
 跳转到 /conversations/{taskId}
 ```
 
-### WebSocket实时通信
+### GMS / WebSocket 实时通信
 
 ```
-前端订阅
+Custom Agent 前端订阅
+    ↓ GMS SDK（VITE_GMS_WS_URL）
+接收 ai24 业务消息
     ↓
-wss://ai24/ws/report
-    ↓
-接收消息类型：
-├─ TASK_STATUS_UPDATE (任务状态更新)
-├─ TASK_PROGRESS (任务进度)
-├─ AGENT_MESSAGE (Agent消息)
-└─ ERROR (错误信息)
+发送用户输入时走 HTTP /api/task/query
     ↓
 更新 UI
 ```
+
+仓库仍保留 V0 Socket.IO、V1 原生 WebSocket 和 Custom Agent / GMS 三套 Provider。排障前必须先确认当前会话版本，不能把某一套 URL 当作全局唯一链路。
 
 ---
 
@@ -140,6 +142,7 @@ ai-program-factory/
 
 - [API 映射文档](./04-API集成/API封装与调用.md) - 前后端接口对接
 - [WebSocket 通信](./02-核心功能/WebSocket实时通信.md) - 实时消息推送
+- [个人工作台与审批产物闭环](./02-核心功能/个人工作台与审批产物闭环.md) - 首页、角色审批、产物版本和模板策略
 
 ---
 

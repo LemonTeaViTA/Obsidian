@@ -1,8 +1,19 @@
 # AI Agent 平台完整学习体系
 
-> 更新时间：2026-07-22  
+> 更新时间：2026-08-03
 > 涵盖：ai24 平台管理侧 + code-agent 执行侧 + ai-program-factory 前端侧  
-> 共 95+ 篇文档，完整覆盖 AI Agent 开发平台的全栈技术
+> 共 266 篇 Markdown，其中 139 篇为非归档内容
+
+---
+
+## 2026-08 当前入口
+
+> [!warning] 版本说明
+> 本页后半部分的目录树和学习路线保留了 2026-07 重构快照，部分路径与实现已经变化。当前源码结论先看 [[源码同步审计-20260803]]，再进入下面三个增量专题。
+
+- [[03-参考手册/01-平台管理侧/2026-08源码演进补充|ai24：审批、工作台、产物与拓扑演进]]
+- [[03-参考手册/02-Agent执行侧/05-扩展机制/CCR多模型适配与动态门禁|code-agent：CCR 多模型适配与动态门禁]]
+- [[03-参考手册/03-前端展示侧/02-核心功能/个人工作台与审批产物闭环|前端：个人工作台与审批产物闭环]]
 
 ---
 
@@ -17,7 +28,7 @@
 │  用户创建任务、查看进度、审批、查看产物                    │
 └─────────────────┬───────────────────────────────────────┘
                   │ HTTP API + WebSocket
-┌─────────────────┴��──────────────────────────────────────┐
+┌─────────────────┴───────────────────────────────────────┐
 │                  平台管理侧                               │
 │              ai24 (Spring Boot + Java)                   │
 │  任务管理、工作流配置、审批流程、数据持久化                │
@@ -119,6 +130,8 @@
 
 ## 📂 目录结构
 
+> 以下是 2026-07 的重构目标树，用于理解资料来源；当前实际目录以 [[AI-Agent平台文档地图]] 和上方“2026-08 当前入口”为准。
+
 ```
 ai-agent-platform-learning/
 ├── 00-导航与入门/
@@ -178,7 +191,7 @@ ai-agent-platform-learning/
 │   └── 04-API集成/
 │       ├── API封装与调用.md
 │       ├── 环境配置(.env).md
-│       └── ��误处理.md
+│       └── 错误处理.md
 │
 ├── 04-完整链路实战/
 │   ├── 端到端流程追踪.md
@@ -223,9 +236,10 @@ ai-agent-platform-learning/
 
 | 概念 | 说明 | 参考文档 |
 |------|------|---------|
-| **WebSocket** | 实时任务状态推送 | WebSocket实时通信 |
+| **GMS / WebSocket** | 多版本实时消息接收，Custom Agent 以 GMS 为主 | WebSocket实时通信 |
 | **任务创建** | 表单 → input JSON → API 调用 | 任务创建流程 |
 | **审批界面** | 审批项展示、通过/拒绝操作 | 审批流程前端实现 |
+| **个人工作台** | 待我审批 + 参与需求的聚合读模型 | 个人工作台与审批产物闭环 |
 | **环境切换** | .env.daily / .env.pre / .env.prod | 环境配置 |
 
 ---
@@ -258,12 +272,13 @@ ai24 更新任务状态
 
 ```
 code-agent 完成某阶段
-  ↓ POST /api/approval/create
+  ↓ POST /api/approvalItem/batchCreate 或 /update
 ai24 创建审批项 (approval_item, status=PENDING)
-  ↓ WebSocket 通知
+  ↓ GMS / 实时消息通知
 前端展示审批卡片
   ↓ 产品点击"通过"或"拒绝"
-  ↓ POST /api/approval/approve 或 /reject
+  ↓ POST /api/approvalItem/approve
+     confirmStatus=APPROVED 或 REJECTED
 ai24 更新审批状态
   ├─ 全部通过 → ApprovalStrategy.onAllApproved()
   │   └─ 创建下一阶段任务
@@ -277,11 +292,11 @@ ai24 更新审批状态
 
 | 层级 | 技术栈 | 用途 |
 |------|--------|------|
-| **前端** | React 18 + TypeScript + Vite | UI 展示与交互 |
+| **前端** | React 19 + TypeScript 5.9 + Vite 7 | UI 展示与交互 |
 | | React Router 7 | 路由管理 |
 | | TanStack Query | 数据请求与缓存 |
 | | Tailwind CSS | 样式 |
-| | WebSocket | 实时通信 |
+| | GMS SDK + WebSocket / Socket.IO 兼容层 | 实时通信 |
 | **平台管理** | Spring Boot 2.7.2 + Java 11 | 后端框架 |
 | | MyBatis Plus 3.5.2 | ORM |
 | | MySQL | 数据库 |
@@ -290,6 +305,7 @@ ai24 更新审批状态
 | **Agent 执行** | Python 3.9+ | 执行环境 |
 | | Flask | HTTP 服务器 |
 | | Claude SDK | AI 调用 |
+| | Claude Code Router | 多模型路由和协议转换 |
 | | MCP (Model Context Protocol) | 工具调用协议 |
 | | LangFuse | 可观测性 |
 
