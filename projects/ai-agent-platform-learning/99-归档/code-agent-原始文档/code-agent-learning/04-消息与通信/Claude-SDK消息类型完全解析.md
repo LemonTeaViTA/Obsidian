@@ -395,18 +395,14 @@ ResultMessage(
 ```python
 # 上下文太长
 ResultMessage(
-    result="Prompt is too long",  # ⭐ 触发 /compact 压缩
+    result="Prompt is too long",
     ...
 )
 ```
 
 **code-agent 的处理**：
-```python
-if isinstance(message, ResultMessage):
-    if message.result == "Prompt is too long":
-        # 自动执行 /compact 压缩上下文
-        await client.query("/compact", session_id=session_id)
-```
+
+当前响应处理会识别该错误结果；如果本次只收到一条 `ResultMessage`，会删除 `task_id → session_id` 单向映射，避免下次继续恢复异常会话，但反向映射和进程内缓存仍保留。当前主查询路径不会自动执行 `/compact`。
 
 ### 何时出现
 

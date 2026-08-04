@@ -94,7 +94,7 @@ Claude SDK 执行
 **补充**：
 - 通过 `TaskSessionMapper` 维护 `task_id ↔ session_id` 映射
 - 支持多轮对话：同一个 task_id 的多次 query 共享 session
-- 持久化到文件：`tmp/data/task_session_mapping.json`
+- 当前实现双写云端：`task_data_api` 保存 `task_id → session_id`，`claude_data_api` 保存反向映射
 
 ---
 

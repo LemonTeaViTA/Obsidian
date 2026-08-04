@@ -46,7 +46,7 @@ await service.query(
     permission_mode="acceptEdits",  # ✅ 权限模式
     settings=str(Path.home() / ".claude" / "settings.json"),  # ✅ 配置文件
     setting_sources=["user", "project"],
-    skip_check=skip_check,     # ✅ 是否跳过 token 检查
+    skip_check=skip_check,     # ✅ 兼容参数
     model=model,               # ✅ 模型（从 AI24 传递）
     dynamic_hooks=dynamic_hooks,  # ✅ 动态 hooks
     speed=speed,               # ✅ fast mode

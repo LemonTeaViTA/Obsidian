@@ -282,7 +282,6 @@ disallowed_tools = ["WebSearch"]  # 禁止联网搜索
 | **多机协同** | ❌ 不支持 | ✅ Redis Pub/Sub |
 | **消息上报** | ❌ 只有本地日志 | ✅ 实时上报到管理平台 |
 | **OpenSpec 集成** | ❌ 需要手动写 prompt | ✅ 内置模板 |
-| **Token 管理** | ❌ 手动 /compact | ✅ 自动检测 85% 压缩 |
 
 **结论：这个项目的 Claude 能力 >= Claude Code CLI，而不是更少！**
 

@@ -245,7 +245,7 @@ def interrupt_task(self, task_id: str) -> tuple[bool, str]:
         # 主会话客户端（key 就是 task_id）
         if task_id in self._active_clients:
             clients_to_interrupt[task_id] = self._active_clients[task_id]
-        # 辅助会话客户端（Token检查、步骤检查，key 是 "task_id:xxx"）
+        # 辅助会话客户端（key 是 "task_id:xxx"）
         for client_key in list(self._active_clients.keys()):
             if client_key.startswith(f"{task_id}:"):
                 clients_to_interrupt[client_key] = self._active_clients[client_key]
@@ -267,7 +267,6 @@ def interrupt_task(self, task_id: str) -> tuple[bool, str]:
 2. 中断"主会话 + 所有辅助会话"
    → 一个任务可能有多个 client：
      - task_123          (主会话)
-     - task_123:token    (Token检查辅助会话)
      - task_123:step     (步骤检查辅助会话)
    → 全部一起中断，不留残留
 
@@ -285,9 +284,9 @@ def interrupt_task(self, task_id: str) -> tuple[bool, str]:
 
 ```python
 # 如果只收到一条 ResultMessage，则删除会话记录
-if message_count == 1 and isinstance(final_result, ResultMessage):
+if message_count == 1 and final_result is not None and task_id:
     logger.info(f"[Task {task_id}] 检测到只收到一条 ResultMessage，删除会话记录")
-    # 删除映射，下次重新开始
+    TaskSessionMapper.remove_task_to_session_only(task_id)
 ```
 
 **为什么？**
@@ -359,7 +358,7 @@ if message_count == 1 and isinstance(final_result, ResultMessage):
 获取：TaskSessionMapper.get_session_id(task_id)  → query 开头
 使用：resume = session_id                         → 构建 options
 建立：TaskSessionMapper.set_mapping()             → 收到 SystemMessage 时
-清理：只收到一条 ResultMessage 时删除              → 出错时
+清理：只收到一条 ResultMessage 时删除 task→session  → 出错时
 ```
 
 ### 3. 印证了之前的两个理解
@@ -372,22 +371,18 @@ if message_count == 1 and isinstance(final_result, ResultMessage):
 - **锁粒度 = task_id**：平衡了"对话顺序"和"并发吞吐"
 - **映射延迟建立**：等 SDK 分配真实 session_id 后才建立，保证准确
 - **双层中断**：标识（快速跳出循环）+ client.interrupt()（彻底中断 SDK）
-- **辅助会话一起中断**：主会话 + Token检查 + 步骤检查，无残留
-- **坏会话自动清理**：只有一条 ResultMessage 时删除映射，避免坏状态传染
+- **辅助会话一起中断**：主会话 + 已注册的辅助会话，无残留
+- **坏会话自动清理**：只有一条 ResultMessage 时删除 `task_id → session_id` 单向映射；反向映射和缓存仍保留
 
 ---
 
 ## 十、待探索的问题
 
-1. **辅助会话（task_id:xxx）具体做什么？**
-   - Token 检查会话：`_check_and_compact_if_needed`
-   - 它们如何创建、何时使用？
-
-2. **_process_response_messages 如何渲染消息？**
+1. **_process_response_messages 如何渲染消息？**
    - 三种渲染器：message / openhands / event
    - 消息如何变成 AI24 能展示的格式？
 
-3. **options 里还配置了什么？**
+2. **options 里还配置了什么？**
    - MCP 服务、hooks、权限模式、系统提示词
    - 这些如何影响 Claude 的行为？
 

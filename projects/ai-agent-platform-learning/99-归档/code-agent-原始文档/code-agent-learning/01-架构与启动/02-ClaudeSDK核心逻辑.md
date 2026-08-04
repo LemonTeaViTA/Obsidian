@@ -14,8 +14,7 @@ ClaudeAgentSDKService (单例)
     ├─ Session 管理      ← task_id ↔ session_id 映射，支持多轮对话
     ├─ MCP 工具集成      ← 连接外部工具（DEP/AI24/Figma等）
     ├─ Hook 系统         ← 拦截 Claude 操作（路径安全/Git/TDD等）
-    ├─ 消息渲染/上报     ← 本地日志 + 远程平台双渲染
-    └─ Token 管理        ← 自动监控使用率，超85%自动compact
+    └─ 消息渲染/上报     ← 本地日志 + 远程平台双渲染
 ```
 
 **设计原则：**
@@ -40,9 +39,9 @@ TaskSessionMapper.get_session_id("123")  # 返回 None（还没建立映射）
   ↓
 调用 Claude SDK（session_id=None）
   ↓
-Claude 返回 ResultMessage（包含新生成的 session_id="abc"）
+Claude 首次返回 SystemMessage（data.session_id="abc"）
   ↓
-TaskSessionMapper.set_mapping("123", "abc")  # 建立映射并持久化
+TaskSessionMapper.set_mapping("123", "abc")  # 建立映射并双写云端
 
 # 第二次查询（task_id=123, prompt="开始编码"）
 TaskSessionMapper.get_session_id("123")  # 返回 "abc"（找到了！）
@@ -52,7 +51,7 @@ TaskSessionMapper.get_session_id("123")  # 返回 "abc"（找到了！）
 Claude 能看到上次的"需求分析"上下文
 ```
 
-**持久化路径：** `tmp/data/task_session_mapping.json`
+**持久化位置：** `task_data_api` 保存 `task_id → session_id`，`claude_data_api` 保存 `session_id → task_id`；进程内只缓存 `session_id → task_id`。
 
 **好处：**
 - 用户无需关心 session_id，只传 task_id
@@ -174,18 +173,15 @@ ClaudeAgentSDKService.query(prompt="实现登录功能", task_id="123")
         await self._process_response_messages(client, session_id, task_id)
             ↓
             【消息类型】
-            ├─ UserMessage        → 渲染用户输入
+            ├─ SystemMessage      → 首次提取 data.session_id 并建立映射
+            ├─ UserMessage        → 渲染输入/工具结果，记录工具错误
             ├─ AssistantMessage   → 渲染 Claude 回复（文本/思考/工具调用）
-            ├─ ToolResultBlock    → 渲染工具执行结果
-            └─ ResultMessage      → 最终结果（提取 session_id 建立映射）
+            └─ ResultMessage      → 标记完成，记录并上报 Token 用量
             ↓
             【双渲染器】
             ├─ 本地渲染 → logs/claude_messages/
             └─ 远程上报 → 管理平台 API
             ↓
-            【Token 检查】
-            if token_usage > 85%:
-                needs_compact = True  ← 标记需要压缩
         ↓
 ┌────────────────────────────────────────────────────────────┐
 │ 阶段7: 清理资源                                              │
@@ -215,76 +211,75 @@ ClaudeAgentSDKService.query(prompt="实现登录功能", task_id="123")
 1. 从 Claude SDK 接收消息流
 2. 渲染到本地日志和远程平台
 3. 提取 session_id 建立映射
-4. 监控 Token 使用率
+4. 识别 `Prompt is too long` 错误结果
 
 ```python
 async def _process_response_messages(
     client, session_id, task_id, keep_session, options
-) -> bool:  # 返回 needs_compact
-    
-    async for message in client.messages():  ← 流式接收消息
-        
-        # 1. 根据消息类型分别处理
-        if isinstance(message, UserMessage):
-            # 用户输入消息（回显）
-            await renderer.render_user_message(...)
-        
-        elif isinstance(message, AssistantMessage):
-            # Claude 的回复消息（可能包含多种 block）
+) -> bool:  # 仅返回是否出现 Prompt is too long
+    final_result = None
+    message_count = 0
+    mapping_saved = False
+
+    async for message in client.receive_response():  ← 流式接收消息
+        message_count += 1
+
+        # 首个初始化消息到达时尽早保存真实 session_id
+        if isinstance(message, SystemMessage):
+            if not mapping_saved and keep_session and task_id:
+                real_session_id = message.data.get("session_id")
+                if real_session_id:
+                    TaskSessionMapper.set_mapping(task_id, real_session_id)
+                    mapping_saved = True
+
+        # 每条消息先渲染到日志，符合过滤规则的内容再上报平台
+        rendered_msg = renderer.render_message(message, session_id)
+        if should_report(message, session_id):
+            await report_coding_message(rendered_msg)
+
+        # ToolResultBlock 位于 UserMessage.content 列表中
+        if isinstance(message, UserMessage) and isinstance(message.content, list):
             for block in message.content:
-                if isinstance(block, TextBlock):
-                    # 普通文本输出
-                    await renderer.render_assistant_text(block.text)
-                
-                elif isinstance(block, ThinkingBlock):
-                    # 思考过程（Extended Thinking）
-                    await renderer.render_thinking(block.thinking)
-                
-                elif isinstance(block, ToolUseBlock):
-                    # Claude 调用工具（如 Read/Write/Bash）
-                    await renderer.render_tool_use(
-                        tool_name=block.name,
-                        tool_input=block.input
-                    )
-        
-        elif isinstance(message, ToolResultBlock):
-            # 工具执行结果
-            await renderer.render_tool_result(
-                tool_name=message.tool_name,
-                result=message.content
-            )
-        
+                if isinstance(block, ToolResultBlock) and block.is_error:
+                    log_error_alert(...)
+
+        if isinstance(message, AssistantMessage):
+            # 收集文本，并记录工具调用等内容
+            collect_content_blocks(message.content)
+
         elif isinstance(message, ResultMessage):
-            # 最终结果消息（包含 session_id 和 token 统计）
-            
-            # 2. 提取 session_id 并建立映射
-            if keep_session and message.session_id:
-                TaskSessionMapper.set_mapping(task_id, message.session_id)
-                logger.info(f"已建立映射: {task_id} ↔ {message.session_id}")
-            
-            # 3. Token 使用率检查
-            if message.usage:
-                total = message.usage.cache_creation_input_tokens + \
-                        message.usage.cache_read_input_tokens + \
-                        message.usage.input_tokens
-                
-                context_window = 200000  # Claude Opus 4.8 的上下文窗口
-                usage_rate = (total / context_window) * 100
-                
-                if usage_rate > TOKEN_USAGE_THRESHOLD:  # 85%
-                    logger.warning(f"Token 使用率 {usage_rate:.1f}% 超过阈值")
-                    return True  # 需要 compact
-            
-            # 4. 渲染最终结果
-            await renderer.render_result(message.result)
-    
-    return False  # 不需要 compact
+            final_result = message
+            mark_task_completed(task_id)
+            if task_id and message.usage:
+                StopWatch.record_tokens(...)
+                await report_usage(...)
+
+    prompt_too_long = (
+        final_result is not None
+        and final_result.result == "Prompt is too long"
+    )
+    if message_count == 1 and final_result is not None and task_id:
+        TaskSessionMapper.remove_task_to_session_only(task_id)
+    return prompt_too_long
 ```
 
 **关键要点：**
 - **流式处理** — 消息一条条到达，边收边渲染，不是等全部完成才显示
 - **双渲染器** — 同一条消息渲染两次（本地文件 + 远程API），互不干扰
-- **Session 绑定时机** — 在收到 `ResultMessage` 时才建立映射，因为这时才拿到 `session_id`
+- **Session 绑定时机** — 首次收到 `SystemMessage` 时，从 `message.data.session_id` 建立映射
+- **Token 用量处理** — 从 `ResultMessage.usage` 记录到 `StopWatch` 并上报 AI24，不等于上下文占用率检查
+- **上下文过长处理** — 响应处理仅返回错误标志；当前主查询路径不会因此自动执行 `/compact`
+
+### 3.4 当前版本的 Token / Compact 行为边界
+
+| 项目 | 当前真实行为 |
+|---|---|
+| `ResultMessage.usage` | 记录并上报本次调用的 Token 用量和费用 |
+| `Prompt is too long` | 能识别并返回布尔标志；主查询只记录日志，不自动恢复或压缩 |
+| 单条 `ResultMessage` | 删除 `task_id → session_id` 映射，避免下次恢复异常会话 |
+| `skip_check` | 为兼容旧调用保留；不再控制查询前检查或压缩 |
+| `_check_and_compact_if_needed()` | 旧实现仍在源码中，但当前没有调用方，不属于现行查询能力 |
+| `TOKEN_USAGE_THRESHOLD = 85` | 只被上述未接入的旧方法使用，不能据此宣称系统会自动 compact |
 
 ---
 
@@ -414,47 +409,7 @@ Hook 检查：文件路径是否在 cwd 下？
 
 ---
 
-### 4.3 Token 管理和自动 Compact
-
-**问题：** Claude Opus 4.8 上下文窗口 200K tokens，用满了怎么办？
-
-**解决：** 自动监控使用率，超过 85% 时触发 `/compact` 压缩上下文。
-
-```python
-TOKEN_USAGE_THRESHOLD = 85  # 百分比
-
-async def _process_response_messages(...) -> bool:
-    ...
-    if isinstance(message, ResultMessage):
-        # 计算 Token 使用率
-        total_tokens = (
-            message.usage.cache_creation_input_tokens +
-            message.usage.cache_read_input_tokens +
-            message.usage.input_tokens
-        )
-        context_window = 200000  # Claude Opus 4.8
-        usage_rate = (total_tokens / context_window) * 100
-        
-        if usage_rate > TOKEN_USAGE_THRESHOLD:
-            logger.warning(
-                f"[Task {task_id}] Token 使用率 {usage_rate:.1f}% "
-                f"超过阈值 {TOKEN_USAGE_THRESHOLD}%"
-            )
-            return True  # 标记需要 compact
-    
-    return False
-```
-
-**Compact 原理：**
-- Claude SDK 内部会保留重要上下文（系统提示词、最近消息）
-- 压缩中间的长对话历史，减少 token 占用
-- 类似"总结之前的对话，忘掉细节"
-
-**代码位置：** `claude_agent_sdk_wrapper.py:1504-1550`
-
----
-
-### 4.4 任务中断机制
+### 4.3 任务中断机制
 
 **问题：** 用户点击"停止"按钮，怎么让正在执行的 Claude 任务立即停下来？
 
@@ -590,7 +545,7 @@ async with ClaudeSDKClient(options) as client:
 ### 6.3 观察者模式（消息流）
 
 ```python
-async for message in client.messages():
+async for message in client.receive_response():
     # 每条消息到达时立即处理
     render(message)
 ```
@@ -603,20 +558,16 @@ async for message in client.messages():
 
 ## 七、常见问题
 
-### Q1: 为什么 Session 要持久化到磁盘？
+### Q1: 为什么 Session 映射要持久化到云端？
 - **多轮对话需求** — 用户可能分多次请求完成一个任务
 - **进程重启恢复** — 服务重启后能继续之前的对话
-- **机器故障转移** — 任务可能从机器A转移到机器B（虽然当前架构不支持，但为未来扩展留接口）
+- **多机定位** — 其他执行机也能通过 task_id 找到 session_id；实际会话文件的跨机恢复由恢复策略另行处理
 
-### Q2: Token 检查为什么是 85% 而不是 90% 或 100%？
-- **留安全余量** — 防止在检查和实际执行之间增长超出窗口
-- **避免强制截断** — 超过 100% 会导致 SDK 抛异常，85% 时主动压缩更优雅
-
-### Q3: 为什么需要任务锁？
+### Q2: 为什么需要任务锁？
 - **防止并发覆盖** — 同一 task_id 的两次请求可能覆盖 session_id 映射
 - **保证 Session 一致性** — 一个 task 同时只能有一个活跃对话
 
-### Q4: MCP 的 stdio 和 SSE 有什么区别？
+### Q3: MCP 的 stdio 和 SSE 有什么区别？
 - **stdio** — 本地子进程，通过标准输入输出通信，适合本地工具（如 mastergo）
 - **SSE (Server-Sent Events)** — 远程 HTTP 接口，适合云服务（如 DEP/AI24）
 
@@ -631,7 +582,7 @@ async for message in client.messages():
 
 ### 第二步：理解 Session 管理
 1. 阅读 `TaskSessionMapper` 的实现
-2. 手动修改 `task_session_mapping.json`，观察多轮对话是否受影响
+2. 对照 `agentTaskData` 与 `agentClaudeData` 的读写日志，观察双向映射如何建立
 3. 尝试 `keep_session=False`，观察行为差异
 
 ### 第三步：理解 MCP 集成
