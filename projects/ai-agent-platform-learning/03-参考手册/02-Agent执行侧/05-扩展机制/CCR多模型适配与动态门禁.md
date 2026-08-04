@@ -1,14 +1,14 @@
 ---
 module: AI Agent 平台学习
 type: project
-tags: [code-agent, CCR, Kimi, Hook, 文件门禁]
-last_reviewed: 2026-08-03
+tags: [code-agent, CCR, Kimi, Hook, 文件门禁, Web Validation, Figma]
+last_reviewed: 2026-08-04
 ---
 
 # CCR 多模型适配与动态门禁
 
 > [!tip] 速览
-> code-agent 的 HTTP 入口仍是 Flask，Agent 执行仍通过 Claude Agent SDK 抽象；新增的 CCR 层让同一执行框架可路由到不同模型。Kimi K2.5 / K3 的关键不是加一个模型名，而是同时修正工具 JSON Schema 和流式 usage 位置，并用上游协议探测与真实执行路径验证。
+> code-agent 的 HTTP 入口仍是 Flask，Agent 执行仍通过 Claude Agent SDK 抽象；CCR 负责多模型协议适配，Hook 负责运行时约束，Skill 负责审批事实源编译，task-scoped MCP 则承载 Figma 节点级 Web Validation。它们是同一执行框架中的四层扩展，不应混成“换了一个模型配置”。
 
 ## 一、多模型路由在什么位置
 
@@ -112,22 +112,57 @@ moonshot-tool-schema -> chat-completions-usage
   -> 找不到：fail open，放行
   -> 文件齐全：放行
   -> 文件缺失且未到 maxLoops：阻止 Stop，要求模型补文件
-  -> 达到 maxLoops：放行，防止无限循环
+  -> 达到 maxLoops：尝试 setAutoExecute(false) 后放行
   -> Hook 自身异常：记录错误并放行
 ```
 
-`files_gate` 是流程完整性保护，不是绝对安全边界。其 fail-open 和最大循环放行是可用性取舍；如果某个文件是发布安全的强制条件，还需要在 CI 或服务端再校验一次。
+达到循环上限时，Hook 会调用 ai24 的 `PUT /api/taskInfo/{taskId}/autoExecute?autoExecute=false`，避免任务在产物持续缺失时继续自动推进；调用失败也不会把 Stop 永久卡死。
+
+`files_gate` 是流程完整性保护，不是绝对安全边界。其 fail-open、远端降级和最大循环放行是可用性取舍；如果某个文件是发布安全的强制条件，还需要在 CI 或服务端再校验一次。
 
 ## 五、审批项 Skill 的当前分流
 
-code-agent 侧还有两个与 ai24 审批写入配套的 Skill：
+code-agent 侧有三个与 ai24 审批写入配套的 Skill：
 
-- `batch-create-approval-items`：首次创建、审批项集合发生增加 / 删除 / 拆分 / 合并，或需要修改已通过项时，整批重建。
-- `update-approval-item`：稳定 `item_key` 能一一对应、没有集合变化、只修改未通过项时，逐项更新并保留 ID。
+- `batch-create-approval-items`：只用于 `(taskId,eventType)` 还没有审批项的首次创建。
+- `update-approval-item`：只为尚未迁移的旧调用方保留，不能作为新流程的分流目标。
+- `reconcile-approval-items`：已有非空批次的重新提交统一入口，覆盖新增、更新、删除、拆分、合并及已通过项变化。
 
-两个 Skill 都要求先 `--dry-run`。批量接口有整批覆盖语义，不能只提交变化项；单项更新不能绕过已通过项保护。这与 ai24 的 `/batchCreate`、`/update`、`/reconcile` 三种写入语义要一起理解。
+reconcile 的决策文件必须覆盖“当前 itemKey 与目标 itemKey 的并集”，每项显式声明 `CREATE`、`UPDATE`、`DELETE` 或 `KEEP`。`UPDATE` 还要由 Agent 根据完整上下文选择 `REAPPROVE` 或 `KEEP_APPROVAL`，并提供 reason、affectedFields 和 evidence；无法证明无需重审时选择 `REAPPROVE`。
 
-## 六、验证模型适配的正确顺序
+脚本从事实源确定性编译完整 target、`sourceRefs` 和 `sourceDigest`，长正文不由模型手工拼装。`--apply` 也不会跳过预览：它先调用服务端 dry-run，取得最新 `batchToken`，再用完全相同的 decisions 原子提交。遇到稳定键、令牌、封存或依赖冲突时停止，不能退回破坏性 batchCreate。
+
+## 六、节点级 Web Validation 是独立运行链
+
+### 6.1 任务作用域
+
+外部 `frontend_common` 任务只有进入 `/web-validation-node` 阶段，才解析为内部 `WEB_VALIDATION_NODE`。初始化阶段只保存 Figma 原始引用，不提前下载节点资产；普通任务不会自动获得这套 UI Test MCP 运行时。
+
+```text
+Figma 官方 MCP
+  -> get_metadata / get_design_context / get_screenshot
+  -> web-validation-tools: web_validation_build_assets
+  -> 内容寻址 assetRef（wva-sha256-*，绑定 taskId）
+  -> web_validation_submit_assets
+  -> UI Test Automation MCP
+  -> status / retry / review
+  -> web_validation_prepare_feedback
+```
+
+### 6.2 资产交接为什么不用模型内联
+
+`mcp_server/web_validation_server.py` 是独立 stdio MCP Server。build-assets 从 Figma MCP 快照构建服务端资产，只把短 `assetRef`、摘要和有限映射返回给模型；完整 DesignSpec、MappingManifest 和 visualTargets 保留在任务作用域资产仓库。submit-assets 再按 `taskId + assetRef` 校验归属和 SHA-256 内容，加载完整资产并调用远端 UI Test Automation MCP。
+
+这条设计避免模型复制、截断或篡改大块节点 JSON。正常节点流程约定使用 submit-assets，而不是让模型直接拼 `ui_web_validation_submit`。运行时注册的 `web_validation_submit_hook` 是最后一道身份护栏：如果仍发生直接调用，它会在 PreToolUse 阶段强制 `flowType=WEB_VALIDATION_NODE` 且 `taskId` 与当前任务一致；它不代替资产交接规则本身。
+
+### 6.3 能力边界
+
+- 正常链路只支持初始化 Figma nodeId 自身或后代的最小 Frame，不使用 Figma REST PAT，也不靠图层名猜 DOM selector。
+- build-assets 失败会阻止视觉验证 submit，但不会回滚已经完成的 proposal、apply、页面开发和功能验证。
+- 源码或构建文件变化必须产生新 commit 和新 run；retry 只用于同一 commit 的明确瞬态平台故障。
+- Gate、failureType 和 decision 决定修复或转人工，不能通过放宽容差、删除关键场景来制造“通过”。
+
+## 七、验证模型适配的正确顺序
 
 1. 静态配置：模型是否绑定正确 transformer。
 2. transformer 单测：嵌套 / 重复 / 递归 `$ref`、SSE usage 是否正确。
@@ -135,7 +170,7 @@ code-agent 侧还有两个与 ai24 审批写入配套的 Skill：
 4. 真实 code-agent 路径：通过任务调度、MCP 多工具链和实际会话验证，而不是只看一个 curl 返回 200。
 5. 回归基线：与已稳定模型对比工具成功率、事件完整性和 token 统计。
 
-## 七、关联文档
+## 八、关联文档
 
 - [[03-参考手册/02-Agent执行侧/05-扩展机制/Hook系统详解|Hook 系统详解]]
 - [[03-参考手册/01-平台管理侧/2026-08源码演进补充|平台管理侧 2026-08 源码演进补充]]
