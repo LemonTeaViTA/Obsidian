@@ -2,10 +2,13 @@
 module: CluadeCode
 type: project
 tags: [Claude Code, Agent, 工具笔记]
-last_reviewed: 2026-07-22
+last_reviewed: 2026-09-05
 ---
 
 # Claude Code 学习地图
+
+> [!warning] 源码研习边界
+> 本目录是对 Claude Code 行为与公开资料的技术学习笔记，不代表个人原创实现、官方内部事实或生产经验。
 
 > 这是理解 Claude Code 内部机制的知识索引。每篇聚焦一个主题，用**纯白话 + 地图式结构**讲透"CC 这里怎么做的"。
 

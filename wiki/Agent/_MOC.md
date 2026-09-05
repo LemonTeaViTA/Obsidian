@@ -2,7 +2,7 @@
 module: Agent
 tags: [Agent, MOC, 工程师视角]
 difficulty: hard
-last_reviewed: 2026-06-01
+last_reviewed: 2026-09-05
 ---
 
 # Agent 索引 MOC（工程师视角）
@@ -124,6 +124,10 @@ Skills 定义、渐进式披露原理（索引段 ≤ 4KB / 启用上限 20 个�
  Agent 安全模型
 ==为什么不做沙箱==（本地 CLI vs 云端 microVM 的根本区别）、四层安全防护（CommandGuard 黑名单 / PathGuard 路径围栏 / HITL 三档授权 / AuditLog）、HITL 工具读/写粒度细化、模式切换=会话边界、Prompt Injection 纵深防御。
 👉 **[[Agent 安全模型]]**
+
+ Agent SSRF 防御
+联网工具的 SSRF 风险、URL 校验与 DNS Rebinding 防护实现指南。
+👉 **[[Agent-SSRF防御]]**
 
 ---
 

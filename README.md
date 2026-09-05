@@ -34,11 +34,14 @@ raws/       原始文档流水线（inbox → staged → processed）
 
 - [Baize 项目](projects/Baize项目/) — RAG 知识库系统（ES + Kafka + MinIO）
 - [CluadeCode](projects/CluadeCode/) — Claude Code 工具笔记
+- [PaiAgent](projects/PaiAgent/) — Agent 工作流平台源码研习与面试卡
 - [SageCLI](projects/SageCLI/) — SageCLI 工具笔记
+
+> 公司内部项目资料不纳入公开知识库；完成脱敏与公开性审计后，仅回迁可独立公开的通用技术内容。
 
 ### career/ — 求职材料
 
-- [简历](career/简历/) — 写法指南 + 项目范例
+- [简历](career/简历/) — 脱敏优化提示词 + 写法指南 + 项目范例（个人投递材料不纳入知识库）
 
 ---
 
@@ -74,6 +77,9 @@ LLM 协作约定见 [AGENTS.md](AGENTS.md)；raw 整理规则见 [raws/WORKSPACE
 
 | 时间 | 变更 |
 |------|------|
+| 2026-09-05 | 将含公司内部实现、服务地址和运营信息的 AI 软件工厂学习资料整体移出知识库，待脱敏与公开性审计后再选择性回迁通用内容 |
+| 2026-09-05 | 将含个人信息的简历与面试材料移出 `career/简历/`，投递材料单独保存；公开目录新增完全脱敏的简历优化提示词 |
+| 2026-08-13 | 新增 `projects/PaiAgent/` 源码研习核心卡与 Agent 岗 7 天突击路线；AI 软件工厂作为实习证据主线，PaiAgent / PaiCLI 明确按开源源码研习使用 |
 | 2026-07-22 | 修复全库 CRLF 行尾污染并建立 LF 约束；恢复 `raws/` 目录骨架与 `WORKSPACE.md`；修正项目路径和审计工具兼容性 |
 | 2026-06-25 | 结构重构：新建 `projects/` 和 `career/`，wiki 专注技术知识；面试题目.md 废弃，考点分散到各模块 `_MOC.md`；治理文档从 6 份压缩到 3 份；补充 OS/网络缺失考点；并发编程大文件加顶部速览；优化记录从 1147 行压缩至 290 行 |
 | 2026-06-01 | 全量审计 + P0/P1 修复：~50 个文件重构，SSoT 收敛，MOC 建立，死链清理 |
