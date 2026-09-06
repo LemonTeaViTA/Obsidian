@@ -144,6 +144,30 @@ check_callouts() {
     fi
 }
 
+# 5. 敏感信息检查（仅扫描公开内容，不读取 .git 历史）
+check_sensitive() {
+    log_section "敏感信息检查"
+
+    local roots=(wiki projects career raws README.md)
+    local matches=""
+    # 排除常见文档示例地址；其余凭据、联系方式和内部域名命中即阻断。
+    matches=$(grep -RInE \
+        --exclude-dir=.git \
+        --exclude='*.pdf' \
+        --exclude='*.png' \
+        --exclude='*.jpg' \
+        '(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(^|[^0-9])1[3-9][0-9]{9}([^0-9]|$)|https?://[^[:space:]]+\.(internal|corp|intra)(/|$))' \
+        "${roots[@]}" 2>/dev/null || true)
+
+    if [ -n "$matches" ]; then
+        log_error "疑似敏感信息: $(echo "$matches" | wc -l | tr -d ' ') 处"
+        echo "$matches" | head -30
+        AUDIT_FAILED=1
+    else
+        log_ok "未发现疑似凭据、联系方式或内部域名"
+    fi
+}
+
 # 主逻辑
 case "${1:-}" in
     --encoding)
@@ -162,11 +186,16 @@ case "${1:-}" in
         check_callouts
         exit "$AUDIT_FAILED"
         ;;
+    --sensitive)
+        check_sensitive
+        exit "$AUDIT_FAILED"
+        ;;
     --all)
         check_encoding
         check_links
         check_structure
         check_callouts
+        check_sensitive
         echo ""
         echo "========================================="
         echo "全量检查完成 ✅"
@@ -180,6 +209,7 @@ case "${1:-}" in
         echo "  --links      : Wikilink 坏链检查(全量)"
         echo "  --structure  : 行数/多H1检查"
         echo "  --callouts   : Callout 规范检查"
+        echo "  --sensitive  : 敏感信息检查"
         echo "  --all        : 全部检查"
         exit 1
         ;;

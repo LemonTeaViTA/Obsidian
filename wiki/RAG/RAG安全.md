@@ -226,7 +226,7 @@ def redact_pii(text, level="full"):
         text = re.sub(PATTERNS["id_card"], "[ID_CARD]", text)
         text = re.sub(PATTERNS["phone"],   "[PHONE]", text)
     elif level == "partial":
-        # 部分脱敏：13812345678 → 138****5678
+        # 部分脱敏：PHONE_NUMBER → 138****5678
         text = re.sub(r"(1[3-9]\d)(\d{4})(\d{4})", r"\1****\3", text)
     elif level == "hash":
         # 哈希化：保留可比性但不可还原
@@ -266,7 +266,7 @@ LLM 可能从 context==推理出 PII 重新组合输出==：
 
 ```
 context 中：
-  chunk_1: "张三的电话是 13812345678"  ← 已脱敏 [PHONE]
+  chunk_1: "张三的电话是 PHONE_NUMBER"  ← 已脱敏 [PHONE]
   chunk_2: "张三住在朝阳区"
 
 LLM 输出：

@@ -50,7 +50,7 @@ XML 的设计目标：==允许自己定义标签==，只要满足语法规则，
 <order id="A-2026-001">
   <customer>
     <name>张三</name>
-    <phone>13800138000</phone>
+    <phone>PHONE_NUMBER</phone>
   </customer>
   <items>
     <item>
@@ -94,7 +94,7 @@ XML 文档天然是==树形结构==（嵌套的标签自然成树）。
 order (id="A-2026-001")              ← 根节点
 ├── customer
 │   ├── name → "张三"
-│   └── phone → "13800138000"
+│   └── phone → "PHONE_NUMBER"
 ├── items
 │   ├── item (第一个)
 │   │   ├── product → "笔记本"
