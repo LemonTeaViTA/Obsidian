@@ -26,7 +26,7 @@ wiki/                  # 正式知识内容（面试+技术知识）
 
 projects/              # 项目文档（工具笔记/个人项目，type: project）
 ├── Baize项目/         # RAG 知识库系统（ES + Kafka + MinIO）
-├── CluadeCode/        # Claude Code 工具笔记
+├── ClaudeCode/        # Claude Code 工具笔记
 └── SageCLI/           # SageCLI 工具笔记
 
 career/                # 求职材料
@@ -211,7 +211,7 @@ bash wiki审计/check.sh --encoding
 
 ## type: project 文件的特殊规则
 
-适用模块：`projects/CluadeCode/`、`projects/SageCLI/`、`projects/Baize项目/`（frontmatter 含 `type: project`）
+适用模块：`projects/ClaudeCode/`、`projects/SageCLI/`、`projects/Baize项目/`（frontmatter 含 `type: project`）
 
 - ❌ 不需要同步面试考点到 _MOC.md
 - ❌ 不需要 Diátaxis 类型对齐
