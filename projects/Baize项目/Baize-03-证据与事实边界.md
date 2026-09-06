@@ -1,6 +1,7 @@
 ---
 module: Baize
 type: project
+status: current
 tags: [Baize, PaiSmart, 简历验收, 技术核对, RAG, Agent]
 last_reviewed: 2026-09-05
 ---

@@ -1,0 +1,31 @@
+name: Vault audit
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run vault checks
+        run: bash wiki审计/check.sh --all
+      - name: Check wiki frontmatter
+        shell: bash
+        run: |
+          set -u
+          missing=0
+          while IFS= read -r -d '' file; do
+            for key in module tags difficulty last_reviewed; do
+              if ! sed -n '1,/^---$/p' "$file" | grep -q "^${key}:"; then
+                echo "Missing ${key}: ${file}"
+                missing=1
+              fi
+            done
+          done < <(find wiki -type f -name '*.md' ! -name '_MOC.md' -print0)
+          exit "$missing"

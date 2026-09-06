@@ -1,6 +1,7 @@
 ---
 module: Baize
 type: project
+status: current
 tags: [Baize, PaiSmart, RAG, 面试题, Elasticsearch, Agent]
 last_reviewed: 2026-09-05
 ---

@@ -1,6 +1,7 @@
 ---
-module: CluadeCode
+module: ClaudeCode
 type: project
+status: source-study
 tags: [Claude Code, Agent, 工具笔记]
 last_reviewed: 2026-07-22
 ---

@@ -1,6 +1,7 @@
 ---
-module: Baize项目
+module: Baize
 type: project
+status: current
 tags: [Baize, Qwen3, Thinking, 排障]
 difficulty: easy
 last_reviewed: 2026-05-29

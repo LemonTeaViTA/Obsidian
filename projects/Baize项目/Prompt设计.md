@@ -1,6 +1,7 @@
 ---
-module: Baize项目
+module: Baize
 type: project
+status: current
 tags: [Baize, Prompt, 上下文整合]
 difficulty: easy
 last_reviewed: 2026-05-29

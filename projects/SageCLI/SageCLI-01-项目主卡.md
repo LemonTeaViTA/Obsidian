@@ -1,6 +1,7 @@
 ---
 module: SageCLI
 type: project
+status: source-study
 tags: [SageCLI, PaiCLI, Agent, ReAct, Plan-and-Execute, Multi-Agent, 面试]
 last_reviewed: 2026-09-05
 ---

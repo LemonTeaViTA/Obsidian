@@ -1,6 +1,7 @@
 ---
 module: SageCLI
 type: project
+status: source-study
 tags: [SageCLI, PaiCLI, 面试题, Agent, Tool-Calling, 安全]
 last_reviewed: 2026-09-05
 ---

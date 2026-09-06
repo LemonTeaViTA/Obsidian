@@ -1,6 +1,7 @@
 ---
 module: PaiAgent
 type: project
+status: source-study
 tags: [PaiAgent, Agent, Workflow, ReAct, 面试题, 源码研习]
 last_reviewed: 2026-09-05
 ---

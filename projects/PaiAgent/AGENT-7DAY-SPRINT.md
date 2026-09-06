@@ -1,6 +1,7 @@
 ---
 module: PaiAgent
 type: project
+status: source-study
 tags: [Agent, PaiAgent, PaiCLI, AI软件工厂, 简历, 面试, 一周突击]
 last_reviewed: 2026-09-05
 ---

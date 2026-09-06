@@ -1,6 +1,7 @@
 ---
-module: Baize项目
+module: Baize
 type: project
+status: current
 tags: [Baize, RAG, 检索, Embedding, ES, RRF, Reranker, 双索引]
 difficulty: hard
 last_reviewed: 2026-05-29

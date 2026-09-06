@@ -1,6 +1,7 @@
 ---
 module: PaiAgent
 type: project
+status: source-study
 tags: [PaiAgent, Agent, 证据, 事实边界, 源码研习, 简历验收]
 last_reviewed: 2026-09-05
 ---

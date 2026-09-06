@@ -1,6 +1,7 @@
 ---
-module: Baize项目
+module: Baize
 type: project
+status: current
 tags: [Baize, 面试, 速记卡, RAG, 评测]
 difficulty: medium
 last_reviewed: 2026-09-05
