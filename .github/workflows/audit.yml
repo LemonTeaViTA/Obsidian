@@ -14,7 +14,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run vault checks
-        run: bash wiki审计/check.sh --all
+        shell: bash
+        run: |
+          set +e
+          bash wiki审计/check.sh --all | tee audit.log
+          rc=${PIPESTATUS[0]}
+          {
+            echo '## Vault audit'
+            echo ''
+            echo '```text'
+            cat audit.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
       - name: Check wiki frontmatter
         shell: bash
         run: |
@@ -43,3 +55,15 @@ jobs:
             done
           done < <(find projects -type f -name '*.md' -print0)
           exit "$missing"
+      - name: List Markdown files in this revision
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Markdown inventory'
+            echo ''
+            echo 'Tracked Markdown files:'
+            echo '```text'
+            git ls-files '*.md' | sort
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
