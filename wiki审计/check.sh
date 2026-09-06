@@ -63,7 +63,8 @@ check_links() {
             ((dead_count++))
             dead_list+=("$link")
         fi
-    done < <(grep -rohE '\[\[[^]]+\]\]' wiki/ 2>/dev/null | sort -u)
+    # 扫描所有公开 Markdown 内容，而不是只扫描 wiki。
+    done < <(grep -rohE '\[\[[^]]+\]\]' wiki/ projects/ career/ raws/ 2>/dev/null | sort -u)
 
     if [ "$dead_count" -eq 0 ]; then
         log_ok "全量: $checked 个唯一链接, 0 死链"
@@ -147,15 +148,19 @@ check_callouts() {
 case "${1:-}" in
     --encoding)
         check_encoding
+        exit "$AUDIT_FAILED"
         ;;
     --links)
         check_links
+        exit "$AUDIT_FAILED"
         ;;
     --structure)
         check_structure
+        exit "$AUDIT_FAILED"
         ;;
     --callouts)
         check_callouts
+        exit "$AUDIT_FAILED"
         ;;
     --all)
         check_encoding

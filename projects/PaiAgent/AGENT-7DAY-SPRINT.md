@@ -270,5 +270,5 @@ PaiCLI：Coding Agent Host，承担 Tool Calling / Context / Safety 深挖
 - [[PaiAgent-01-项目主卡]]
 - [[PaiAgent-02-高频追问卡]]
 - [[PaiAgent-03-证据与事实边界]]
-- [[AI软件工厂-01-项目主卡]]
+- AI 软件工厂材料已移出公开仓库（不在本目录提供链接）
 - [[SageCLI-01-项目主卡]]
