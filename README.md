@@ -51,7 +51,7 @@ wiki审计/   审计报告、检查结果和历史整理记录
 ### projects/ — 项目文档
 
 - [Baize 项目](projects/Baize项目/) — RAG 知识库系统（ES + Kafka + MinIO）
-- [Claude Code](projects/CluadeCode/) — Claude Code 工具笔记（目录名暂保持历史兼容）
+- [Claude Code](projects/ClaudeCode/) — Claude Code 工具笔记
 - [PaiAgent](projects/PaiAgent/) — Agent 工作流平台源码研习与面试卡
 - [SageCLI](projects/SageCLI/) — SageCLI 工具笔记
 
