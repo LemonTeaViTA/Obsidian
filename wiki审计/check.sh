@@ -5,6 +5,9 @@
 # 注意: 不用 set -e, 因为 ((var++)) 在 var=0 时返回 1 会触发退出
 set -uo pipefail
 
+# 仅红色错误阻断 CI；600-800 行黄旗仍是提示，不阻断提交。
+AUDIT_FAILED=0
+
 WIKI_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$WIKI_ROOT"
 
@@ -31,6 +34,7 @@ check_encoding() {
     else
         log_error "UTF-8 乱码: $corrupt_count 处"
         echo "$corrupt_files"
+        AUDIT_FAILED=1
     fi
 }
 
@@ -67,6 +71,7 @@ check_links() {
         log_error "全量: $checked 个唯一链接, $dead_count 个死链"
         printf '  死链: [[%s]]\n' "${dead_list[@]}" | head -30
         [ "$dead_count" -gt 30 ] && echo "  ...还有 $((dead_count-30)) 个"
+        AUDIT_FAILED=1
     fi
 }
 
@@ -87,6 +92,7 @@ check_structure() {
             if [ "$lines" -gt 800 ]; then
                 log_error ">800行: $file ($lines 行)"
                 ((over_800++))
+                AUDIT_FAILED=1
             elif [ "$lines" -gt 600 ]; then
                 log_warn ">600行: $file ($lines 行)"
                 ((over_600++))
@@ -98,6 +104,7 @@ check_structure() {
         if [ "$h1_count" -gt 1 ]; then
             log_error "多H1($h1_count个): $file"
             ((multi_h1++)) || true
+            AUDIT_FAILED=1
         fi
 
     done < <(find wiki/ -name '*.md' -type f)
@@ -130,6 +137,7 @@ check_callouts() {
         nested_count=$(echo "$nested" | wc -l)
         log_error "嵌套 callout: $nested_count 处"
         echo "$nested" | head -5
+        AUDIT_FAILED=1
     else
         log_ok "嵌套 callout: 0 处"
     fi
@@ -157,6 +165,7 @@ case "${1:-}" in
         echo ""
         echo "========================================="
         echo "全量检查完成 ✅"
+        exit "$AUDIT_FAILED"
         ;;
     *)
         echo "用法: $0 [--encoding|--links|--structure|--callouts|--all]"
