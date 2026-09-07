@@ -1,4 +1,0 @@
-black
-PyYAML
-Requests
-urllib3

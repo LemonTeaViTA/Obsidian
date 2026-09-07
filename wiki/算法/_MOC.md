@@ -2,7 +2,7 @@
 module: 算法
 tags: [算法, MOC, LeetCode, 模式识别]
 difficulty: medium
-last_reviewed: 2026-06-01
+last_reviewed: 2026-09-07
 ---
 
 # 算法体系与 LeetCode 经典题库 (Algorithm MOC)
@@ -10,6 +10,12 @@ last_reviewed: 2026-06-01
 > **整理时间**：2026-05-08（最近一次大重构）
 > **核心语言**：Python 3
 > **重构特征**：以**核心思想 + 模式识别 + 题题串联**为先导，摒弃纯题海战术。
+
+> [!tip] 统一复习入口
+> 按模式学习后，进入 [[刷题复习索引]] 选择代表题；华为机试题解仍保留在 [[华为机试/_MOC]]，个人 LeetCode 练习保留在 `wiki/leetcode-practice/`，这里只维护复习路径，不复制题解。
+
+> [!info] 代码契约
+> 算法思想可以跨平台复用，但提交外壳不能混用：华为机试按 ACM 标准输入输出，LeetCode 按 `class Solution` 和方法签名。具体转换步骤见 [[刷题复习索引#代码格式切换]]。
 
 ---
 
@@ -132,5 +138,7 @@ last_reviewed: 2026-06-01
 
 ## 相关链接
 
+- [[刷题复习索引]] — 按模式汇总华为机试、LeetCode 和个人练习
+- [[华为机试/_MOC]] — 华为机试题目分类入口
 - [[_MOC]] — 数据结构在 Java 中的实现细节
 - [[_MOC]] — HashMap / TreeMap 等集合是算法的基础
