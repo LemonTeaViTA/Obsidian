@@ -152,7 +152,7 @@ List<Float> vec = embeddingClient.embed(embeddingInput);
 
 **存储引擎**：Elasticsearch 8.10.0，单索引 `knowledge_base`。
 
-> [!important] 2026-05-28 重大演进
+> [!info] 2026-05-28 重大演进
 > 原本的「父子分块」演化成了更彻底的**双索引架构**（参考 Anthropic Contextual Retrieval 论文）：
 > - **`textContent` 字段**：纯净 chunk 原文，**仅供 LLM 看到的生成上下文**
 > - **`contentEnhanced` 字段**：`[sectionPath] + ctxSummary（LLM 生成的上下文摘要）+ 原文`，用于 BM25 倒排索引 + embedding 输入

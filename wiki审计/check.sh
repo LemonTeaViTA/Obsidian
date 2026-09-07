@@ -103,12 +103,13 @@ check_structure() {
         # 多 H1 检查 (使用 awk 区分代码块内外)
         local h1_count=$(awk '/^```/{in_code=!in_code; next} !in_code && /^# /{c++} END{print c+0}' "$file")
         if [ "$h1_count" -gt 1 ]; then
-            log_error "多H1($h1_count个): $file"
+            log_error "多H1(${h1_count}个): $file"
             ((multi_h1++)) || true
             AUDIT_FAILED=1
         fi
 
-    done < <(find wiki/ -name '*.md' -type f)
+    # 正式公开内容的结构检查；raws 保留为原始材料区，不纳入正文质量门禁。
+    done < <(find wiki/ projects/ career/ -name '*.md' -type f)
 
     log_ok "结构检查完成"
     echo "  >600行: $over_600 个 🟡"
@@ -121,7 +122,7 @@ check_callouts() {
     log_section "Callout 规范检查"
 
     # 非法 callout 类型
-    local invalid=$(grep -rnE '^>[[:space:]]*\[![^]]+\]' wiki/ 2>/dev/null | grep -vE '>[[:space:]]*\[!(tip|info|note|warning|danger)(\]|[[:space:]])' || true)
+    local invalid=$(grep -rnE '^>[[:space:]]*\[![^]]+\]' wiki/ projects/ career/ 2>/dev/null | grep -vE '>[[:space:]]*\[!(tip|info|note|warning|danger)(\]|[[:space:]])' || true)
     local invalid_count=0
     if [ -n "$invalid" ]; then
         invalid_count=$(echo "$invalid" | wc -l)
@@ -132,7 +133,7 @@ check_callouts() {
     fi
 
     # 嵌套 callout
-    local nested=$(grep -rnE '^>[[:space:]]*>[[:space:]]*\[!' wiki/ 2>/dev/null || true)
+    local nested=$(grep -rnE '^>[[:space:]]*>[[:space:]]*\[!' wiki/ projects/ career/ 2>/dev/null || true)
     local nested_count=0
     if [ -n "$nested" ]; then
         nested_count=$(echo "$nested" | wc -l)
