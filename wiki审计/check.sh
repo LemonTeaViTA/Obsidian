@@ -1,6 +1,6 @@
 #!/bin/bash
 # wiki 机械检查独立脚本 (简化版,移除 JSON 输出)
-# 用法: ./check.sh [--encoding|--links|--structure|--callouts|--all]
+# 用法: ./check.sh [--encoding|--links|--structure|--callouts|--sensitive|--all]
 
 # 注意: 不用 set -e, 因为 ((var++)) 在 var=0 时返回 1 会触发退出
 set -uo pipefail
@@ -145,27 +145,27 @@ check_callouts() {
     fi
 }
 
-# 5. 敏感信息检查（仅扫描公开内容，不读取 .git 历史）
+# 5. 敏感信息检查（已跟踪 Markdown 的工作区内容，不读取 Git 历史）
 check_sensitive() {
     log_section "敏感信息检查"
 
-    local roots=(wiki projects career raws README.md)
     local matches=""
-    # 排除常见文档示例地址；其余凭据、联系方式和内部域名命中即阻断。
-    matches=$(grep -RInE \
-        --exclude-dir=.git \
-        --exclude='*.pdf' \
-        --exclude='*.png' \
-        --exclude='*.jpg' \
+    # git grep 默认只读已跟踪文件，含已 git add 的新文件及尚未暂存的修改。
+    # 只输出命中文件名，防止凭据正文被复制到 CI 日志或 Job Summary。
+    if matches=$(git grep --no-color -l -I -E -e \
         '(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(^|[^0-9])1[3-9][0-9]{9}([^0-9]|$)|https?://[^[:space:]]+\.(internal|corp|intra)(/|$))' \
-        "${roots[@]}" 2>/dev/null || true)
-
-    if [ -n "$matches" ]; then
-        log_error "疑似敏感信息: $(echo "$matches" | wc -l | tr -d ' ') 处"
-        echo "$matches" | head -30
+        -- '*.md'); then
+        log_error "疑似敏感信息：以下已跟踪 Markdown 文件命中（不显示匹配内容）"
+        printf '%s\n' "$matches"
         AUDIT_FAILED=1
     else
-        log_ok "未发现疑似凭据、联系方式或内部域名"
+        local scan_status=$?
+        if [ "$scan_status" -eq 1 ]; then
+            log_ok "已跟踪 Markdown 未发现疑似凭据、联系方式或内部域名"
+        else
+            log_error "敏感信息扫描未完成（git grep 退出码：$scan_status）"
+            AUDIT_FAILED=1
+        fi
     fi
 }
 
@@ -203,7 +203,7 @@ case "${1:-}" in
         exit "$AUDIT_FAILED"
         ;;
     *)
-        echo "用法: $0 [--encoding|--links|--structure|--callouts|--all]"
+        echo "用法: $0 [--encoding|--links|--structure|--callouts|--sensitive|--all]"
         echo ""
         echo "选项:"
         echo "  --encoding   : UTF-8 乱码检查"
