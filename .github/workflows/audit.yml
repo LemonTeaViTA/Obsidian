@@ -42,7 +42,7 @@ jobs:
                 missing=1
               fi
             done
-          done < <(find wiki -type f -name '*.md' ! -name '_MOC.md' -print0)
+          done < <(find wiki -path 'wiki/leetcode' -prune -o -path 'wiki/华为机试' -prune -o -type f -name '*.md' ! -name '_MOC.md' -print0)
           exit "$missing"
       - name: Check project frontmatter
         shell: bash

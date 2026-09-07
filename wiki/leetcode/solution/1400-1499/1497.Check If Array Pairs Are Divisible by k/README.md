@@ -1,0 +1,211 @@
+---
+comments: true
+difficulty: 中等
+edit_url: https://github.com/doocs/leetcode/edit/main/solution/1400-1499/1497.Check%20If%20Array%20Pairs%20Are%20Divisible%20by%20k/README.md
+rating: 1787
+source: 第 195 场周赛 Q2
+tags:
+    - 数组
+    - 哈希表
+    - 计数
+---
+
+<!-- problem:start -->
+
+# [1497. 检查数组对是否可以被 k 整除](https://leetcode.cn/problems/check-if-array-pairs-are-divisible-by-k)
+
+[English Version](/solution/1400-1499/1497.Check%20If%20Array%20Pairs%20Are%20Divisible%20by%20k/README_EN.md)
+
+## 题目描述
+
+<!-- description:start -->
+
+<p>给你一个整数数组 <code>arr</code> 和一个整数 <code>k</code> ，其中数组长度是偶数，值为 <code>n</code> 。</p>
+
+<p>现在需要把数组恰好分成 <code>n /&nbsp;2</code> 对，以使每对数字的和都能够被 <code>k</code> 整除。</p>
+
+<p>如果存在这样的分法，请返回&nbsp;<code>true</code> ；否则，返回<i>&nbsp;</i><code>false</code>。</p>
+
+<p>&nbsp;</p>
+
+<p><strong>示例 1：</strong></p>
+
+<pre>
+<strong>输入：</strong>arr = [1,2,3,4,5,10,6,7,8,9], k = 5
+<strong>输出：</strong>true
+<strong>解释：</strong>划分后的数字对为 (1,9),(2,8),(3,7),(4,6) 以及 (5,10) 。
+</pre>
+
+<p><strong>示例 2：</strong></p>
+
+<pre>
+<strong>输入：</strong>arr = [1,2,3,4,5,6], k = 7
+<strong>输出：</strong>true
+<strong>解释：</strong>划分后的数字对为 (1,6),(2,5) 以及 (3,4) 。
+</pre>
+
+<p><strong>示例 3：</strong></p>
+
+<pre>
+<strong>输入：</strong>arr = [1,2,3,4,5,6], k = 10
+<strong>输出：</strong>false
+<strong>解释：</strong>无法在将数组中的数字分为三对的同时满足每对数字和能够被 10 整除的条件。
+</pre>
+
+<p>&nbsp;</p>
+
+<p><strong>提示：</strong></p>
+
+<ul>
+	<li><code>arr.length == n</code></li>
+	<li><code>1 &lt;= n &lt;= 10<sup>5</sup></code></li>
+	<li><code>n</code> 为偶数<meta charset="UTF-8" /></li>
+	<li><code>-10<sup>9</sup>&nbsp;&lt;= arr[i] &lt;= 10<sup>9</sup></code></li>
+	<li><code>1 &lt;= k &lt;= 10<sup>5</sup></code></li>
+</ul>
+
+<!-- description:end -->
+
+## 解法
+
+<!-- solution:start -->
+
+### 方法一：统计余数
+
+两个数 $a$ 和 $b$ 的和能被 $k$ 整除，当且仅当这两个数分别对 $k$ 取模的结果之和能被 $k$ 整除。
+
+因此，我们可以统计数组中每个数对 $k$ 取模的结果，即余数，记录在数组 $\textit{cnt}$ 中。然后我们遍历数组 $\textit{cnt}$，对于范围在 $[1,..k-1]$ 的每个数 $i$，如果 $\textit{cnt}[i]$ 和 $\textit{cnt}[k-i]$ 的值不相等，说明无法将数组中的数字分为 $n/2$ 对，使得每对数字的和都能被 $k$ 整除。如果 $\textit{cnt}[0]$ 的值不是偶数，也说明无法将数组中的数字分为 $n/2$ 对，使得每对数字的和都能被 $k$ 整除。
+
+时间复杂度 $O(n)$，其中 $n$ 为数组 $\textit{arr}$ 的长度。空间复杂度 $O(k)$。
+
+<!-- tabs:start -->
+
+#### Python3
+
+```python
+class Solution:
+    def canArrange(self, arr: List[int], k: int) -> bool:
+        cnt = Counter(x % k for x in arr)
+        return cnt[0] % 2 == 0 and all(cnt[i] == cnt[k - i] for i in range(1, k))
+```
+
+#### Java
+
+```java
+class Solution {
+    public boolean canArrange(int[] arr, int k) {
+        int[] cnt = new int[k];
+        for (int x : arr) {
+            ++cnt[(x % k + k) % k];
+        }
+        for (int i = 1; i < k; ++i) {
+            if (cnt[i] != cnt[k - i]) {
+                return false;
+            }
+        }
+        return cnt[0] % 2 == 0;
+    }
+}
+```
+
+#### C++
+
+```cpp
+class Solution {
+public:
+    bool canArrange(vector<int>& arr, int k) {
+        vector<int> cnt(k);
+        for (int& x : arr) {
+            ++cnt[((x % k) + k) % k];
+        }
+        for (int i = 1; i < k; ++i) {
+            if (cnt[i] != cnt[k - i]) {
+                return false;
+            }
+        }
+        return cnt[0] % 2 == 0;
+    }
+};
+```
+
+#### Go
+
+```go
+func canArrange(arr []int, k int) bool {
+	cnt := make([]int, k)
+	for _, x := range arr {
+		cnt[(x%k+k)%k]++
+	}
+	for i := 1; i < k; i++ {
+		if cnt[i] != cnt[k-i] {
+			return false
+		}
+	}
+	return cnt[0]%2 == 0
+}
+```
+
+#### TypeScript
+
+```ts
+function canArrange(arr: number[], k: number): boolean {
+    const cnt: number[] = Array(k).fill(0);
+    for (const x of arr) {
+        ++cnt[((x % k) + k) % k];
+    }
+    for (let i = 1; i < k; ++i) {
+        if (cnt[i] !== cnt[k - i]) {
+            return false;
+        }
+    }
+    return cnt[0] % 2 === 0;
+}
+```
+
+#### Rust
+
+```rust
+impl Solution {
+    pub fn can_arrange(arr: Vec<i32>, k: i32) -> bool {
+        let k = k as usize;
+        let mut cnt = vec![0; k];
+        for &x in &arr {
+            cnt[((x % k as i32 + k as i32) % k as i32) as usize] += 1;
+        }
+        for i in 1..k {
+            if cnt[i] != cnt[k - i] {
+                return false;
+            }
+        }
+        cnt[0] % 2 == 0
+    }
+}
+```
+
+#### JavaScript
+
+```js
+/**
+ * @param {number[]} arr
+ * @param {number} k
+ * @return {boolean}
+ */
+var canArrange = function (arr, k) {
+    const cnt = Array(k).fill(0);
+    for (const x of arr) {
+        ++cnt[((x % k) + k) % k];
+    }
+    for (let i = 1; i < k; ++i) {
+        if (cnt[i] !== cnt[k - i]) {
+            return false;
+        }
+    }
+    return cnt[0] % 2 === 0;
+};
+```
+
+<!-- tabs:end -->
+
+<!-- solution:end -->
+
+<!-- problem:end -->

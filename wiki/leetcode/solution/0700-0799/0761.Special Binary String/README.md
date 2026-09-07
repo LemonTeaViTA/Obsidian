@@ -1,0 +1,203 @@
+---
+comments: true
+difficulty: 困难
+edit_url: https://github.com/doocs/leetcode/edit/main/solution/0700-0799/0761.Special%20Binary%20String/README.md
+tags:
+    - 字符串
+    - 分治
+    - 排序
+---
+
+<!-- problem:start -->
+
+# [761. 特殊的二进制字符串](https://leetcode.cn/problems/special-binary-string)
+
+[English Version](/solution/0700-0799/0761.Special%20Binary%20String/README_EN.md)
+
+## 题目描述
+
+<!-- description:start -->
+
+<p><strong>特殊的二进制字符串</strong> 是具有以下两个性质的二进制序列：</p>
+
+<ul>
+	<li><code>0</code> 的数量与 <code>1</code> 的数量相等。</li>
+	<li>二进制序列的每一个前缀码中 <code>1</code> 的数量要大于等于 <code>0</code> 的数量。</li>
+</ul>
+
+<p>给定一个特殊的二进制字符串&nbsp;<code>s</code>。</p>
+
+<p>一次移动操作包括选择字符串 <code>s</code> 中的两个连续的、非空的、特殊子串，并交换它们。两个字符串是连续的，如果第一个字符串的最后一个字符与第二个字符串的第一个字符的索引相差正好为 1。</p>
+
+<p>返回在字符串上应用任意次操作后可能得到的字典序最大的字符串。</p>
+
+<p>&nbsp;</p>
+
+<p><strong>示例 1:</strong></p>
+
+<pre>
+<strong>输入:</strong> S = "11011000"
+<strong>输出:</strong> "11100100"
+<strong>解释:</strong>
+将子串 "10" （在 s[1] 出现） 和 "1100" （在 s[3] 出现）进行交换。
+这是在进行若干次操作后按字典序排列最大的结果。
+</pre>
+
+<p><strong class="example">示例 2：</strong></p>
+
+<pre>
+<b>输入：</b>s = "10"
+<b>输出：</b>"10"
+</pre>
+
+<p>&nbsp;</p>
+
+<p><strong>提示：</strong></p>
+
+<ul>
+	<li><code>1 &lt;= s.length &lt;= 50</code></li>
+	<li><code>s[i]</code>&nbsp;为&nbsp;<code>'0'</code> 或&nbsp;<code>'1'</code>。</li>
+	<li><code>s</code>&nbsp;是一个特殊的二进制字符串。</li>
+</ul>
+
+<!-- description:end -->
+
+## 解法
+
+<!-- solution:start -->
+
+### 方法一：递归 + 排序
+
+我们可以把特殊的二进制序列看作“有效的括号”，其中 $1$ 代表左括号，而 $0$ 代表右括号。例如，"11011000" 可以看作："(()(()))"。
+
+交换两个连续非空的特殊子串，相当于交换两个相邻的有效括号，我们可以使用递归来解决这个问题。
+
+我们将字符串 $s$ 中的每个“有效的括号”都看作一部分，递归处理，最后进行排序，得到最终答案。
+
+时间复杂度 $O(n^2)$，空间复杂度 $O(n)$。其中 $n$ 是字符串 $s$ 的长度。
+
+<!-- tabs:start -->
+
+#### Python3
+
+```python
+class Solution:
+    def makeLargestSpecial(self, s: str) -> str:
+        if s == '':
+            return ''
+        ans = []
+        cnt = 0
+        i = j = 0
+        while i < len(s):
+            cnt += 1 if s[i] == '1' else -1
+            if cnt == 0:
+                ans.append('1' + self.makeLargestSpecial(s[j + 1 : i]) + '0')
+                j = i + 1
+            i += 1
+        ans.sort(reverse=True)
+        return ''.join(ans)
+```
+
+#### Java
+
+```java
+class Solution {
+    public String makeLargestSpecial(String s) {
+        if ("".equals(s)) {
+            return "";
+        }
+        List<String> ans = new ArrayList<>();
+        int cnt = 0;
+        for (int i = 0, j = 0; i < s.length(); ++i) {
+            cnt += s.charAt(i) == '1' ? 1 : -1;
+            if (cnt == 0) {
+                String t = "1" + makeLargestSpecial(s.substring(j + 1, i)) + "0";
+                ans.add(t);
+                j = i + 1;
+            }
+        }
+        ans.sort(Comparator.reverseOrder());
+        return String.join("", ans);
+    }
+}
+```
+
+#### C++
+
+```cpp
+class Solution {
+public:
+    string makeLargestSpecial(string s) {
+        if (s == "") {
+            return s;
+        }
+        vector<string> ans;
+        int cnt = 0;
+        for (int i = 0, j = 0; i < s.size(); ++i) {
+            cnt += s[i] == '1' ? 1 : -1;
+            if (cnt == 0) {
+                ans.push_back("1" + makeLargestSpecial(s.substr(j + 1, i - j - 1)) + "0");
+                j = i + 1;
+            }
+        }
+        sort(ans.begin(), ans.end(), greater<string>{});
+        return accumulate(ans.begin(), ans.end(), ""s);
+    }
+};
+```
+
+#### Go
+
+```go
+func makeLargestSpecial(s string) string {
+	if s == "" {
+		return ""
+	}
+	ans := sort.StringSlice{}
+	cnt := 0
+	for i, j := 0, 0; i < len(s); i++ {
+		if s[i] == '1' {
+			cnt++
+		} else {
+			cnt--
+		}
+		if cnt == 0 {
+			ans = append(ans, "1"+makeLargestSpecial(s[j+1:i])+"0")
+			j = i + 1
+		}
+	}
+	sort.Sort(sort.Reverse(ans))
+	return strings.Join(ans, "")
+}
+```
+
+#### TypeScript
+
+```ts
+function makeLargestSpecial(s: string): string {
+    if (s.length === 0) {
+        return '';
+    }
+
+    const ans: string[] = [];
+    let cnt = 0;
+
+    for (let i = 0, j = 0; i < s.length; ++i) {
+        cnt += s[i] === '1' ? 1 : -1;
+        if (cnt === 0) {
+            const t = '1' + makeLargestSpecial(s.substring(j + 1, i)) + '0';
+            ans.push(t);
+            j = i + 1;
+        }
+    }
+
+    ans.sort((a, b) => b.localeCompare(a));
+    return ans.join('');
+}
+```
+
+<!-- tabs:end -->
+
+<!-- solution:end -->
+
+<!-- problem:end -->

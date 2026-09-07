@@ -48,6 +48,10 @@ wiki审计/   审计报告、检查结果和历史整理记录
 
 > 每个模块根目录有 `_MOC.md`（排序置顶），包含文档导航和面试考点清单。
 
+**整理中的题解材料**
+- [LeetCode 外部题库快照](wiki/leetcode/) — 第三方题库材料，遵循其自带许可证，暂不纳入正式 wiki 规范
+- [华为机试题解](wiki/华为机试/) — 个人整理中的题解，暂不纳入正式 wiki 规范
+
 ### projects/ — 项目文档
 
 - [Baize 项目](projects/Baize项目/) — RAG 知识库系统（ES + Kafka + MinIO）

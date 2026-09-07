@@ -1,0 +1,176 @@
+---
+comments: true
+difficulty: 简单
+edit_url: https://github.com/doocs/leetcode/edit/main/solution/1700-1799/1752.Check%20if%20Array%20Is%20Sorted%20and%20Rotated/README.md
+rating: 1324
+source: 第 227 场周赛 Q1
+tags:
+    - 数组
+---
+
+<!-- problem:start -->
+
+# [1752. 检查数组是否经排序和轮转得到](https://leetcode.cn/problems/check-if-array-is-sorted-and-rotated)
+
+[English Version](/solution/1700-1799/1752.Check%20if%20Array%20Is%20Sorted%20and%20Rotated/README_EN.md)
+
+## 题目描述
+
+<!-- description:start -->
+
+<p>给你一个数组 <code>nums</code> 。<code>nums</code> 的源数组中，所有元素与 <code>nums</code> 相同，但按非递减顺序排列。</p>
+
+<p>如果&nbsp;<code>nums</code> 能够由源数组轮转若干位置（包括 0 个位置）得到，则返回 <code>true</code><em> </em>；否则，返回 <code>false</code> 。</p>
+
+<p>源数组中可能存在 <strong>重复项</strong> 。</p>
+
+<p><strong>注意：</strong>数组 <code>A</code> 在轮转 <code>x</code> 个位置后得到长度相同的数组 <code>B</code> ，使得对于每一个有效的下标&nbsp;<code>i</code>，满足&nbsp;<code>B[i] == A[(i+x) % A.length]</code>。</p>
+
+<p>&nbsp;</p>
+
+<p><strong>示例 1：</strong></p>
+
+<pre>
+<strong>输入：</strong>nums = [3,4,5,1,2]
+<strong>输出：</strong>true
+<strong>解释：</strong>[1,2,3,4,5] 为有序的源数组。
+可以轮转 x = 2 个位置，使新数组从值为 3 的元素开始：[3,4,5,1,2] 。
+</pre>
+
+<p><strong>示例 2：</strong></p>
+
+<pre>
+<strong>输入：</strong>nums = [2,1,3,4]
+<strong>输出：</strong>false
+<strong>解释：</strong>源数组无法经轮转得到 nums 。
+</pre>
+
+<p><strong>示例 3：</strong></p>
+
+<pre>
+<strong>输入：</strong>nums = [1,2,3]
+<strong>输出：</strong>true
+<strong>解释：</strong>[1,2,3] 为有序的源数组。
+可以轮转 x = 0 个位置（即不轮转）得到 nums 。
+</pre>
+
+<p>&nbsp;</p>
+
+<p><strong>提示：</strong></p>
+
+<ul>
+	<li><code>1 &lt;= nums.length &lt;= 100</code></li>
+	<li><code>1 &lt;= nums[i] &lt;= 100</code></li>
+</ul>
+
+<!-- description:end -->
+
+## 解法
+
+<!-- solution:start -->
+
+### 方法一：一次遍历
+
+要满足题目要求，那么数组 $\textit{nums}$ 中最多只能存在一个元素，其值大于下一个元素，即 $nums[i] \gt nums[i + 1]$。如果存在多个这样的元素，那么数组 $\textit{nums}$ 无法通过轮转得到。
+
+注意，数组 $\textit{nums}$ 最后一个元素的下一个元素是数组 $\textit{nums}$ 的第一个元素。
+
+时间复杂度 $O(n)$，其中 $n$ 为数组 $\textit{nums}$ 的长度。空间复杂度 $O(1)$。
+
+<!-- tabs:start -->
+
+#### Python3
+
+```python
+class Solution:
+    def check(self, nums: List[int]) -> bool:
+        return sum(nums[i - 1] > x for i, x in enumerate(nums)) <= 1
+```
+
+#### Java
+
+```java
+class Solution {
+    public boolean check(int[] nums) {
+        int cnt = 0;
+        for (int i = 0, n = nums.length; i < n; ++i) {
+            if (nums[i] > nums[(i + 1) % n]) {
+                ++cnt;
+            }
+        }
+        return cnt <= 1;
+    }
+}
+```
+
+#### C++
+
+```cpp
+class Solution {
+public:
+    bool check(vector<int>& nums) {
+        int cnt = 0;
+        for (int i = 0, n = nums.size(); i < n; ++i) {
+            cnt += nums[i] > (nums[(i + 1) % n]);
+        }
+        return cnt <= 1;
+    }
+};
+```
+
+#### Go
+
+```go
+func check(nums []int) bool {
+	cnt := 0
+	for i, x := range nums {
+		if x > nums[(i+1)%len(nums)] {
+			cnt++
+		}
+	}
+	return cnt <= 1
+}
+```
+
+#### TypeScript
+
+```ts
+function check(nums: number[]): boolean {
+    const n = nums.length;
+    return nums.reduce((cnt, x, i) => cnt + (x > nums[(i + 1) % n] ? 1 : 0), 0) <= 1;
+}
+```
+
+#### Rust
+
+```rust
+impl Solution {
+    pub fn check(nums: Vec<i32>) -> bool {
+        let n = nums.len();
+        let cnt = nums.iter().enumerate().fold(0, |cnt, (i, &x)| {
+            cnt + if x > nums[(i + 1) % n] { 1 } else { 0 }
+        });
+        cnt <= 1
+    }
+}
+```
+
+#### C
+
+```c
+bool check(int* nums, int numsSize) {
+    int cnt = 0;
+    for (int i = 0; i < numsSize; i++) {
+        if (nums[i] > nums[(i + 1) % numsSize]) {
+            cnt++;
+        }
+    }
+    return cnt <= 1;
+}
+```
+
+<!-- tabs:end -->
+
+<!-- solution:end -->
+
+<!-- problem:end -->

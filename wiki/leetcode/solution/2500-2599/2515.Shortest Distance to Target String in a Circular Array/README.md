@@ -1,0 +1,222 @@
+---
+comments: true
+difficulty: 简单
+edit_url: https://github.com/doocs/leetcode/edit/main/solution/2500-2599/2515.Shortest%20Distance%20to%20Target%20String%20in%20a%20Circular%20Array/README.md
+rating: 1367
+source: 第 325 场周赛 Q1
+tags:
+    - 数组
+    - 字符串
+---
+
+<!-- problem:start -->
+
+# [2515. 到目标字符串的最短距离](https://leetcode.cn/problems/shortest-distance-to-target-string-in-a-circular-array)
+
+[English Version](/solution/2500-2599/2515.Shortest%20Distance%20to%20Target%20String%20in%20a%20Circular%20Array/README_EN.md)
+
+## 题目描述
+
+<!-- description:start -->
+
+<p>给你一个下标从 <strong>0</strong> 开始的 <strong>环形</strong> 字符串数组 <code>words</code> 和一个字符串 <code>target</code> 。<strong>环形数组</strong> 意味着数组首尾相连。</p>
+
+<ul>
+	<li>形式上， <code>words[i]</code> 的下一个元素是 <code>words[(i + 1) % n]</code> ，而 <code>words[i]</code> 的前一个元素是 <code>words[(i - 1 + n) % n]</code> ，其中 <code>n</code> 是 <code>words</code> 的长度。</li>
+</ul>
+
+<p>从 <code>startIndex</code> 开始，你一次可以用 <code>1</code> 步移动到下一个或者前一个单词。</p>
+
+<p>返回到达目标字符串 <code>target</code> 所需的最短距离。如果 <code>words</code> 中不存在字符串 <code>target</code> ，返回 <code>-1</code> 。</p>
+
+<p>&nbsp;</p>
+
+<p><strong>示例 1：</strong></p>
+
+<pre>
+<strong>输入：</strong>words = ["hello","i","am","leetcode","hello"], target = "hello", startIndex = 1
+<strong>输出：</strong>1
+<strong>解释：</strong>从下标 1 开始，可以经由以下步骤到达 "hello" ：
+- 向右移动 3 个单位，到达下标 4 。
+- 向左移动 2 个单位，到达下标 4 。
+- 向右移动 4 个单位，到达下标 0 。
+- 向左移动 1 个单位，到达下标 0 。
+到达 "hello" 的最短距离是 1 。
+</pre>
+
+<p><strong>示例 2：</strong></p>
+
+<pre>
+<strong>输入：</strong>words = ["a","b","leetcode"], target = "leetcode", startIndex = 0
+<strong>输出：</strong>1
+<strong>解释：</strong>从下标 0 开始，可以经由以下步骤到达 "leetcode" ：
+- 向右移动 2 个单位，到达下标 2 。
+- 向左移动 1 个单位，到达下标 2 。
+到达 "leetcode" 的最短距离是 1 。</pre>
+
+<p><strong>示例 3：</strong></p>
+
+<pre>
+<strong>输入：</strong>words = ["i","eat","leetcode"], target = "ate", startIndex = 0
+<strong>输出：</strong>-1
+<strong>解释：</strong>因为 words 中不存在字符串 "ate" ，所以返回 -1 。
+</pre>
+
+<p>&nbsp;</p>
+
+<p><strong>提示：</strong></p>
+
+<ul>
+	<li><code>1 &lt;= words.length &lt;= 100</code></li>
+	<li><code>1 &lt;= words[i].length &lt;= 100</code></li>
+	<li><code>words[i]</code> 和 <code>target</code> 仅由小写英文字母组成</li>
+	<li><code>0 &lt;= startIndex &lt; words.length</code></li>
+</ul>
+
+<!-- description:end -->
+
+## 解法
+
+<!-- solution:start -->
+
+### 方法一：一次遍历
+
+我们遍历数组 $\textit{words}$，找到与 $\textit{target}$ 相等的单词，计算其与 $\textit{startIndex}$ 的距离 $t$，则此时的最短距离为 $\min(t, n - t)$，我们只需要不断更新最小值即可。
+
+时间复杂度 $O(n)$，其中 $n$ 是数组的长度。空间复杂度 $O(1)$。
+
+<!-- tabs:start -->
+
+#### Python3
+
+```python
+class Solution:
+    def closestTarget(self, words: List[str], target: str, startIndex: int) -> int:
+        n = len(words)
+        ans = n
+        for i, w in enumerate(words):
+            if w == target:
+                t = abs(i - startIndex)
+                ans = min(ans, t, n - t)
+        return -1 if ans == n else ans
+```
+
+#### Java
+
+```java
+class Solution {
+    public int closestTarget(String[] words, String target, int startIndex) {
+        int n = words.length;
+        int ans = n;
+        for (int i = 0; i < n; i++) {
+            if (words[i].equals(target)) {
+                int t = Math.abs(i - startIndex);
+                ans = Math.min(ans, Math.min(t, n - t));
+            }
+        }
+        return ans == n ? -1 : ans;
+    }
+}
+```
+
+#### C++
+
+```cpp
+class Solution {
+public:
+    int closestTarget(vector<string>& words, string target, int startIndex) {
+        int n = words.size();
+        int ans = n;
+        for (int i = 0; i < n; i++) {
+            if (words[i] == target) {
+                int t = abs(i - startIndex);
+                ans = min({ans, t, n - t});
+            }
+        }
+        return ans == n ? -1 : ans;
+    }
+};
+```
+
+#### Go
+
+```go
+func closestTarget(words []string, target string, startIndex int) int {
+	n := len(words)
+	ans := n
+	for i, w := range words {
+		if w == target {
+			t := i - startIndex
+			if t < 0 {
+				t = -t
+			}
+			ans = min(ans, t, n-t)
+		}
+	}
+	if ans == n {
+		return -1
+	}
+	return ans
+}
+```
+
+#### TypeScript
+
+```ts
+function closestTarget(words: string[], target: string, startIndex: number): number {
+    const n = words.length;
+    let ans = n;
+    for (let i = 0; i < n; i++) {
+        if (words[i] === target) {
+            const t = Math.abs(i - startIndex);
+            ans = Math.min(ans, t, n - t);
+        }
+    }
+    return ans === n ? -1 : ans;
+}
+```
+
+#### Rust
+
+```rust
+impl Solution {
+    pub fn closest_target(words: Vec<String>, target: String, start_index: i32) -> i32 {
+        let n = words.len() as i32;
+        let mut ans = n;
+        for (i, w) in words.iter().enumerate() {
+            if w == &target {
+                let t = (i as i32 - start_index).abs();
+                ans = ans.min(t.min(n - t));
+            }
+        }
+        if ans == n { -1 } else { ans }
+    }
+}
+```
+
+#### C
+
+```c
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
+int closestTarget(char** words, int wordsSize, char* target, int startIndex) {
+    int n = wordsSize;
+    int ans = n;
+
+    for (int i = 0; i < n; i++) {
+        if (strcmp(words[i], target) == 0) {
+            int t = abs(i - startIndex);
+            int dist = min(t, n - t);
+            ans = min(ans, dist);
+        }
+    }
+
+    return ans == n ? -1 : ans;
+}
+```
+
+<!-- tabs:end -->
+
+<!-- solution:end -->
+
+<!-- problem:end -->

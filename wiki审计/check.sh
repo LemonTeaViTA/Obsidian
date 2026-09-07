@@ -20,7 +20,7 @@ log_error() { echo "🔴 $1"; }
 check_encoding() {
     log_section "UTF-8 乱码检查"
 
-    local scan_roots=(wiki/)
+    local scan_roots=(wiki/算法 wiki/Agent wiki/Java基础 wiki/JVM wiki/LLM wiki/Meta wiki/MySQL wiki/RAG wiki/Redis wiki/Spring wiki/数据格式 wiki/文档解析 wiki/操作系统 wiki/计算机网络 wiki/集合框架)
     [ -d projects/ ] && scan_roots+=(projects/)
     [ -d career/ ] && scan_roots+=(career/)
     local corrupt_files=$(grep -rl $'\xef\xbf\xbd' "${scan_roots[@]}" 2>/dev/null || true)
@@ -46,7 +46,7 @@ check_links() {
     declare -a wiki_files=()
     while IFS= read -r f; do
         wiki_files+=("$(basename "$f" .md)")
-    done < <({ find wiki/ projects/ career/ -name '*.md' -type f; [ -d raws/ ] && find raws/ -name '*.md' -type f; find . -maxdepth 1 -name '*.md' -type f; })
+    done < <({ find wiki/ -path 'wiki/leetcode' -prune -o -path 'wiki/华为机试' -prune -o -name '*.md' -type f -print; find projects/ career/ -name '*.md' -type f; [ -d raws/ ] && find raws/ -name '*.md' -type f; find . -maxdepth 1 -name '*.md' -type f; })
 
     local dead_count=0 checked=0
     declare -a dead_list=()
@@ -59,12 +59,17 @@ check_links() {
         [[ "$link" =~ ^(wikilink|主文档|1,|file|相关文档|相关\ wiki) ]] && continue
 
         ((checked++))
-        if ! printf '%s\n' "${wiki_files[@]}" | grep -Fqx "$link"; then
+        if ! printf '%s\n' "${wiki_files[@]}" | grep -Fqx -- "$link"; then
             ((dead_count++))
             dead_list+=("$link")
         fi
     # 扫描所有公开 Markdown 内容，而不是只扫描 wiki。
-    done < <(grep -rohE '\[\[[^]]+\]\]' wiki/ projects/ career/ raws/ 2>/dev/null | sort -u)
+    done < <(
+        while IFS= read -r -d '' file; do
+            grep -hEo '\[\[[^]]+\]\]' -- "$file" 2>/dev/null || true
+        done < <(find wiki/ projects/ career/ raws/ -type f -name '*.md' \
+            ! -path 'wiki/leetcode/*' ! -path 'wiki/华为机试/*' -print0 2>/dev/null)
+    )
 
     if [ "$dead_count" -eq 0 ]; then
         log_ok "全量: $checked 个唯一链接, 0 死链"
@@ -109,7 +114,7 @@ check_structure() {
         fi
 
     # 正式公开内容的结构检查；raws 保留为原始材料区，不纳入正文质量门禁。
-    done < <(find wiki/ projects/ career/ -name '*.md' -type f)
+    done < <(find wiki/ -path 'wiki/leetcode' -prune -o -path 'wiki/华为机试' -prune -o -name '*.md' -type f -print; find projects/ career/ -name '*.md' -type f)
 
     log_ok "结构检查完成"
     echo "  >600行: $over_600 个 🟡"
@@ -122,7 +127,13 @@ check_callouts() {
     log_section "Callout 规范检查"
 
     # 非法 callout 类型
-    local invalid=$(grep -rnE '^>[[:space:]]*\[![^]]+\]' wiki/ projects/ career/ 2>/dev/null | grep -vE '>[[:space:]]*\[!(tip|info|note|warning|danger)(\]|[[:space:]])' || true)
+    local invalid=$(
+        while IFS= read -r -d '' file; do
+            grep -nHE '^>[[:space:]]*\[![^]]+\]' -- "$file" 2>/dev/null || true
+        done < <(find wiki/ projects/ career/ -type f -name '*.md' \
+            ! -path 'wiki/leetcode/*' ! -path 'wiki/华为机试/*' -print0 2>/dev/null) |
+        grep -vE '>[[:space:]]*\[!(tip|info|note|warning|danger)(\]|[[:space:]])' || true
+    )
     local invalid_count=0
     if [ -n "$invalid" ]; then
         invalid_count=$(echo "$invalid" | wc -l)
@@ -133,7 +144,10 @@ check_callouts() {
     fi
 
     # 嵌套 callout
-    local nested=$(grep -rnE '^>[[:space:]]*>[[:space:]]*\[!' wiki/ projects/ career/ 2>/dev/null || true)
+    local nested=$(while IFS= read -r -d '' file; do
+        grep -nHE '^>[[:space:]]*>[[:space:]]*\[!' -- "$file" 2>/dev/null || true
+    done < <(find wiki/ projects/ career/ -type f -name '*.md' \
+        ! -path 'wiki/leetcode/*' ! -path 'wiki/华为机试/*' -print0 2>/dev/null))
     local nested_count=0
     if [ -n "$nested" ]; then
         nested_count=$(echo "$nested" | wc -l)
@@ -154,7 +168,7 @@ check_sensitive() {
     # 只输出命中文件名，防止凭据正文被复制到 CI 日志或 Job Summary。
     if matches=$(git grep --no-color -l -I -E -e \
         '(AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{20,}|Bearer[[:space:]]+[A-Za-z0-9._-]{20,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|(^|[^0-9])1[3-9][0-9]{9}([^0-9]|$)|https?://[^[:space:]]+\.(internal|corp|intra)(/|$))' \
-        -- '*.md'); then
+        -- '*.md' ':!wiki/leetcode/**' ':!wiki/华为机试/**'); then
         log_error "疑似敏感信息：以下已跟踪 Markdown 文件命中（不显示匹配内容）"
         printf '%s\n' "$matches"
         AUDIT_FAILED=1

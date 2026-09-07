@@ -1,0 +1,210 @@
+---
+comments: true
+difficulty: 困难
+edit_url: https://github.com/doocs/leetcode/edit/main/solution/1500-1599/1526.Minimum%20Number%20of%20Increments%20on%20Subarrays%20to%20Form%20a%20Target%20Array/README.md
+rating: 1872
+source: 第 31 场双周赛 Q4
+tags:
+    - 栈
+    - 贪心
+    - 数组
+    - 动态规划
+    - 单调栈
+---
+
+<!-- problem:start -->
+
+# [1526. 形成目标数组的子数组最少增加次数](https://leetcode.cn/problems/minimum-number-of-increments-on-subarrays-to-form-a-target-array)
+
+[English Version](/solution/1500-1599/1526.Minimum%20Number%20of%20Increments%20on%20Subarrays%20to%20Form%20a%20Target%20Array/README_EN.md)
+
+## 题目描述
+
+<!-- description:start -->
+
+<p>给你一个整数数组&nbsp;<code>target</code>&nbsp;和一个数组&nbsp;<code>initial</code>&nbsp;，<code>initial</code>&nbsp;数组与 <code>target</code>&nbsp; 数组有同样的大小，且一开始全部为 0 。</p>
+
+<p>一次操作中，你可以从&nbsp;<code>initial</code> 数组中选择 <strong>任何</strong> 子数组，并将每个值加 <code>1</code>。</p>
+
+<p>返回从&nbsp;<code>initial</code>&nbsp;数组构造&nbsp;<code>target</code>&nbsp;数组的最少操作次数。</p>
+
+<p>答案保证在 32 位整数以内。</p>
+
+<p>&nbsp;</p>
+
+<p><strong>示例 1：</strong></p>
+
+<pre>
+<strong>输入：</strong>target = [1,2,3,2,1]
+<strong>输出：</strong>3
+<strong>解释：</strong>我们需要至少 3 次操作从 intial 数组得到 target 数组。
+[0,0,0,0,0] 将下标为 0 到 4&nbsp;的元素（包含二者）加 1 。
+[1,1,1,1,1] 将下标为 1 到 3 的元素（包含二者）加 1 。
+[1,2,2,2,1] 将下标为 2 的元素增加 1 。
+[1,2,3,2,1] 得到了目标数组。
+</pre>
+
+<p><strong>示例 2：</strong></p>
+
+<pre>
+<strong>输入：</strong>target = [3,1,1,2]
+<strong>输出：</strong>4
+<strong>解释：</strong>(initial)[0,0,0,0] -&gt; [1,1,1,1] -&gt; [1,1,1,2] -&gt; [2,1,1,2] -&gt; [3,1,1,2] (target) 。
+</pre>
+
+<p><strong>示例 3：</strong></p>
+
+<pre>
+<strong>输入：</strong>target = [3,1,5,4,2]
+<strong>输出：</strong>7
+<strong>解释：</strong>(initial)[0,0,0,0,0] -&gt; [1,1,1,1,1] -&gt; [2,1,1,1,1] -&gt; [3,1,1,1,1] 
+                                  -&gt; [3,1,2,2,2] -&gt; [3,1,3,3,2] -&gt; [3,1,4,4,2] -&gt; [3,1,5,4,2] (target)。
+</pre>
+
+<p><strong>示例 4：</strong></p>
+
+<pre>
+<strong>输入：</strong>target = [1,1,1,1]
+<strong>输出：</strong>1
+</pre>
+
+<p>&nbsp;</p>
+
+<p><strong>提示：</strong></p>
+
+<ul>
+	<li><code>1 &lt;= target.length &lt;= 10<sup>5</sup></code></li>
+	<li><code>1 &lt;= target[i] &lt;= 10<sup>5</sup></code></li>
+	<li>输入保证答案在 32 位整数范围内。</li>
+</ul>
+
+<!-- description:end -->
+
+## 解法
+
+<!-- solution:start -->
+
+### 方法一：动态规划
+
+我们定义 $f[i]$ 表示得到 $target[0,..i]$ 的最少操作次数，初始时 $f[0] = target[0]$。
+
+对于 $target[i]$，如果 $target[i] \leq target[i-1]$，则 $f[i] = f[i-1]$；否则 $f[i] = f[i-1] + target[i] - target[i-1]$。
+
+最终答案即为 $f[n-1]$。
+
+我们注意到 $f[i]$ 只与 $f[i-1]$ 有关，因此可以只用一个变量来维护操作次数。
+
+时间复杂度 $O(n)$，其中 $n$ 为数组 $target$ 的长度。空间复杂度 $O(1)$。
+
+相似题目：
+
+- [3229. 使数组等于目标数组所需的最少操作次数](https://github.com/doocs/leetcode/blob/main/solution/3200-3299/3229.Minimum%20Operations%20to%20Make%20Array%20Equal%20to%20Target/README.md)
+
+<!-- tabs:start -->
+
+#### Python3
+
+```python
+class Solution:
+    def minNumberOperations(self, target: List[int]) -> int:
+        return target[0] + sum(max(0, b - a) for a, b in pairwise(target))
+```
+
+#### Java
+
+```java
+class Solution {
+    public int minNumberOperations(int[] target) {
+        int f = target[0];
+        for (int i = 1; i < target.length; ++i) {
+            if (target[i] > target[i - 1]) {
+                f += target[i] - target[i - 1];
+            }
+        }
+        return f;
+    }
+}
+```
+
+#### C++
+
+```cpp
+class Solution {
+public:
+    int minNumberOperations(vector<int>& target) {
+        int f = target[0];
+        for (int i = 1; i < target.size(); ++i) {
+            if (target[i] > target[i - 1]) {
+                f += target[i] - target[i - 1];
+            }
+        }
+        return f;
+    }
+};
+```
+
+#### Go
+
+```go
+func minNumberOperations(target []int) int {
+	f := target[0]
+	for i, x := range target[1:] {
+		if x > target[i] {
+			f += x - target[i]
+		}
+	}
+	return f
+}
+```
+
+#### TypeScript
+
+```ts
+function minNumberOperations(target: number[]): number {
+    let f = target[0];
+    for (let i = 1; i < target.length; ++i) {
+        if (target[i] > target[i - 1]) {
+            f += target[i] - target[i - 1];
+        }
+    }
+    return f;
+}
+```
+
+#### Rust
+
+```rust
+impl Solution {
+    pub fn min_number_operations(target: Vec<i32>) -> i32 {
+        let mut f = target[0];
+        for i in 1..target.len() {
+            if target[i] > target[i - 1] {
+                f += target[i] - target[i - 1];
+            }
+        }
+        f
+    }
+}
+```
+
+#### C#
+
+```cs
+public class Solution {
+    public int MinNumberOperations(int[] target) {
+        int f = target[0];
+        for (int i = 1; i < target.Length; ++i) {
+            if (target[i] > target[i - 1]) {
+                f += target[i] - target[i - 1];
+            }
+        }
+        return f;
+    }
+}
+```
+
+<!-- tabs:end -->
+
+<!-- solution:end -->
+
+<!-- problem:end -->
