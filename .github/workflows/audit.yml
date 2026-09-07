@@ -55,6 +55,20 @@ jobs:
             done
           done < <(find projects -type f -name '*.md' -print0)
           exit "$missing"
+      - name: Check career frontmatter
+        shell: bash
+        run: |
+          set -u
+          missing=0
+          while IFS= read -r -d '' file; do
+            for key in module tags difficulty last_reviewed; do
+              if ! sed -n '1,/^---$/p' "$file" | grep -q "^${key}:"; then
+                echo "Missing ${key}: ${file}"
+                missing=1
+              fi
+            done
+          done < <(find career -type f -name '*.md' -print0)
+          exit "$missing"
       - name: List Markdown files in this revision
         if: always()
         shell: bash
